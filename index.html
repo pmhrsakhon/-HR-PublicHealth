@@ -246,8 +246,28 @@ function stub(v){const m=MENUS.find(x=>x.id===v);
 
 /* ข้อมูลแบบสำรวจ: เก็บในเบราว์เซอร์เครื่องนี้ (localStorage) ของจริงต้องส่งไปฐานข้อมูลกลาง */
 const KEY='hr2570_survey_v1';
-let DATA=(()=>{try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){return[]}})();
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(DATA))}catch(e){}};
+/* แก้ไข: เก็บข้อมูลแบบสำรวจใน Firebase Realtime Database (path survey2570) ทุกคนเห็นข้อมูลชุดเดียวกันแบบเรียลไทม์
+   ถ้าเชื่อม Firebase ไม่ได้ จะสำรองไว้ใน localStorage ของเครื่อง */
+const SPATH='survey2570';
+const lsGet=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){return[]}};
+let DATA=db?[]:lsGet();
+const lsSave=()=>{try{localStorage.setItem(KEY,JSON.stringify(DATA))}catch(e){}};
+const fbErr=e=>(e&&e.code==='PERMISSION_DENIED')?'ไม่มีสิทธิ์เขียนฐานข้อมูล (ตรวจสอบ Rules ของ Firebase Realtime Database)':'บันทึกลงฐานข้อมูลไม่สำเร็จ: '+((e&&e.message)||e);
+async function dbSet(rec){if(!db){const i=DATA.findIndex(d=>d.id===rec.id);if(i>=0)DATA[i]=rec;else DATA.push(rec);lsSave();return}await db.ref(SPATH+'/'+rec.id).set(rec)}
+async function dbDel(id){if(!db){DATA=DATA.filter(d=>d.id!==id);lsSave();return}await db.ref(SPATH+'/'+id).remove()}
+async function dbClear(){if(!db){DATA=[];lsSave();return}await db.ref(SPATH).remove()}
+async function dbMerge(list){if(!db){lsSave();return}const m={};list.forEach(r=>m[r.id]=r);await db.ref(SPATH).update(m)}
+if(db){
+ db.ref(SPATH).on('value',snap=>{
+  const v=snap.val()||{};DATA=Object.values(v).filter(Boolean);
+  /* ย้ายข้อมูลเก่าที่ค้างใน localStorage ของเครื่องนี้ขึ้นฐานข้อมูลกลาง (ครั้งเดียว ไม่ทับข้อมูลที่มีอยู่) */
+  try{const old=lsGet().filter(r=>r&&r.id&&!v[r.id]);if(old.length&&!localStorage.getItem(KEY+'_migrated')){
+   localStorage.setItem(KEY+'_migrated','1');dbMerge(old).catch(e=>{localStorage.removeItem(KEY+'_migrated');console.warn(fbErr(e))})}}catch(e){}
+  /* ไม่ re-render ขณะกำลังกรอกฟอร์ม เพื่อไม่ให้ข้อมูลที่พิมพ์หาย */
+  const typing=st.view==='survey'&&document.activeElement&&document.activeElement.closest&&document.activeElement.closest('#f');
+  if(!typing&&typeof render==='function')render();
+ },e=>{console.warn(fbErr(e));const m=document.querySelector('#view');if(m&&st.view==='survey')st.msg='อ่านข้อมูลจากฐานข้อมูลไม่ได้: '+fbErr(e)})
+}
 const cnt=id=>DATA.filter(d=>d.courses.includes(id)).length;
 const cmp=(a,b)=>a.localeCompare(b,'th');
 const canSee=()=>st.role!=='guest';
@@ -349,7 +369,7 @@ function demo(){
  const r=a=>a[Math.floor(Math.random()*a.length)];
  for(let i=1;i<=40;i++){const u=r(UL),cs=COURSES.filter(()=>Math.random()<.45).map(c=>c.id);if(!cs.length)cs.push(r(COURSES).id);
  DATA.push({id:'demo'+Date.now()+'_'+i,unit:u[1],amphoe:u[0],name:'ตัวอย่าง '+i,posno:'ตย.'+i,pos:r(POS),level:r(LVL)[1],grp:r(GROUPS),courses:cs,at:new Date().toISOString()})}
- save();render();
+ {const n0=DATA.length;dbMerge(DATA.filter(d=>String(d.id).startsWith('demo'))).then(render).catch(e=>alert(fbErr(e)))}
 }
 function bindSurvey(){
  const f=$('#f');
@@ -374,9 +394,13 @@ function bindSurvey(){
   if(dup&&!st.edit){goEdit(dup);return}
   if(dup){err.textContent='มีข้อมูลของ '+dup.name+' อยู่แล้ว กรุณาตรวจสอบเลขที่ตำแหน่งหรือชื่อ-สกุล';return}
   const rec={id:st.edit||Date.now()+Math.random().toString(36).slice(2,6),unit:unitName(),amphoe:g('amphoe'),name:g('name'),posno:g('posno'),pos:g('pos'),level:g('level'),grp:g('grp'),courses,at:new Date().toISOString()};
-  const i=DATA.findIndex(d=>d.id===rec.id),was=!!st.edit;
-  if(i>=0)DATA[i]=rec;else DATA.push(rec);
-  st.edit=null;save();st.msg=(was?'แก้ไขข้อมูลของ ':'บันทึกแบบสำรวจของ ')+rec.name+' เรียบร้อยแล้ว';render();scrollTo(0,0);
+  const was=!!st.edit,btn=f.querySelector('button[type=submit]');
+  if(btn){btn.disabled=true;btn.textContent='กำลังบันทึก...'}
+  err.textContent='';
+  dbSet(rec).then(()=>{
+   if(db){const i=DATA.findIndex(d=>d.id===rec.id);if(i>=0)DATA[i]=rec;else DATA.push(rec)}
+   st.edit=null;st.msg=(was?'แก้ไขข้อมูลของ ':'บันทึกแบบสำรวจของ ')+rec.name+' เรียบร้อยแล้ว';render();scrollTo(0,0);
+  }).catch(e=>{err.textContent=fbErr(e);if(btn){btn.disabled=false;btn.textContent=was?'บันทึกการแก้ไข':'ส่งแบบสำรวจ'}});
  };
  /* โหมดแก้ไข: ใส่ข้อมูลเดิมลงฟอร์ม */
  const cur=st.edit&&DATA.find(d=>d.id===st.edit);
@@ -399,8 +423,8 @@ $('#view').onclick=e=>{
  else if(a==='demo')demo();
  else if(a==='cancel'){st.edit=null;st.msg='';render()}
  else if(a==='edit'){const d=DATA.find(x=>x.id===b.dataset.i);if(d){st.edit=d.id;st.msg='กำลังแก้ไขข้อมูลของ '+d.name;render();scrollTo(0,0)}}
- else if(a==='del'){if(confirm('ลบรายการนี้?')){DATA=DATA.filter(d=>d.id!==b.dataset.i);save();render()}}
- else if(a==='clear'){if(confirm('ล้างข้อมูลผู้ตอบทั้งหมด?')){DATA=[];save();render()}}
+ else if(a==='del'){if(confirm('ลบรายการนี้?')){dbDel(b.dataset.i).then(()=>{if(db)DATA=DATA.filter(d=>d.id!==b.dataset.i);render()}).catch(e=>alert(fbErr(e)))}}
+ else if(a==='clear'){if(confirm('ล้างข้อมูลผู้ตอบทั้งหมด?')){dbClear().then(()=>{if(db)DATA=[];render()}).catch(e=>alert(fbErr(e)))}}
 };
 
 /* ===== ข้อมูลอัตรากำลัง: ข้อมูลจากไฟล์ข้อมูลบุคลากร รพ.สต. 149 แห่ง (สร้างอัตโนมัติจาก Excel) ===== */
