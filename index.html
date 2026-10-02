@@ -271,7 +271,7 @@ if(db){
 const cnt=id=>DATA.filter(d=>d.courses.includes(id)).length;
 const cmp=(a,b)=>a.localeCompare(b,'th');
 const canSee=()=>st.role!=='guest';
-const canEdit=()=>['admin','exec','staff'].includes(st.role),canDel=()=>st.role==='admin';
+const canEdit=()=>['admin','exec','staff'].includes(st.role),canDel=()=>canEdit();
 const op=a=>a.map(x=>`<option>${esc(x)}</option>`).join('');
 const short=COURSES.map(c=>c.s);
 
@@ -301,9 +301,16 @@ function survey(){
  <label>กลุ่มงาน<select name="grp"><option value="">เลือกกลุ่มงาน</option>${op(GROUPS)}</select></label>
  <fieldset><legend>หลักสูตรที่ต้องการเข้ารับการอบรม (เลือกได้หลายหลักสูตร)</legend>${COURSES.map((c,i)=>`<label class="opt"><input type="checkbox" name="c" value="${c.id}"><span>${i+1}. ${esc(c.n)}</span></label>`).join('')}</fieldset>
  <div class="actions full"><button class="btn" type="submit">${st.edit?'บันทึกการแก้ไข':'ส่งแบบสำรวจ'}</button>${st.edit?'<button class="btn sec" type="button" data-act="cancel">ยกเลิกการแก้ไข</button>':''}<span class="err" id="err" role="alert"></span></div></form></div>
- ${canSee()?report():'<div class="glass card note">รายงานสรุปแสดงเฉพาะผู้ดูแลระบบและผู้บริหาร</div>'}`;
+ ${canSee()?dataTable()+report():'<div class="glass card note">รายงานสรุปแสดงเฉพาะผู้ดูแลระบบและผู้บริหาร</div>'}`;
 }
 
+function dataTable(){
+ const rows=[...DATA].sort((x,y)=>cmp(x.amphoe||'',y.amphoe||'')||cmp(x.unit||'',y.unit||'')||cmp(x.name||'',y.name||''));
+ const H=['ที่','อำเภอ','ชื่อ รพ.สต.','ชื่อ-สกุล','เลขที่ตำแหน่ง','ตำแหน่ง','ระดับ','กลุ่มงาน','หลักสูตรที่ต้องการเข้ารับการอบรม (เลือกได้หลายหลักสูตร)'];
+ const ce=canEdit();
+ const body=rows.length?rows.map((d,i)=>`<tr><td class="n">${i+1}</td><td>${esc(d.amphoe)}</td><td>${esc(d.unit)}</td><td>${esc(d.name)}</td><td>${esc(d.posno)}</td><td>${esc(d.pos)}</td><td>${esc(d.level)}</td><td>${esc(d.grp||'')}</td><td>${(d.courses||[]).map(id=>{const c=COURSES.find(c=>c.id===id);return c?'• '+esc(c.n):''}).filter(Boolean).join('<br>')}</td>${ce?`<td style="white-space:nowrap"><button class="btn sec sm" type="button" data-act="edit" data-i="${esc(d.id)}">แก้ไข</button> <button class="btn sec sm" type="button" data-act="del" data-i="${esc(d.id)}" style="color:var(--bad)">ลบ</button></td>`:''}</tr>`).join(''):`<tr><td colspan="${H.length+(ce?1:0)}" class="empty">ยังไม่มีข้อมูล</td></tr>`;
+ return `<div class="glass card"><h2>ตารางข้อมูลสำรวจความต้องการฝึกอบรม ปีงบประมาณ 2570 <span class="note">(ทั้งหมด ${rows.length} รายการ)</span></h2><div class="tw" style="max-height:560px"><table><thead><tr>${H.map(x=>`<th>${x}</th>`).join('')}${ce?'<th>จัดการ</th>':''}</tr></thead><tbody>${body}</tbody></table></div></div>`;
+}
 function report(){
  const adm=st.role==='admin';
  const demoBtns=adm?`<button class="btn sec" data-act="demo">เพิ่มข้อมูลตัวอย่าง</button>${DATA.length?'<button class="btn sec" data-act="clear">ล้างข้อมูลทั้งหมด</button>':''}`:'';
@@ -327,8 +334,7 @@ function report(){
  ${sec('จำแนกตามอำเภอ','อำเภอ',cross(AMPHOE,d=>d.amphoe))}
  ${sec('จำแนกตามระดับ','ระดับ',cross(LVL.map(x=>x[1]),d=>d.level,k=>typeOf(k)+' / '+k))}
  ${sec('จำแนกตามกลุ่มงาน','กลุ่มงาน',cross(GROUPS,d=>d.grp))}
- ${sec('จำแนกตามตำแหน่ง','ตำแหน่ง',cross(POS,d=>d.pos))}
- <div class="glass card"><h2>รายชื่อผู้ตอบแบบสำรวจ</h2><div class="tw"><table><thead><tr>${['ที่','ชื่อ รพ.สต.','อำเภอ','ชื่อ-สกุล','เลขที่ตำแหน่ง','ตำแหน่ง','ระดับ','กลุ่มงาน','หลักสูตร'].map(x=>`<th>${x}</th>`).join('')}${canEdit()?'<th></th>':''}</tr></thead><tbody>${DATA.map((d,i)=>`<tr><td>${i+1}</td><td>${esc(d.unit)}</td><td>${esc(d.amphoe)}</td><td>${esc(d.name)}</td><td>${esc(d.posno)}</td><td>${esc(d.pos)}</td><td>${esc(d.level)}</td><td>${esc(d.grp||'')}</td><td>${d.courses.map(id=>esc(COURSES.find(c=>c.id===id).s)).join(', ')}</td>${canEdit()?`<td><button class="btn sec sm" data-act="edit" data-i="${d.id}">แก้ไข</button>${canDel()?` <button class="btn sec sm" data-act="del" data-i="${d.id}">ลบ</button>`:''}</td>`:''}</tr>`).join('')}</tbody></table></div></div>`;
+ ${sec('จำแนกตามตำแหน่ง','ตำแหน่ง',cross(POS,d=>d.pos))}`;
 }
 function surveyInsight(){
  if(!DATA.length)return '<div class="insight"><b>ผลสำรวจฝึกอบรม 2570</b><br>ยังไม่มีผู้ตอบแบบสำรวจ</div>';
@@ -414,7 +420,7 @@ function bindSurvey(){
 }
 $('#view').onclick=e=>{
  const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
- if((a==='edit'||a==='cancel')&&!canEdit()||(a==='del'||a==='clear'||a==='demo')&&!canDel()||a.startsWith('u_')&&st.role!=='admin')return;
+ if((a==='edit'||a==='cancel')&&!canEdit()||(a==='del'&&!canDel()||(a==='clear'||a==='demo')&&st.role!=='admin')||a.startsWith('u_')&&st.role!=='admin')return;
  if(a.startsWith('u_'))return userAct(a,b);
  if(a==='unit')openUnit(+b.dataset.i);
  else if(a==='go')go(b.dataset.i);
@@ -423,7 +429,7 @@ $('#view').onclick=e=>{
  else if(a==='demo')demo();
  else if(a==='cancel'){st.edit=null;st.msg='';render()}
  else if(a==='edit'){const d=DATA.find(x=>x.id===b.dataset.i);if(d){st.edit=d.id;st.msg='กำลังแก้ไขข้อมูลของ '+d.name;render();scrollTo(0,0)}}
- else if(a==='del'){if(confirm('ลบรายการนี้?')){dbDel(b.dataset.i).then(()=>{if(db)DATA=DATA.filter(d=>d.id!==b.dataset.i);render()}).catch(e=>alert(fbErr(e)))}}
+ else if(a==='del'){const _d=DATA.find(x=>String(x.id)===b.dataset.i);if(confirm('ลบข้อมูลของ '+(_d?_d.name:'รายการนี้')+' ?')){dbDel(b.dataset.i).then(()=>{if(db)DATA=DATA.filter(d=>d.id!==b.dataset.i);render()}).catch(e=>alert(fbErr(e)))}}
  else if(a==='clear'){if(confirm('ล้างข้อมูลผู้ตอบทั้งหมด?')){dbClear().then(()=>{if(db)DATA=[];render()}).catch(e=>alert(fbErr(e)))}}
 };
 
