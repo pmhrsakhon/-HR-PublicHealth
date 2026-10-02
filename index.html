@@ -271,7 +271,7 @@ if(db){
 const cnt=id=>DATA.filter(d=>d.courses.includes(id)).length;
 const cmp=(a,b)=>a.localeCompare(b,'th');
 const canSee=()=>st.role!=='guest';
-const canEdit=()=>['admin','exec','staff'].includes(st.role),canDel=()=>canEdit();
+const canEdit=()=>['admin','exec','staff'].includes(st.role),canDel=()=>st.role==='admin';
 const op=a=>a.map(x=>`<option>${esc(x)}</option>`).join('');
 const short=COURSES.map(c=>c.s);
 
@@ -308,7 +308,7 @@ function dataTable(){
  const rows=[...DATA].sort((x,y)=>cmp(x.amphoe||'',y.amphoe||'')||cmp(x.unit||'',y.unit||'')||cmp(x.name||'',y.name||''));
  const H=['ที่','อำเภอ','ชื่อ รพ.สต.','ชื่อ-สกุล','เลขที่ตำแหน่ง','ตำแหน่ง','ระดับ','กลุ่มงาน','หลักสูตรที่ต้องการเข้ารับการอบรม (เลือกได้หลายหลักสูตร)'];
  const ce=canEdit();
- const body=rows.length?rows.map((d,i)=>`<tr><td class="n">${i+1}</td><td>${esc(d.amphoe)}</td><td>${esc(d.unit)}</td><td>${esc(d.name)}</td><td>${esc(d.posno)}</td><td>${esc(d.pos)}</td><td>${esc(d.level)}</td><td>${esc(d.grp||'')}</td><td>${(d.courses||[]).map(id=>{const c=COURSES.find(c=>c.id===id);return c?'• '+esc(c.n):''}).filter(Boolean).join('<br>')}</td>${ce?`<td style="white-space:nowrap"><button class="btn sec sm" type="button" data-act="edit" data-i="${esc(d.id)}">แก้ไข</button> <button class="btn sec sm" type="button" data-act="del" data-i="${esc(d.id)}" style="color:var(--bad)">ลบ</button></td>`:''}</tr>`).join(''):`<tr><td colspan="${H.length+(ce?1:0)}" class="empty">ยังไม่มีข้อมูล</td></tr>`;
+ const body=rows.length?rows.map((d,i)=>`<tr><td class="n">${i+1}</td><td>${esc(d.amphoe)}</td><td>${esc(d.unit)}</td><td>${esc(d.name)}</td><td>${esc(d.posno)}</td><td>${esc(d.pos)}</td><td>${esc(d.level)}</td><td>${esc(d.grp||'')}</td><td>${(d.courses||[]).map(id=>{const c=COURSES.find(c=>c.id===id);return c?'• '+esc(c.n):''}).filter(Boolean).join('<br>')}</td>${ce?`<td style="white-space:nowrap"><button class="btn sec sm" type="button" data-act="edit" data-i="${esc(d.id)}">แก้ไข</button>${canDel()?` <button class="btn sec sm" type="button" data-act="del" data-i="${esc(d.id)}" style="color:var(--bad)">ลบ</button>`:''}</td>`:''}</tr>`).join(''):`<tr><td colspan="${H.length+(ce?1:0)}" class="empty">ยังไม่มีข้อมูล</td></tr>`;
  return `<div class="glass card"><h2>ตารางข้อมูลสำรวจความต้องการฝึกอบรม ปีงบประมาณ 2570 <span class="note">(ทั้งหมด ${rows.length} รายการ)</span></h2><div class="tw" style="max-height:560px"><table><thead><tr>${H.map(x=>`<th>${x}</th>`).join('')}${ce?'<th>จัดการ</th>':''}</tr></thead><tbody>${body}</tbody></table></div></div>`;
 }
 function report(){
