@@ -367,8 +367,29 @@ function missBlock(){
  const by=AMPHOE.map(a=>[a,miss.filter(m=>m[0]===a).length]).filter(x=>x[1]).sort((x,y)=>y[1]-x[1]);
  const top=by.slice(0,3).map(x=>esc(x[0])+' '+x[1]+' แห่ง').join(', ');
  return `<div class="insight bad"><b>🤖 AI รายงานอัตโนมัติ</b><br>ขณะนี้มี รพ.สต. ที่<b>ยังไม่กรอกข้อมูล ${miss.length} แห่ง</b> จากทั้งหมด ${total} แห่ง · กรอกแล้ว ${done} แห่ง (ร้อยละ ${pc}) · อำเภอที่ยังไม่กรอกมากที่สุด: ${top}</div>
- <div class="actions"><button class="btn sec" type="button" data-act="miss" aria-expanded="false" aria-controls="misslist">ดูรายชื่อ รพ.สต. ที่ยังไม่กรอก (${miss.length} แห่ง)</button></div>
+ <div class="actions"><button class="btn sec" type="button" data-act="miss" aria-expanded="false" aria-controls="misslist">ดูรายชื่อ รพ.สต. ที่ยังไม่กรอก (${miss.length} แห่ง)</button> <button class="btn" type="button" data-act="misspdf">📄 ส่งออกเป็น PDF</button></div>
  <div id="misslist" hidden style="margin-top:12px">${tbl(['ลำดับ','อำเภอ','ชื่อ รพ.สต.'],miss.map((m,i)=>[i+1,m[0],m[1]]),3)}<p class="note">นับว่ากรอกแล้วเมื่อมีผู้ตอบแบบสำรวจของ รพ.สต. นั้นอย่างน้อย 1 คน</p></div>`;
+}
+/* ส่งออก PDF รายชื่อ รพ.สต. ที่ยังไม่กรอก: เปิดกล่องพิมพ์ของเบราว์เซอร์ แล้วเลือก "บันทึกเป็น PDF" (ใช้ฟอนต์ไทยของเครื่อง) */
+function missPdf(){
+ const miss=missingUnits();if(!miss.length){alert('ทุก รพ.สต. กรอกข้อมูลครบแล้ว ไม่มีรายชื่อให้ส่งออก');return}
+ const total=UL.length,dt=new Date().toLocaleDateString('th-TH',{year:'numeric',month:'long',day:'numeric'});
+ const by=AMPHOE.map(a=>[a,miss.filter(m=>m[0]===a).length,UL.filter(u=>u[0]===a).length]).filter(x=>x[1]);
+ const html=`<!doctype html><html lang="th"><head><meta charset="utf-8"><title>รายชื่อ รพ.สต. ที่ยังไม่กรอกแบบสำรวจ 2570</title><style>
+ @page{size:A4;margin:14mm}body{font-family:'Sarabun','TH Sarabun New','Noto Sans Thai',Tahoma,sans-serif;color:#000;font-size:13px}
+ h1{font-size:18px;margin:0 0 4px}p{margin:2px 0 8px}table{border-collapse:collapse;width:100%;margin-top:8px}
+ th,td{border:1px solid #444;padding:4px 8px;text-align:left}th{background:#e6eef2}thead{display:table-header-group}tr{page-break-inside:avoid}
+ .n{text-align:center;width:48px}.s td{background:#f6f6f6}</style></head><body>
+ <h1>รายชื่อ รพ.สต. ที่ยังไม่กรอกแบบสำรวจเป้าหมายอบรมข้าราชการ ปีงบประมาณ 2570</h1>
+ <p>กองสาธารณสุข องค์การบริหารส่วนจังหวัดสกลนคร · ข้อมูล ณ วันที่ ${esc(dt)}</p>
+ <p>ยังไม่กรอก <b>${miss.length}</b> แห่ง จากทั้งหมด ${total} แห่ง (กรอกแล้ว ${total-miss.length} แห่ง)</p>
+ <table><thead><tr><th class="n">ลำดับ</th><th>อำเภอ</th><th>ชื่อ รพ.สต.</th></tr></thead><tbody>${miss.map((m,i)=>`<tr><td class="n">${i+1}</td><td>${esc(m[0])}</td><td>${esc(m[1])}</td></tr>`).join('')}</tbody></table>
+ <table><thead><tr><th>สรุปรายอำเภอ</th><th class="n">ยังไม่กรอก</th><th class="n">ทั้งหมด</th></tr></thead><tbody>${by.map(x=>`<tr><td>${esc(x[0])}</td><td class="n">${x[1]}</td><td class="n">${x[2]}</td></tr>`).join('')}</tbody></table>
+ </body></html>`;
+ const fr=document.createElement('iframe');fr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.appendChild(fr);
+ const d=fr.contentWindow.document;d.open();d.write(html);d.close();
+ const go=()=>{try{fr.contentWindow.focus();fr.contentWindow.print()}catch(e){alert('เปิดหน้าต่างพิมพ์ไม่ได้')}setTimeout(()=>fr.remove(),60000)};
+ setTimeout(go,300);
 }
 function surveyInsight(){
  if(!DATA.length)return '<div class="insight"><b>ผลสำรวจฝึกอบรม 2570</b><br>ยังไม่มีผู้ตอบแบบสำรวจ</div>';
@@ -461,6 +482,7 @@ $('#view').onclick=e=>{
  else if(a==='go')go(b.dataset.i);
  else if(a==='dx')dirXlsx();
  else if(a==='miss'){const l=$('#misslist');if(l){l.hidden=!l.hidden;b.setAttribute('aria-expanded',String(!l.hidden));const n=missingUnits().length;b.textContent=l.hidden?'ดูรายชื่อ รพ.สต. ที่ยังไม่กรอก ('+n+' แห่ง)':'ซ่อนรายชื่อ'}}
+ else if(a==='misspdf')missPdf();
  else if(a==='xlsx')xlsx();
  else if(a==='demo')demo();
  else if(a==='pg'){tpage=+b.dataset.i||1;const el=$('#dtbl');if(el)el.outerHTML=dataTable()}
