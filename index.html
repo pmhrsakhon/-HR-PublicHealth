@@ -354,7 +354,21 @@ function report(){
  <div class="insight">อำเภอที่มีผู้ตอบมากที่สุดคือ ${esc(ad[0])} ${ad[1]} คน โดยรวมมี ${units.length} รพ.สต. ที่ตอบแล้ว</div>
  <div class="insight">ผู้ที่ต้องการอบรมมากกว่า 1 หลักสูตรมี ${multi} คน (ร้อยละ ${pct(multi)})</div>
  <div class="actions"><button class="btn" data-act="xlsx">ดาวน์โหลดไฟล์ Excel</button>${demoBtns}</div></div>
- <div class="glass card"><h2>แบบสำรวจเป้าหมายอบรมข้าราชการ รายโรงพยาบาลส่งเสริมสุขภาพตำบล</h2>${tbl(['ลำดับ','อำเภอ','ชื่อรพ.สต.',...short.map(x=>x+' (คน)'),'หมายเหตุ'],[...unitRows().map(r=>[...r.map((x,i)=>i>=3&&x===0?'':x),'']),['','','รวม',...COURSES.map(c=>cnt(c.id)),'']],3)}</div>`;
+ <div class="glass card"><h2>แบบสำรวจเป้าหมายอบรมข้าราชการ รายโรงพยาบาลส่งเสริมสุขภาพตำบล</h2>${tbl(['ลำดับ','อำเภอ','ชื่อรพ.สต.',...short.map(x=>x+' (คน)'),'หมายเหตุ'],[...unitRows().map(r=>[...r.map((x,i)=>i>=3&&x===0?'':x),'']),['','','รวม',...COURSES.map(c=>cnt(c.id)),'']],3)}${missBlock()}</div>`;
+}
+/* AI รายงานอัตโนมัติ: รพ.สต. ที่ยังไม่กรอกแบบสำรวจ (นับว่ากรอกแล้วเมื่อมีผู้ตอบอย่างน้อย 1 คน) */
+function missingUnits(){
+ const done=new Set(DATA.map(d=>d.amphoe+'\u0001'+d.unit));
+ return UL.filter(([a,u])=>!done.has(a+'\u0001'+u));
+}
+function missBlock(){
+ const miss=missingUnits(),total=UL.length,done=total-miss.length,pc=Math.round(done/total*100);
+ if(!miss.length)return `<div class="insight"><b>🤖 AI รายงานอัตโนมัติ</b><br>ทุก รพ.สต. (${total} แห่ง) กรอกข้อมูลแบบสำรวจแล้วครบถ้วน</div>`;
+ const by=AMPHOE.map(a=>[a,miss.filter(m=>m[0]===a).length]).filter(x=>x[1]).sort((x,y)=>y[1]-x[1]);
+ const top=by.slice(0,3).map(x=>esc(x[0])+' '+x[1]+' แห่ง').join(', ');
+ return `<div class="insight bad"><b>🤖 AI รายงานอัตโนมัติ</b><br>ขณะนี้มี รพ.สต. ที่<b>ยังไม่กรอกข้อมูล ${miss.length} แห่ง</b> จากทั้งหมด ${total} แห่ง · กรอกแล้ว ${done} แห่ง (ร้อยละ ${pc}) · อำเภอที่ยังไม่กรอกมากที่สุด: ${top}</div>
+ <div class="actions"><button class="btn sec" type="button" data-act="miss" aria-expanded="false" aria-controls="misslist">ดูรายชื่อ รพ.สต. ที่ยังไม่กรอก (${miss.length} แห่ง)</button></div>
+ <div id="misslist" hidden style="margin-top:12px">${tbl(['ลำดับ','อำเภอ','ชื่อ รพ.สต.'],miss.map((m,i)=>[i+1,m[0],m[1]]),3)}<p class="note">นับว่ากรอกแล้วเมื่อมีผู้ตอบแบบสำรวจของ รพ.สต. นั้นอย่างน้อย 1 คน</p></div>`;
 }
 function surveyInsight(){
  if(!DATA.length)return '<div class="insight"><b>ผลสำรวจฝึกอบรม 2570</b><br>ยังไม่มีผู้ตอบแบบสำรวจ</div>';
@@ -446,6 +460,7 @@ $('#view').onclick=e=>{
  else if(a==='unit'){if(canSee())openUnit(+b.dataset.i)}
  else if(a==='go')go(b.dataset.i);
  else if(a==='dx')dirXlsx();
+ else if(a==='miss'){const l=$('#misslist');if(l){l.hidden=!l.hidden;b.setAttribute('aria-expanded',String(!l.hidden));const n=missingUnits().length;b.textContent=l.hidden?'ดูรายชื่อ รพ.สต. ที่ยังไม่กรอก ('+n+' แห่ง)':'ซ่อนรายชื่อ'}}
  else if(a==='xlsx')xlsx();
  else if(a==='demo')demo();
  else if(a==='pg'){tpage=+b.dataset.i||1;const el=$('#dtbl');if(el)el.outerHTML=dataTable()}
