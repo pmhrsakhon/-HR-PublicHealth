@@ -148,6 +148,20 @@ details summary{cursor:pointer;font-weight:700;font-size:1.05rem}
 .tag.r{background:rgba(179,38,30,.16);color:var(--bad)}
 #view tr[data-act]{cursor:pointer}
 #lg{max-width:420px;width:92vw;margin-top:10vh}#lgc{background:var(--panel);border:1px solid var(--line);padding:22px}
+
+#ud{max-width:760px}
+.ed-sec{margin:14px 0 4px}.ed-sec h3{margin:0 0 6px}
+.ed-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)}
+.ed-row>span{flex:1;font-size:.92rem;font-weight:600}
+.ed-st{display:flex;align-items:center;gap:6px}
+.ed-st button{width:34px;height:34px;border-radius:10px;border:1.5px solid var(--line);background:var(--panel);color:var(--tx);font-weight:800;font-size:1.1rem;cursor:pointer;line-height:1}
+.ed-st button:hover{border-color:var(--ac)}
+.ed-st input{width:58px;height:34px;text-align:center;border-radius:10px;border:1.5px solid var(--line);background:var(--panel);color:var(--tx);font-weight:700}
+.ed-add{margin-top:8px;display:flex;gap:8px;align-items:center}
+.ed-add select{height:36px;border-radius:10px;border:1.5px solid var(--line);background:var(--panel);color:var(--tx);padding:0 10px;max-width:100%}
+#edb{max-height:58vh;overflow-y:auto;padding-right:4px}
+#eds{position:sticky;top:0;z-index:1;margin:10px 0;font-weight:600}
+#udnote{width:100%;min-height:64px;border-radius:12px;border:1.5px solid var(--line);background:var(--panel);color:var(--tx);padding:8px 12px;font:inherit}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -428,7 +442,8 @@ $('#view').onclick=e=>{
  const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
  if((a==='edit'||a==='cancel')&&!canEdit()||(a==='del'&&!canDel()||(a==='clear'||a==='demo')&&st.role!=='admin')||a.startsWith('u_')&&st.role!=='admin')return;
  if(a.startsWith('u_'))return userAct(a,b);
- if(a==='unit')openUnit(+b.dataset.i);
+ if(a==='uedit')openEdit(+b.dataset.i);
+ else if(a==='unit')openUnit(+b.dataset.i);
  else if(a==='go')go(b.dataset.i);
  else if(a==='dx')dirXlsx();
  else if(a==='xlsx')xlsx();
@@ -462,6 +477,90 @@ const pair=(k,l,j)=>{const a=cs(k,j),b=cs(k,j+1);return[l,a+b,'พกส. '+f(a)
 const bars=a=>{const x=a.filter(r=>r[1]>0).sort((p,q)=>q[1]-p[1]),m=x[0][1];return x.map(r=>`<div class="bar"><span>${esc(r[0])}${r[2]?`<small>${esc(r[2])}</small>`:''}</span><div class="track"><div class="fill" style="width:${r[1]/m*100}%"></div></div><b>${f(r[1])}</b></div>`).join('')};
 function amphoeRows(){return AM.map(a=>{const d=D.filter(u=>u.a===a);return{a,n:d.length,fr:S(d,'fr'),g:S(d,'gt'),f:S(d,'ft'),c:S(d,'ct'),inf:S(d,'inf')}})}
 
+
+/* ===== แก้ไขข้อมูลบุคลากรรายตำแหน่ง: admin แก้ได้ทุก รพ.สต. · เจ้าหน้าที่ (username = รหัสสถานบริการ 5 หลัก) แก้ได้เฉพาะ รพ.สต. ของตน ===== */
+D.forEach(u=>{u.base={G:[...u.G],F:[...u.F],O:[...u.O],C:[...u.C],gt:u.gt,fc:u.fc,fo:u.fo,ct:u.ct,note:u.note};u.ed=null});
+const sm=a=>a.reduce((x,y)=>x+y,0);
+const canEditUnit=u=>!!u&&(st.role==='admin'||(st.role==='staff'&&!!st.user&&st.user===u.cd));
+const anyEdit=()=>st.role==='admin'||(st.role==='staff'&&D.some(u=>u.cd===st.user));
+const EPATH='staffing2570',EKEY='hr_staffing_v1';
+let EDITS=(()=>{try{return JSON.parse(localStorage.getItem(EKEY)||'{}')}catch(e){return{}}})();
+const eSave=()=>{try{localStorage.setItem(EKEY,JSON.stringify(EDITS))}catch(e){}};
+const toArr=(v,n)=>{const a=String(v||'').split(',').map(x=>Math.max(0,parseInt(x,10)||0));while(a.length<n)a.push(0);return a.slice(0,n)};
+/* ยอดรวม = ยอดตามไฟล์ + ส่วนต่างที่แก้ เพื่อคงยอดเดิมของแถวที่ไฟล์ต้นทางไม่ตรงกับผลบวกรายตำแหน่ง */
+function applyEdit(u){
+ const e=EDITS[u.cd],b=u.base;
+ if(!e){u.G=[...b.G];u.F=[...b.F];u.O=[...b.O];u.C=[...b.C];u.gt=b.gt;u.fc=b.fc;u.fo=b.fo;u.ct=b.ct;u.note=b.note;u.ed=null}
+ else{u.G=toArr(e.G,b.G.length);u.F=toArr(e.F,b.F.length);u.O=toArr(e.O,b.O.length);u.C=toArr(e.C,b.C.length);
+  u.gt=Math.max(0,b.gt+sm(u.G)-sm(b.G));u.fc=Math.max(0,b.fc+sm(u.F)-sm(b.F));u.fo=Math.max(0,b.fo+sm(u.O)-sm(b.O));u.ct=Math.max(0,b.ct+sm(u.C)-sm(b.C));
+  u.note=e.note!=null?String(e.note).trim():b.note;u.ed={by:e.by||'',at:e.at||''}}
+ u.ft=u.fc+u.fo;u.all=u.gt+u.ft+u.ct;u.inf=u.gt+u.fc;u.dif=u.fr-u.inf;
+}
+const applyAll=()=>D.forEach(applyEdit);
+applyAll();
+async function eSet(u,rec){if(!db){EDITS[u.cd]=rec;eSave();return}await db.ref(EPATH+'/'+u.cd).set(rec)}
+async function eDel(u){if(!db){delete EDITS[u.cd];eSave();return}await db.ref(EPATH+'/'+u.cd).remove()}
+if(db){db.ref(EPATH).on('value',snap=>{
+ EDITS=snap.val()||{};applyAll();
+ const ae=document.activeElement,typing=ae&&ae.closest&&ae.closest('.fl');
+ if(!typing&&(st.view==='dir'||st.view==='dash')&&!$('#ud').open)render();
+},e=>console.warn(fbErr(e)))}
+const eWho=u=>u.ed?`แก้ไขล่าสุดโดย ${esc(u.ed.by)}${u.ed.at?' · '+new Date(u.ed.at).toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'}):''}`:'';
+
+/* หน้าต่างแก้ไข */
+let EW=null;
+const ESEC=[['G','ข้าราชการ',GL],['F','พนักงานจ้างเงินบำรุง ตำแหน่งตามกรอบ',FL],['O','พนักงานจ้างเงินบำรุง ตำแหน่งนอกกรอบ',OL],['C','พนักงานจ้างเหมาบริการ',CL]];
+function edSecs(){
+ return ESEC.map(([k,t,L])=>{
+  const vis=j=>EW[k][j]>0||EW.sh[k].has(j);
+  const shown=L.map((l,j)=>[l,j]).filter(x=>vis(x[1])),hid=L.map((l,j)=>[l,j]).filter(x=>!vis(x[1]));
+  return `<div class="ed-sec"><h3>${t} <span class="note">(<span data-tot="${k}">${sm(EW[k])}</span> คน)</span></h3>${shown.length?shown.map(([l,j])=>`<div class="ed-row"><span>${esc(l)}</span><div class="ed-st"><button type="button" data-k="${k}" data-j="${j}" data-d="-1" aria-label="ลด ${esc(l)}">−</button><input type="number" min="0" max="99" inputmode="numeric" data-k="${k}" data-j="${j}" value="${EW[k][j]}" aria-label="จำนวน ${esc(l)}"><button type="button" data-k="${k}" data-j="${j}" data-d="1" aria-label="เพิ่ม ${esc(l)}">+</button></div></div>`).join(''):'<p class="note" style="margin:4px 0">ยังไม่มีบุคลากรในกลุ่มนี้</p>'}
+  ${hid.length?`<div class="ed-add"><select data-addk="${k}" aria-label="เพิ่มตำแหน่ง"><option value="">＋ เพิ่มตำแหน่ง…</option>${hid.map(([l,j])=>`<option value="${j}">${esc(l)}</option>`).join('')}</select></div>`:''}</div>`}).join('');
+}
+function edSum(){
+ const u=D[EW.i],b=u.base;
+ const gt=Math.max(0,b.gt+sm(EW.G)-sm(b.G)),fc=Math.max(0,b.fc+sm(EW.F)-sm(b.F)),fo=Math.max(0,b.fo+sm(EW.O)-sm(b.O)),ct=Math.max(0,b.ct+sm(EW.C)-sm(b.C));
+ const all=gt+fc+fo+ct,inf=gt+fc,dif=u.fr-inf;
+ return `ปฏิบัติงานจริง <b>${all}</b> คน (ข้าราชการ ${gt} · จ้างเงินบำรุง ${fc+fo} · จ้างเหมา ${ct}) · ครองกรอบ <b>${inf}/${u.fr}</b> ${dif>0?'· <span style="color:var(--bad)">ขาด '+dif+' อัตรา</span>':dif<0?'· เกินกรอบ '+(-dif)+' คน':'· ครบตามกรอบ'}`;
+}
+function openEdit(i){
+ const u=D[i];if(!canEditUnit(u)){alert('คุณไม่มีสิทธิ์แก้ไขข้อมูลของ รพ.สต. นี้');return}
+ EW={i,G:[...u.G],F:[...u.F],O:[...u.O],C:[...u.C],sh:{G:new Set(),F:new Set(),O:new Set(),C:new Set()}};
+ $('#udc').innerHTML=`<h2>แก้ไขข้อมูลบุคลากร</h2><p class="sub">${esc(u.n)} · อำเภอ${esc(u.a)} · รหัส ${cdTag(u.cd)} · กรอบ ${u.fr} คน</p>
+ <div id="eds" class="insight"></div>
+ <div id="edb"></div>
+ <h3>หมายเหตุ</h3><textarea id="udnote" placeholder="เช่น รก.ผอ.รพ.สต., ช่วยราชการ, ลาศึกษาต่อ" aria-label="หมายเหตุ">${esc(u.note)}</textarea>
+ <p class="note">กด + / − หรือพิมพ์ตัวเลขเพื่อเพิ่ม/ลดบุคลากรแต่ละตำแหน่ง · ตำแหน่งที่ยังไม่มีให้เลือกจาก "＋ เพิ่มตำแหน่ง" · ${eWho(u)||'ยังไม่เคยมีการแก้ไขในระบบ'}</p>
+ <div class="actions"><button class="btn" type="button" data-ed="save">บันทึก</button><button class="btn sec" type="button" data-x>ยกเลิก</button>${st.role==='admin'&&u.ed?'<button class="btn sec" type="button" data-ed="reset">คืนค่าเดิมจากไฟล์ต้นทาง</button>':''}<span class="err" id="ede" role="alert"></span></div>`;
+ $('#edb').innerHTML=edSecs();$('#eds').innerHTML=edSum();
+ if(!$('#ud').open)$('#ud').showModal();
+}
+function edBind(){
+ const dlgE=$('#ud');
+ const upd=(k,j,v)=>{v=Math.max(0,Math.min(99,Math.floor(+v)||0));EW[k][j]=v;
+  const inp=dlgE.querySelector(`input[data-k="${k}"][data-j="${j}"]`);if(inp&&+inp.value!==v)inp.value=v;
+  const t=dlgE.querySelector(`[data-tot="${k}"]`);if(t)t.textContent=sm(EW[k]);$('#eds').innerHTML=edSum()};
+ dlgE.addEventListener('click',e=>{
+  if(!EW)return;
+  const b1=e.target.closest('button[data-d]');
+  if(b1){upd(b1.dataset.k,+b1.dataset.j,EW[b1.dataset.k][+b1.dataset.j]+ +b1.dataset.d);return}
+  const a=e.target.closest('[data-ed]');if(!a)return;
+  const u=D[EW.i];
+  if(!canEditUnit(u)){alert('คุณไม่มีสิทธิ์แก้ไขข้อมูลของ รพ.สต. นี้');return}
+  if(a.dataset.ed==='save'){
+   a.disabled=true;a.textContent='กำลังบันทึก...';
+   const rec={G:EW.G.join(','),F:EW.F.join(','),O:EW.O.join(','),C:EW.C.join(','),note:($('#udnote').value||'').trim(),by:(USERS.find(x=>x.u===st.user)||{}).name||st.user,at:new Date().toISOString()};
+   eSet(u,rec).then(()=>{if(db)EDITS[u.cd]=rec;applyEdit(u);dlgE.close();EW=null;render()}).catch(err=>{$('#ede').textContent=fbErr(err);a.disabled=false;a.textContent='บันทึก'});
+  }else if(a.dataset.ed==='reset'&&st.role==='admin'){
+   if(confirm('คืนค่าข้อมูลของ '+u.n+' กลับเป็นข้อมูลจากไฟล์ต้นทาง?'))eDel(u).then(()=>{if(db)delete EDITS[u.cd];applyEdit(u);dlgE.close();EW=null;render()}).catch(err=>{$('#ede').textContent=fbErr(err)});
+  }
+ });
+ dlgE.addEventListener('input',e=>{const t=e.target;if(EW&&t.matches&&t.matches('input[data-k]'))upd(t.dataset.k,+t.dataset.j,t.value)});
+ dlgE.addEventListener('change',e=>{const t=e.target;
+  if(EW&&t.matches&&t.matches('select[data-addk]')&&t.value!==''){const k=t.dataset.addk,j=+t.value;EW.sh[k].add(j);if(!EW[k][j])EW[k][j]=1;$('#edb').innerHTML=edSecs();$('#eds').innerHTML=edSum()}});
+ dlgE.addEventListener('close',()=>{EW=null});
+}
+edBind();
 function unitDetail(i){
  const u=D[i],pc=u.fr?Math.round(u.inf/u.fr*100):0;
  const blk=(t,L,A)=>{const r=L.map((l,j)=>[l,A[j]]).filter(x=>x[1]>0);return r.length?`<h3>${t}</h3>${tbl(['ตำแหน่ง','จำนวน (คน)'],[...r,['รวม',r.reduce((x,y)=>x+y[1],0)]],1)}`:''};
@@ -469,7 +568,7 @@ function unitDetail(i){
  <div class="kpis" style="margin:14px 0"><div class="glass kpi"><b>${u.all}</b><span>ปฏิบัติงานจริง (คน)</span></div><div class="glass kpi"><b>${u.gt}</b><span>ข้าราชการ</span></div><div class="glass kpi"><b>${u.ft}</b><span>จ้างเงินบำรุง</span></div><div class="glass kpi"><b>${u.ct}</b><span>จ้างเหมาบริการ</span></div></div>
  <div class="insight${u.dif>0?' bad':''}">ครองกรอบ ${u.inf} จาก ${u.fr} คน (${pc}%) ${u.dif>0?'· ขาด '+u.dif+' อัตรา':u.dif<0?'· เกินกรอบ '+(-u.dif)+' คน':'· ครบตามกรอบ'}</div>
  ${blk('ข้าราชการ',GL,u.G)}${blk('พนักงานจ้างเงินบำรุง ตำแหน่งตามกรอบ',FL,u.F)}${blk('พนักงานจ้างเงินบำรุง ตำแหน่งนอกกรอบ',OL,u.O)}${blk('พนักงานจ้างเหมาบริการ',CL,u.C)}
- ${u.note?`<h3>หมายเหตุ</h3><div class="insight">${esc(u.note)}</div>`:''}`;
+ ${u.note?`<h3>หมายเหตุ</h3><div class="insight">${esc(u.note)}</div>`:''}${u.ed?`<p class="note">✏️ ${eWho(u)}</p>`:''}`;
 }
 function dirPage(){
  if(false)return `<div class="glass hero"><h1>👥 ข้อมูลอัตรากำลัง</h1><p class="sub">ขอบเขตข้อมูล: ${SCOPE[st.role]} · ข้อมูล ณ วันที่ ${AS_OF}</p></div><div class="glass card">${unitDetail(0)}<p class="note">ตัวอย่างแสดง ${esc(D[0].n)} · ในระบบจริงจะผูกกับ รพ.สต. ของผู้ใช้</p></div>`;
@@ -481,29 +580,27 @@ function dirPage(){
  const seg=[['ข้าราชการ',gt,'#0A8F9E'],['พนักงานจ้างเงินบำรุง',ft,'#4A63D8'],['พนักงานจ้างเหมาบริการ',ct,'#F2A900']];
  const nd=D.filter(u=>u.G[0]+u.G[1]+u.G[2]>0).length;
  const top=[...D].sort((a,b)=>b.dif-a.dif).slice(0,5).map(u=>esc(u.n.replace(/^รพ\.?สต\./,'')+' อ.'+u.a+' ขาด '+u.dif)).join('<br>');
- const rows=[...ar.map(r=>[r.a,r.n,f(r.fr),f(r.g),f(r.f),f(r.c),f(r.g+r.f+r.c),Math.round(r.inf/r.fr*100)+'%']),['รวม',D.length,f(fr),f(gt),f(ft),f(ct),f(al),pc+'%']];
  const nt=D.filter(u=>u.note);
  return `<div class="glass hero"><h1>👥 ข้อมูลอัตรากำลัง</h1><p class="sub">บุคลากรที่ปฏิบัติงานจริง แยกรายโรงพยาบาลส่งเสริมสุขภาพตำบล · กองสาธารณสุข อบจ.สกลนคร · ข้อมูล ณ วันที่ ${AS_OF}</p><div class="hchips"><span>${D.length} รพ.สต.</span><span>${AM.length} อำเภอ</span><span>${f(al)} คน</span></div></div>
+ <div class="glass card"><h2>รายละเอียดรายโรงพยาบาลส่งเสริมสุขภาพตำบล</h2><div class="fl"><input id="dq" type="search" placeholder="ค้นหาชื่อ รพ.สต. อำเภอ หรือรหัส 5 หลัก" aria-label="ค้นหา"><select id="da" aria-label="อำเภอ"><option value="">ทุกอำเภอ</option>${AM.map(a=>`<option>${esc(a)}</option>`).join('')}</select><select id="ds" aria-label="ขนาด"><option value="">ทุกขนาด</option><option value="L">ขนาดใหญ่ (L)</option><option value="M">ขนาดกลาง (M)</option><option value="S">ขนาดเล็ก (S)</option></select><button class="btn" data-act="dx">ดาวน์โหลด Excel</button></div>
+ <div class="tw" style="max-height:560px"><table><thead><tr>${['ที่','รหัส 5 หลัก','รพ.สต.','อำเภอ','ขนาด','ตามกรอบ','ผอ.','ขรก. พว.','ขรก. นวก.สธ.','ขรก. จพ.สธ.','ขรก. แพทย์แผนไทย','ขรก. ทันตะ','ขรก. รวม','จ้างเงินบำรุง','จ้างเหมา','รวมทั้งหมด','เทียบกรอบ'].map(x=>`<th>${x}</th>`).join('')}${anyEdit()?'<th>จัดการ</th>':''}</tr></thead><tbody id="utb"></tbody></table></div>${st.role==='admin'?'<p class="insight">👤 ผู้ดูแลระบบ: แก้ไขบุคลากรได้ทุก รพ.สต. กดปุ่ม ✏️ แก้ไข ท้ายแถว</p>':(anyEdit()?'<p class="insight">👤 เจ้าหน้าที่ '+esc((D.find(u=>u.cd===st.user)||{}).n||'')+': แก้ไขได้เฉพาะ รพ.สต. ของท่าน กดปุ่ม ✏️ แก้ไข ท้ายแถว</p>':'')}<p class="note" id="dcnt"></p><p class="note">คลิกที่แถวเพื่อดูจำนวนบุคลากรทุกตำแหน่งและหมายเหตุ · ✏️ ข้างชื่อ = มีการแก้ไขข้อมูลในระบบ · ⚠️ = รหัสควรตรวจสอบยืนยัน (รหัส 05522 จับคู่โดยวิธีคัดออก) · 📝 = มีหมายเหตุ · เทียบกรอบ: ตัวเลขสีแดง = ขาดอัตรา, + = เกินกรอบ</p></div>
  <div class="kpis"><div class="glass kpi"><b>${f(al)}</b><span>บุคลากรปฏิบัติงานจริง (คน)</span></div><div class="glass kpi"><b>${f(gt)}</b><span>ข้าราชการ (${Math.round(gt/al*100)}%)</span></div><div class="glass kpi"><b>${f(ft)}</b><span>พนักงานจ้างเงินบำรุง (${Math.round(ft/al*100)}%)</span></div><div class="glass kpi"><b>${f(ct)}</b><span>พนักงานจ้างเหมาบริการ (${Math.round(ct/al*100)}%)</span></div></div>
  <div class="cols"><div class="glass card"><h2>สัดส่วนบุคลากรตามประเภทการจ้าง</h2><div class="stk">${seg.map(s=>`<i style="width:${s[1]/al*100}%;background:${s[2]}" title="${s[0]}"></i>`).join('')}</div><div class="leg">${seg.map(s=>`<span><span class="dot" style="background:${s[2]}"></span>${s[0]} <b>${f(s[1])}</b> คน</span>`).join('')}</div>
  <h3>การครองกรอบอัตรากำลัง</h3><div class="bar"><span>ข้าราชการ + จ้างตามกรอบ<small>กรอบรวม ${f(fr)} อัตรา</small></span><div class="track"><div class="fill" style="width:${Math.min(pc,100)}%"></div></div><b>${pc}%</b></div><p class="note">คำนวณจาก ข้าราชการ ${f(gt)} + พนักงานจ้างเงินบำรุงตำแหน่งตามกรอบ ${f(S(D,'fc'))} = ${f(inf)} คน เทียบกรอบ ${f(fr)} (ไม่นับตำแหน่งนอกกรอบและจ้างเหมา)</p></div>
  <div class="glass card"><h2>ข้อสังเกตจากข้อมูล</h2><div class="insight"><b>ผอ.รพ.สต.</b><br>มีผู้ดำรงตำแหน่ง ${nd} จาก ${D.length} แห่ง ยังไม่มี ${D.length-nd} แห่ง</div><div class="insight bad"><b>ขาดอัตราตามกรอบมากที่สุด 5 แห่ง</b><br>${top}</div>${CHK.length?`<div class="insight bad"><b>ยอดรวมในไฟล์ไม่ตรงผลบวกรายตำแหน่ง ${CHK.length} รายการ</b><br>${CHK.map(esc).join('<br>')}<br><span class="note">หน้านี้ใช้ยอดรวมตามไฟล์</span></div>`:''}</div></div>
  <div class="cols3"><div class="glass card"><h2>ข้าราชการ ${f(gt)} คน</h2>${bars(gov)}</div><div class="glass card"><h2>พนักงานจ้างเงินบำรุง ${f(ft)} คน</h2><h3>ตำแหน่งตามกรอบ (${f(S(D,'fc'))})</h3>${bars(fin)}<h3>ตำแหน่งนอกกรอบ (${f(S(D,'fo'))})</h3>${bars(out)}</div><div class="glass card"><h2>พนักงานจ้างเหมาบริการ ${f(ct)} คน</h2>${bars(CL.map((l,j)=>[l,cs('C',j)]))}</div></div>
- <div class="cols"><div class="glass card"><h2>สรุปรายอำเภอ</h2>${tbl(['อำเภอ','รพ.สต. (แห่ง)','ตามกรอบ','ข้าราชการ','จ้างเงินบำรุง','จ้างเหมา','รวมทั้งหมด','ครองกรอบ'],rows,1)}</div><div class="glass card"><h2>ร้อยละการครองกรอบ รายอำเภอ</h2>${[...ar].sort((a,b)=>b.inf/b.fr-a.inf/a.fr).map(r=>{const p=Math.round(r.inf/r.fr*100);return `<div class="bar"><span>${esc(r.a)}</span><div class="track"><div class="fill" style="width:${Math.min(p,100)}%"></div></div><b>${p}%</b></div>`}).join('')}</div></div>
- <div class="glass card"><h2>รายละเอียดรายโรงพยาบาลส่งเสริมสุขภาพตำบล</h2><div class="fl"><input id="dq" type="search" placeholder="ค้นหาชื่อ รพ.สต. อำเภอ หรือรหัส 5 หลัก" aria-label="ค้นหา"><select id="da" aria-label="อำเภอ"><option value="">ทุกอำเภอ</option>${AM.map(a=>`<option>${esc(a)}</option>`).join('')}</select><select id="ds" aria-label="ขนาด"><option value="">ทุกขนาด</option><option value="L">ขนาดใหญ่ (L)</option><option value="M">ขนาดกลาง (M)</option><option value="S">ขนาดเล็ก (S)</option></select><button class="btn" data-act="dx">ดาวน์โหลด Excel</button></div>
- <div class="tw" style="max-height:560px"><table><thead><tr>${['ที่','รหัส 5 หลัก','รพ.สต.','อำเภอ','ขนาด','ตามกรอบ','ผอ.','ขรก. พว.','ขรก. นวก.สธ.','ขรก. จพ.สธ.','ขรก. แพทย์แผนไทย','ขรก. ทันตะ','ขรก. รวม','จ้างเงินบำรุง','จ้างเหมา','รวมทั้งหมด','เทียบกรอบ'].map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody id="utb"></tbody></table></div><p class="note" id="dcnt"></p><p class="note">คลิกที่แถวเพื่อดูจำนวนบุคลากรทุกตำแหน่งและหมายเหตุ · ⚠️ = รหัสควรตรวจสอบยืนยัน (รหัส 05522 จับคู่โดยวิธีคัดออก) · 📝 = มีหมายเหตุ · เทียบกรอบ: ตัวเลขสีแดง = ขาดอัตรา, + = เกินกรอบ</p></div>
  <div class="glass card"><details><summary>หมายเหตุจากหน่วยงาน (${nt.length} รายการ)</summary><ul class="notes">${nt.map(u=>`<li><b>${esc(u.n)}</b> (อ.${esc(u.a)}): ${esc(u.note)}</li>`).join('')}</ul></details></div>`;
 }
 function bindDir(){
  const q=$('#dq');if(!q)return;
  const up=()=>{const k=q.value.trim(),a=$('#da').value,s=$('#ds').value;
   const r=D.filter(u=>(!a||u.a===a)&&(!s||u.s===s)&&(!k||(u.n+u.a+u.cd).includes(k)));
-  $('#utb').innerHTML=r.length?r.map(u=>`<tr data-act="unit" data-i="${u.i}"><td>${u.i+1}</td><td>${cdTag(u.cd)}</td><td>${esc(u.n)}${u.note?' 📝':''}</td><td>${esc(u.a)}</td><td>${u.s}</td><td class="n">${u.fr}</td><td class="n">${dd(u.G[0]+u.G[1]+u.G[2])}</td><td class="n">${dd(u.G[3])}</td><td class="n">${dd(u.G[4])}</td><td class="n">${dd(u.G[8])}</td><td class="n">${dd(u.G[7])}</td><td class="n">${dd(u.G[5]+u.G[6])}</td><td class="n">${u.gt}</td><td class="n">${u.ft}</td><td class="n">${dd(u.ct)}</td><td class="n"><b>${u.all}</b></td><td class="n"${u.dif>0?' style="color:var(--bad)"':''}>${u.dif>0?'−'+u.dif:u.dif<0?'+'+(-u.dif):'ครบ'}</td></tr>`).join(''):'<tr><td colspan="17" class="empty">ไม่พบรายการ</td></tr>';
+  $('#utb').innerHTML=r.length?r.map(u=>`<tr data-act="unit" data-i="${u.i}"><td>${u.i+1}</td><td>${cdTag(u.cd)}</td><td>${esc(u.n)}${u.note?' 📝':''}${u.ed?' ✏️':''}</td><td>${esc(u.a)}</td><td>${u.s}</td><td class="n">${u.fr}</td><td class="n">${dd(u.G[0]+u.G[1]+u.G[2])}</td><td class="n">${dd(u.G[3])}</td><td class="n">${dd(u.G[4])}</td><td class="n">${dd(u.G[8])}</td><td class="n">${dd(u.G[7])}</td><td class="n">${dd(u.G[5]+u.G[6])}</td><td class="n">${u.gt}</td><td class="n">${u.ft}</td><td class="n">${dd(u.ct)}</td><td class="n"><b>${u.all}</b></td><td class="n"${u.dif>0?' style="color:var(--bad)"':''}>${u.dif>0?'−'+u.dif:u.dif<0?'+'+(-u.dif):'ครบ'}</td>${anyEdit()?`<td>${canEditUnit(u)?`<button class="btn sm" type="button" data-act="uedit" data-i="${u.i}">✏️ แก้ไข</button>`:''}</td>`:''}</tr>`).join(''):`<tr><td colspan="${anyEdit()?18:17}" class="empty">ไม่พบรายการ</td></tr>`;
   $('#dcnt').textContent='แสดง '+r.length+' จาก '+D.length+' แห่ง'};
  q.oninput=up;$('#da').onchange=up;$('#ds').onchange=up;up();
 }
-function openUnit(i){$('#udc').innerHTML=unitDetail(i)+'<div class="actions"><button class="btn" data-x>ปิด</button></div>';$('#ud').showModal()}
-$('#ud').onclick=e=>{if(e.target===e.currentTarget||e.target.closest('[data-x]'))e.currentTarget.close()};
+function openUnit(i){$('#udc').innerHTML=unitDetail(i)+'<div class="actions">'+(canEditUnit(D[i])?'<button class="btn" type="button" data-ed-open="'+i+'">✏️ แก้ไขบุคลากร</button>':'')+'<button class="btn sec" data-x>ปิด</button></div>';$('#ud').showModal()}
+$('#ud').onclick=e=>{const o=e.target.closest('[data-ed-open]');if(o){openEdit(+o.dataset.edOpen);return}if(e.target===e.currentTarget||e.target.closest('[data-x]'))e.currentTarget.close()};
 function dirXlsx(){
  if(!window.XLSX){alert('โหลดตัวสร้างไฟล์ Excel ไม่ได้ (ต้องเชื่อมต่ออินเทอร์เน็ต)');return}
  const H=['ลำดับ','รหัสสถานบริการ (5 หลัก)','อำเภอ','ชื่อ รพ.สต.','ขนาด','ตามกรอบ',...GL.map(x=>'ขรก. '+x),...FL.map(x=>'จ้างตามกรอบ '+x),...OL.map(x=>'จ้างนอกกรอบ '+x),...CL.map(x=>'จ้างเหมา '+x),'ข้าราชการรวม','จ้างเงินบำรุงรวม','จ้างเหมารวม','รวมทั้งหมด','หมายเหตุ'];
