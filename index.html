@@ -341,8 +341,21 @@ let tpage=1,tq='';const PER=10;
 const hay=d=>[d.amphoe,d.unit,d.name,d.posno,d.pos,d.level,d.grp,...(d.courses||[]).map(id=>(COURSES.find(c=>c.id===id)||{}).n)].join(' ').toLowerCase();
 function dataTable(){
  return `<div class="glass card" id="dtbl"><h2>ตารางข้อมูลสำรวจความต้องการฝึกอบรม ปีงบประมาณ 2570 <span class="note">(ทั้งหมด ${DATA.length} รายการ)</span></h2>
- <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 12px"><input id="tq" type="search" value="${esc(tq)}" placeholder="🔍 ค้นหา ชื่อ-สกุล / รพ.สต. / อำเภอ / ตำแหน่ง / หลักสูตร" autocomplete="off" aria-label="ค้นหาข้อมูลในตาราง" style="flex:1 1 260px;min-width:0;padding:9px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--panel);color:var(--tx);font:inherit"><button class="btn sec sm" type="button" data-act="tclr">ล้างการค้นหา</button></div>
+ <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 12px"><input id="tq" type="search" value="${esc(tq)}" placeholder="🔍 ค้นหา ชื่อ-สกุล / รพ.สต. / อำเภอ / ตำแหน่ง / หลักสูตร" autocomplete="off" aria-label="ค้นหาข้อมูลในตาราง" style="flex:1 1 260px;min-width:0;padding:9px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--panel);color:var(--tx);font:inherit"><button class="btn sec sm" type="button" data-act="tclr">ล้างการค้นหา</button><button class="btn sm" type="button" data-act="dtx">⬇️ ดาวน์โหลด Excel</button></div>
  <div id="dinner">${dataInner()}</div></div>`;
+}
+/* ดาวน์โหลดตารางเป็น Excel: ตามผลการค้นหาที่แสดงอยู่ (ถ้าไม่ได้ค้นหา = ทั้งหมด) เรียงลำดับที่ตามลำดับการคีย์ */
+function dtXlsx(){
+ const byAt=(x,y)=>String(x.at||'').localeCompare(String(y.at||''))||String(x.id).localeCompare(String(y.id));
+ const asc=[...DATA].sort(byAt),no=new Map(asc.map((d,i)=>[d.id,i+1])),qs=tq.trim().toLowerCase().split(/\s+/).filter(Boolean);
+ const list=(qs.length?asc.filter(d=>{const h=hay(d);return qs.every(w=>h.includes(w))}):asc);
+ if(!list.length){alert('ไม่มีข้อมูลให้ดาวน์โหลด');return}
+ const H=['ที่','อำเภอ','ชื่อ รพ.สต.','ชื่อ-สกุล','เลขที่ตำแหน่ง','ตำแหน่ง','ระดับ','กลุ่มงาน','หลักสูตรที่ต้องการเข้ารับการอบรม'];
+ const rows=list.map(d=>[no.get(d.id),d.amphoe,d.unit,d.name,d.posno,d.pos,d.level,d.grp||'',(d.courses||[]).map(id=>{const c=COURSES.find(c=>c.id===id);return c?c.n:''}).filter(Boolean).join('\n')]);
+ if(!window.XLSX){alert('โหลดตัวสร้างไฟล์ Excel ไม่ได้ (ต้องเชื่อมต่ออินเทอร์เน็ต) จึงดาวน์โหลดเป็นไฟล์ CSV แทน');csv(H,rows);return}
+ const a=[H,...rows],ws=XLSX.utils.aoa_to_sheet(a);ws['!cols']=widths(a);
+ const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'ข้อมูลสำรวจ 2570');
+ XLSX.writeFile(wb,'ตารางข้อมูลสำรวจฝึกอบรม_2570'+(qs.length?'_ผลการค้นหา':'')+'.xlsx');
 }
 function dataInner(){
  /* ลำดับ = ลำดับการคีย์ (คนแรกที่คีย์ = 1) ไม่เปลี่ยนตามการเรียง; แสดงคนคีย์ล่าสุดไว้บนสุด */
@@ -516,6 +529,7 @@ $('#view').onclick=e=>{
  else if(a==='xlsx')xlsx();
  else if(a==='demo')demo();
  else if(a==='pg'){tpage=+b.dataset.i||1;const el=$('#dinner');if(el)el.innerHTML=dataInner()}
+ else if(a==='dtx'){if(canSee())dtXlsx()}
  else if(a==='tclr'){tq='';tpage=1;const i=$('#tq');if(i)i.value='';const el=$('#dinner');if(el)el.innerHTML=dataInner()}
  else if(a==='cancel'){st.edit=null;st.msg='';render()}
  else if(a==='edit'){const d=DATA.find(x=>x.id===b.dataset.i);if(d){st.edit=d.id;st.msg='กำลังแก้ไขข้อมูลของ '+d.name;render();scrollTo(0,0)}}
