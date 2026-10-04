@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B2D45">
 <title>ระบบบริหารงานบุคคล กองสาธารณสุข อบจ.สกลนคร</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -162,6 +163,92 @@ details summary{cursor:pointer;font-weight:700;font-size:1.05rem}
 #edb{max-height:58vh;overflow-y:auto;padding-right:4px}
 #eds{position:sticky;top:0;z-index:1;margin:10px 0;font-weight:600}
 #udnote{width:100%;min-height:64px;border-radius:12px;border:1.5px solid var(--line);background:var(--panel);color:var(--tx);padding:8px 12px;font:inherit}
+
+/* ===== ปรับ UI ให้เหมาะกับมือถือ + สไตล์ยุค AI (aurora · glass · pill) ===== */
+html{-webkit-text-size-adjust:100%}
+body{-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased;overscroll-behavior-y:none}
+button,.btn,.opt,.search{touch-action:manipulation}
+.glass{border-radius:22px}
+.hero h1{letter-spacing:-.02em}
+.btn{background-size:160% 100%;transition:transform .15s,filter .15s}
+.btn:active{transform:scale(.97)}
+.card h2{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px}
+#botbtn{background:linear-gradient(135deg,#FFD26B,#F2A900);box-shadow:0 0 0 5px rgba(242,169,0,.22),0 10px 24px rgba(0,0,0,.3)}
+@media(max-width:860px){
+:root{--sh:0 6px 20px rgba(10,40,70,.12)}
+body{font-size:15.5px}
+body::before{background:radial-gradient(380px 300px at 0% 0%,var(--b1),transparent 70%),radial-gradient(420px 340px at 100% 8%,var(--b2),transparent 70%),radial-gradient(420px 340px at 50% 100%,var(--b3),transparent 70%)}
+.app{padding:8px 10px calc(96px + env(safe-area-inset-bottom,0px));gap:12px}
+main,#view{gap:12px}
+/* แถบบน: ติดขอบบน แคบ กระชับ */
+.top{position:sticky;top:6px;z-index:3;padding:8px 10px;gap:8px;flex-wrap:nowrap;border-radius:18px}
+.search{flex:1;min-width:0;padding:10px 14px;border-radius:99px;font-size:.9rem}
+#who{display:none}
+.top .btn.sm,.icon{min-height:42px;border-radius:99px;padding:0 14px;white-space:nowrap}
+.icon{width:42px;padding:0;display:grid;place-items:center}
+/* แถบเมนูล่าง: ลอย เลื่อนซ้ายขวาได้ ปุ่มที่เลือกเป็นแคปซูล */
+aside.glass{left:10px;right:10px;border-radius:26px;padding:6px;background:rgba(10,38,56,.88);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.2);box-shadow:0 12px 34px rgba(0,0,0,.35)}
+nav{overflow-x:auto;scrollbar-width:none;justify-content:flex-start;gap:2px}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:1 0 64px;min-height:54px;border-radius:20px;justify-content:center;font-size:.68rem;font-weight:600;line-height:1.2}
+nav button[aria-current="page"]{background:linear-gradient(135deg,#FFD26B,#F2A900);box-shadow:0 4px 14px rgba(242,169,0,.4)}
+nav .i{background:none;width:26px;height:26px;font-size:1.2rem}
+nav button span.t{max-width:64px}
+#bot{right:12px;bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+#botbtn{width:50px;height:50px;font-size:1.3rem}
+#botbox{width:calc(100vw - 24px);bottom:60px}
+/* หัวเรื่อง การ์ด */
+h1{font-size:1.35rem}
+h2{font-size:1.05rem}
+.glass.hero{padding:18px 18px 16px;border-radius:24px}
+.hero::after{width:190px;height:190px;right:-50px;top:-60px}
+.hero::before{display:none}
+.hchips{gap:6px;margin-top:10px}
+.hchips span{padding:2px 11px;font-size:.8rem}
+.card{padding:16px;border-radius:20px}
+.kpis{gap:10px}
+.kpi{border-radius:18px}
+.cols3{grid-template-columns:1fr}
+/* ฟอร์ม: คอลัมน์เดียว ช่องใหญ่ นิ้วแตะง่าย ไม่ซูมบน iOS */
+.form{grid-template-columns:1fr;gap:14px}
+.form input[type=text],.form select,.fl input,.fl select,.pal input,#botbox input,#udnote{font-size:16px}
+.form input[type=text],.form select{height:50px;border-radius:16px}
+.form label.opt{padding:13px 14px;border-radius:18px;font-size:.95rem;align-items:flex-start;gap:12px}
+.form label.opt input{margin-top:2px}
+.actions{gap:8px}
+.actions.full{position:sticky;bottom:calc(88px + env(safe-area-inset-bottom,0px));z-index:2;padding:10px;margin:8px -6px 0;border-radius:20px;background:var(--glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.actions.full .btn{flex:1;min-height:48px}
+.btn{min-height:44px;padding:10px 18px}
+.btn.sm{min-height:40px;padding:6px 14px;font-size:.85rem}
+.fl{flex-direction:column;align-items:stretch}
+.fl input,.fl select{width:100%;min-width:0}
+/* ตาราง: เลื่อนข้างได้ลื่น ตัวเล็กลง */
+.tw{-webkit-overflow-scrolling:touch;border-radius:16px}
+table{font-size:.82rem}
+th,td{padding:8px 10px}
+/* ป๊อปอัป → bottom sheet */
+dialog,#ud,#lg{max-width:none;width:100%;margin:auto 0 0;padding:0}
+dialog .glass,#udc,#lgc,.pal{border-radius:26px 26px 0 0;padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))}
+#udc{max-height:88vh}
+#pal{margin-top:0}
+.ed-row{flex-wrap:wrap}
+.ed-add{flex-wrap:wrap}
+#edb{max-height:52vh}
+}
+/* ตารางข้อมูลสำรวจ → การ์ดรายคน บนจอเล็ก */
+@media(max-width:640px){
+#dtbl .tw{border:0;max-height:none;overflow:visible;border-radius:0}
+#dtbl table,#dtbl tbody,#dtbl tr,#dtbl td{display:block;width:100%}
+#dtbl thead{display:none}
+#dtbl tbody tr,#dtbl tbody tr:nth-child(even){background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:10px 14px;margin:0 0 10px;box-shadow:0 3px 12px rgba(10,40,70,.08)}
+#dtbl td{display:flex;justify-content:space-between;gap:12px;white-space:normal;border:0;padding:5px 0;text-align:right;font-size:.88rem}
+#dtbl td[data-label]::before{content:attr(data-label);flex:none;max-width:42%;color:var(--mut);font-weight:600;font-size:.8rem;text-align:left}
+#dtbl td.n{justify-content:flex-start;gap:8px;font-weight:700;color:var(--ac);border-bottom:1px dashed var(--line);padding-bottom:7px;margin-bottom:3px}
+#dtbl td:nth-child(9){flex-direction:column;gap:4px;text-align:left}
+#dtbl td:nth-child(10){justify-content:flex-start;gap:8px;padding-top:8px}
+#dtbl td:nth-child(10) .btn{flex:1}
+#dtbl td.empty{display:block;text-align:center}
+}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -865,6 +952,9 @@ $('#bi').onkeydown=e=>{
 
 document.documentElement.dataset.theme=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
 setUser((()=>{try{return USERS.find(x=>x.u===sessionStorage.getItem(SK))||null}catch(e){return null}})());
+
+/* มือถือ: ใส่ป้ายชื่อคอลัมน์ให้ตารางข้อมูลสำรวจ เพื่อแสดงเป็นการ์ดรายคน */
+(function(){const run=()=>{const t=document.querySelector('#dtbl table');if(!t||!t.tHead)return;const h=[...t.tHead.rows[0].cells].map(x=>x.textContent.trim().replace(/\s*\(เลือกได้.*$/,''));[...t.tBodies[0].rows].forEach(r=>{if(r.cells.length<2)return;[...r.cells].forEach((c,i)=>{c.dataset.label=h[i]||''})})};let q;new MutationObserver(()=>{clearTimeout(q);q=setTimeout(run,0)}).observe(document.getElementById('view'),{childList:true,subtree:true});run()})();
 </script>
 </body>
 </html>
