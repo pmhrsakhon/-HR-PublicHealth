@@ -282,6 +282,24 @@ if(db){
   if(!typing&&typeof render==='function')render();
  },e=>{console.warn(fbErr(e));const m=document.querySelector('#view');if(m&&st.view==='survey')st.msg='อ่านข้อมูลจากฐานข้อมูลไม่ได้: '+fbErr(e)})
 }
+/* เปิด/ปิดรับข้อมูลแบบสำรวจ 2570: เก็บสถานะที่ Firebase path settings/survey2570_open (true หรือไม่มีค่า = เปิดรับ, false = ปิดรับ)
+   เฉพาะผู้ดูแลระบบ (admin) เห็นปุ่มและสั่งเปิด/ปิดได้ */
+const OKEY='hr2570_survey_open';
+let SOPEN=true;
+if(!db){try{SOPEN=localStorage.getItem(OKEY)!=='0'}catch(e){}}
+else db.ref('settings/survey2570_open').on('value',snap=>{
+ SOPEN=snap.val()!==false;
+ const typing=st.view==='survey'&&document.activeElement&&document.activeElement.closest&&document.activeElement.closest('#f');
+ if(!typing&&typeof render==='function')render();
+},e=>console.warn('อ่านสถานะเปิด/ปิดรับไม่ได้',e));
+async function setOpen(v){if(!db){try{localStorage.setItem(OKEY,v?'1':'0')}catch(e){}SOPEN=v;return}await db.ref('settings/survey2570_open').set(v)}
+const isAdm=()=>st.role==='admin',intake=()=>SOPEN||isAdm();
+const intakeBar=()=>{
+ const adm=isAdm();
+ const note=SOPEN?'':`<div class="insight" role="status" style="border-left-color:var(--bad)"><b>🔴 ขณะนี้ปิดรับข้อมูลแบบสำรวจ</b><br>${adm?'ผู้ใช้อื่นไม่สามารถส่งหรือแก้ไขข้อมูลได้ (ผู้ดูแลระบบยังกรอกและแก้ไขได้)':'ไม่สามารถส่งหรือแก้ไขแบบสำรวจได้ในขณะนี้ หากต้องการกรอกหรือแก้ไขข้อมูล โปรดติดต่อผู้ดูแลระบบ'}</div>`;
+ if(!adm)return note;
+ return `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px"><b>สถานะการรับข้อมูล: ${SOPEN?'🟢 เปิดรับ':'🔴 ปิดรับ'}</b><button class="btn sm" type="button" data-act="sopen"${SOPEN?' disabled':''}>เปิดรับ</button><button class="btn sec sm" type="button" data-act="sclose"${SOPEN?'':' disabled'} style="color:var(--bad)">ปิดรับ</button></div>`+note;
+};
 const cnt=id=>DATA.filter(d=>d.courses.includes(id)).length;
 const cmp=(a,b)=>a.localeCompare(b,'th');
 const canSee=()=>st.role!=='guest';
@@ -304,8 +322,8 @@ function survey(){
  return `<div class="glass hero"><h1>สำรวจความต้องการฝึกอบรม ปีงบประมาณ 2570</h1>
  <p class="sub">เลือกได้หลายหลักสูตร และต้องกรอกข้อมูลให้ครบทุกช่อง</p><div class="hchips"><span>${COURSES.length} หลักสูตร</span><span>${UL.length} รพ.สต.</span><span>${AMPHOE.length} อำเภอ</span></div></div>
  <div class="glass card">
- ${st.msg?`<div class="insight" role="status">${esc(st.msg)}</div>`:''}
- <form id="f" class="form" novalidate>
+ ${intakeBar()}${st.msg?`<div class="insight" role="status">${esc(st.msg)}</div>`:''}
+ ${intake()?`<form id="f" class="form" novalidate>
  <label>อำเภอ<select name="amphoe"><option value="">เลือกอำเภอ</option>${op(AMPHOE)}</select></label>
  <label>ชื่อ รพ.สต.<select name="unit" disabled><option value="">เลือกอำเภอก่อน</option></select><input type="text" name="unitx" placeholder="พิมพ์ชื่อ รพ.สต." autocomplete="off" hidden></label>
  <label>ชื่อ-สกุล<input type="text" name="name" placeholder="ชื่อ นามสกุล" autocomplete="name"></label>
@@ -314,7 +332,7 @@ function survey(){
  <label>ระดับ<select name="level"><option value="">เลือกระดับ</option>${LEVELS.map(g=>`<optgroup label="${g[0]}">${op(g[1])}</optgroup>`).join('')}</select></label>
  <label>กลุ่มงาน<select name="grp"><option value="">เลือกกลุ่มงาน</option>${op(GROUPS)}</select></label>
  <fieldset><legend>หลักสูตรที่ต้องการเข้ารับการอบรม (เลือกได้หลายหลักสูตร)</legend>${COURSES.map((c,i)=>`<label class="opt"><input type="checkbox" name="c" value="${c.id}"><span>${i+1}. ${esc(c.n)}</span></label>`).join('')}</fieldset>
- <div class="actions full"><button class="btn" type="submit">${st.edit?'บันทึกการแก้ไข':'ส่งแบบสำรวจ'}</button>${st.edit?'<button class="btn sec" type="button" data-act="cancel">ยกเลิกการแก้ไข</button>':''}<span class="err" id="err" role="alert"></span></div></form></div>
+ <div class="actions full"><button class="btn" type="submit">${st.edit?'บันทึกการแก้ไข':'ส่งแบบสำรวจ'}</button>${st.edit?'<button class="btn sec" type="button" data-act="cancel">ยกเลิกการแก้ไข</button>':''}<span class="err" id="err" role="alert"></span></div></form>`:'<div class="empty">ปิดรับข้อมูลแบบสำรวจชั่วคราว</div>'}</div>
  ${canSee()?dataTable()+report():'<div class="glass card note">รายงานสรุปแสดงเฉพาะผู้ดูแลระบบและผู้บริหาร</div>'}`;
 }
 
@@ -327,7 +345,7 @@ function dataTable(){
  if(tpage>tp)tpage=tp;if(tpage<1)tpage=1;
  const st0=(tpage-1)*PER,rows=all.slice(st0,st0+PER);
  const H=['ที่','อำเภอ','ชื่อ รพ.สต.','ชื่อ-สกุล','เลขที่ตำแหน่ง','ตำแหน่ง','ระดับ','กลุ่มงาน','หลักสูตรที่ต้องการเข้ารับการอบรม (เลือกได้หลายหลักสูตร)'];
- const ce=canEdit(),cd=canDel();
+ const ce=canEdit()&&intake(),cd=canDel();
  const body=rows.length?rows.map(d=>`<tr><td class="n">${no.get(d.id)}</td><td>${esc(d.amphoe)}</td><td>${esc(d.unit)}</td><td>${esc(d.name)}</td><td>${esc(d.posno)}</td><td>${esc(d.pos)}</td><td>${esc(d.level)}</td><td>${esc(d.grp||'')}</td><td>${(d.courses||[]).map(id=>{const c=COURSES.find(c=>c.id===id);return c?'• '+esc(c.n):''}).filter(Boolean).join('<br>')}</td>${ce?`<td style="white-space:nowrap"><button class="btn sec sm" type="button" data-act="edit" data-i="${esc(d.id)}">แก้ไข</button>${cd?` <button class="btn sec sm" type="button" data-act="del" data-i="${esc(d.id)}" style="color:var(--bad)">ลบ</button>`:''}</td>`:''}</tr>`).join(''):`<tr><td colspan="${H.length+(ce?1:0)}" class="empty">ยังไม่มีข้อมูล</td></tr>`;
  const pb=(p,label,dis,cur)=>`<button class="btn ${cur?'':'sec '}sm" type="button" data-act="pg" data-i="${p}"${dis?' disabled':''}${cur?' aria-current="page"':''}>${label}</button>`;
  const pages=[];for(let p=1;p<=tp;p++)if(p===1||p===tp||Math.abs(p-tpage)<=1)pages.push(p);
@@ -433,7 +451,7 @@ function demo(){
  {const n0=DATA.length;dbMerge(DATA.filter(d=>String(d.id).startsWith('demo'))).then(render).catch(e=>alert(fbErr(e)))}
 }
 function bindSurvey(){
- const f=$('#f');
+ const f=$('#f');if(!f){st.edit=null;return}
  const g=k=>f.elements[k].value.trim();
  const setUnits=a=>{const u=f.elements.unit,list=(U.find(x=>x[0]===a)||[,[]])[1];u.disabled=!a;u.innerHTML=a?'<option value="">เลือก รพ.สต.</option>'+op(list)+'<option value="__x">อื่น ๆ (ไม่อยู่ในรายการ)</option>':'<option value="">เลือกอำเภอก่อน</option>';f.elements.unitx.hidden=true};
  const unitName=()=>g('unit')==='__x'?g('unitx'):g('unit');
@@ -445,7 +463,7 @@ function bindSurvey(){
  f.elements.unit.onchange=()=>{const x=f.elements.unitx;x.hidden=f.elements.unit.value!=='__x';if(!x.hidden)x.focus();else chk()};
  f.elements.posno.onchange=chk;f.elements.name.onchange=chk;f.elements.unitx.onchange=chk;
  f.onsubmit=e=>{
-  e.preventDefault();if(!canEdit())return;
+  e.preventDefault();if(!canEdit())return;if(!intake()){$('#err').textContent='ขณะนี้ปิดรับข้อมูลแล้ว';return}
   const courses=[...f.querySelectorAll('input[name=c]:checked')].map(x=>x.value);
   const miss=[['unitN','ชื่อ รพ.สต.'],['amphoe','อำเภอ'],['name','ชื่อ-สกุล'],['posno','เลขที่ตำแหน่ง'],['pos','ตำแหน่ง'],['level','ระดับ'],['grp','กลุ่มงาน']].filter(x=>x[0]==='unitN'?!unitName():!g(x[0])).map(x=>x[1]);
   const err=$('#err');
@@ -475,7 +493,7 @@ function bindSurvey(){
 }
 $('#view').onclick=e=>{
  const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
- if((a==='edit'||a==='cancel')&&!canEdit()||(a==='del'&&!canDel()||(a==='clear'||a==='demo')&&st.role!=='admin')||a.startsWith('u_')&&st.role!=='admin')return;
+ if((a==='sopen'||a==='sclose')&&!isAdm()||(a==='edit'||a==='cancel')&&!(canEdit()&&intake())||(a==='del'&&!canDel()||(a==='clear'||a==='demo')&&st.role!=='admin')||a.startsWith('u_')&&st.role!=='admin')return;
  if(a.startsWith('u_'))return userAct(a,b);
  if(a==='uedit')openEdit(+b.dataset.i);
  else if(a==='unit'){if(canSee())openUnit(+b.dataset.i)}
@@ -483,6 +501,7 @@ $('#view').onclick=e=>{
  else if(a==='dx')dirXlsx();
  else if(a==='miss'){const l=$('#misslist');if(l){l.hidden=!l.hidden;b.setAttribute('aria-expanded',String(!l.hidden));const n=missingUnits().length;b.textContent=l.hidden?'ดูรายชื่อ รพ.สต. ที่ยังไม่กรอก ('+n+' แห่ง)':'ซ่อนรายชื่อ'}}
  else if(a==='misspdf')missPdf();
+ else if(a==='sopen'||a==='sclose'){const v=a==='sopen';if(confirm(v?'เปิดรับข้อมูลแบบสำรวจความต้องการฝึกอบรม 2570 ?':'ปิดรับข้อมูลแบบสำรวจความต้องการฝึกอบรม 2570 ?\nผู้ใช้อื่นจะส่งหรือแก้ไขข้อมูลไม่ได้ จนกว่าจะเปิดรับอีกครั้ง')){setOpen(v).then(()=>{st.msg=v?'เปิดรับข้อมูลแบบสำรวจแล้ว':'ปิดรับข้อมูลแบบสำรวจแล้ว';render()}).catch(e=>alert('บันทึกสถานะไม่สำเร็จ: '+((e&&e.code==='PERMISSION_DENIED')?'ไม่มีสิทธิ์เขียน path settings ใน Firebase Rules':((e&&e.message)||e))))}}
  else if(a==='xlsx')xlsx();
  else if(a==='demo')demo();
  else if(a==='pg'){tpage=+b.dataset.i||1;const el=$('#dtbl');if(el)el.outerHTML=dataTable()}
