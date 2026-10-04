@@ -278,7 +278,7 @@ if(db){
   try{const old=lsGet().filter(r=>r&&r.id&&!v[r.id]);if(old.length&&!localStorage.getItem(KEY+'_migrated')){
    localStorage.setItem(KEY+'_migrated','1');dbMerge(old).catch(e=>{localStorage.removeItem(KEY+'_migrated');console.warn(fbErr(e))})}}catch(e){}
   /* ไม่ re-render ขณะกำลังกรอกฟอร์ม เพื่อไม่ให้ข้อมูลที่พิมพ์หาย */
-  const typing=st.view==='survey'&&document.activeElement&&document.activeElement.closest&&document.activeElement.closest('#f');
+  const typing=st.view==='survey'&&document.activeElement&&document.activeElement.closest&&document.activeElement.closest('#f,#tq');
   if(!typing&&typeof render==='function')render();
  },e=>{console.warn(fbErr(e));const m=document.querySelector('#view');if(m&&st.view==='survey')st.msg='อ่านข้อมูลจากฐานข้อมูลไม่ได้: '+fbErr(e)})
 }
@@ -289,7 +289,7 @@ let SOPEN=true;
 if(!db){try{SOPEN=localStorage.getItem(OKEY)!=='0'}catch(e){}}
 else db.ref('settings/survey2570_open').on('value',snap=>{
  SOPEN=snap.val()!==false;
- const typing=st.view==='survey'&&document.activeElement&&document.activeElement.closest&&document.activeElement.closest('#f');
+ const typing=st.view==='survey'&&document.activeElement&&document.activeElement.closest&&document.activeElement.closest('#f,#tq');
  if(!typing&&typeof render==='function')render();
 },e=>console.warn('อ่านสถานะเปิด/ปิดรับไม่ได้',e));
 async function setOpen(v){if(!db){try{localStorage.setItem(OKEY,v?'1':'0')}catch(e){}SOPEN=v;return}await db.ref('settings/survey2570_open').set(v)}
@@ -336,22 +336,29 @@ function survey(){
  ${canSee()?dataTable()+report():'<div class="glass card note">รายงานสรุปแสดงเฉพาะผู้ดูแลระบบและผู้บริหาร</div>'}`;
 }
 
-let tpage=1;const PER=10;
+let tpage=1,tq='';const PER=10;
+/* ค้นหา: พิมพ์หลายคำได้ (เว้นวรรค) ต้องพบทุกคำ ค้นจากอำเภอ รพ.สต. ชื่อ เลขที่ตำแหน่ง ตำแหน่ง ระดับ กลุ่มงาน และชื่อหลักสูตร */
+const hay=d=>[d.amphoe,d.unit,d.name,d.posno,d.pos,d.level,d.grp,...(d.courses||[]).map(id=>(COURSES.find(c=>c.id===id)||{}).n)].join(' ').toLowerCase();
 function dataTable(){
+ return `<div class="glass card" id="dtbl"><h2>ตารางข้อมูลสำรวจความต้องการฝึกอบรม ปีงบประมาณ 2570 <span class="note">(ทั้งหมด ${DATA.length} รายการ)</span></h2>
+ <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 12px"><input id="tq" type="search" value="${esc(tq)}" placeholder="🔍 ค้นหา ชื่อ-สกุล / รพ.สต. / อำเภอ / ตำแหน่ง / หลักสูตร" autocomplete="off" aria-label="ค้นหาข้อมูลในตาราง" style="flex:1 1 260px;min-width:0;padding:9px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--panel);color:var(--tx);font:inherit"><button class="btn sec sm" type="button" data-act="tclr">ล้างการค้นหา</button></div>
+ <div id="dinner">${dataInner()}</div></div>`;
+}
+function dataInner(){
  /* ลำดับ = ลำดับการคีย์ (คนแรกที่คีย์ = 1) ไม่เปลี่ยนตามการเรียง; แสดงคนคีย์ล่าสุดไว้บนสุด */
  const byAt=(x,y)=>String(x.at||'').localeCompare(String(y.at||''))||String(x.id).localeCompare(String(y.id));
  const asc=[...DATA].sort(byAt),no=new Map(asc.map((d,i)=>[d.id,i+1]));
- const all=asc.reverse(),total=all.length,tp=Math.max(1,Math.ceil(total/PER));
+ const full=asc.reverse(),qs=tq.trim().toLowerCase().split(/\s+/).filter(Boolean),all=qs.length?full.filter(d=>{const h=hay(d);return qs.every(w=>h.includes(w))}):full,total=all.length,tp=Math.max(1,Math.ceil(total/PER));
  if(tpage>tp)tpage=tp;if(tpage<1)tpage=1;
  const st0=(tpage-1)*PER,rows=all.slice(st0,st0+PER);
  const H=['ที่','อำเภอ','ชื่อ รพ.สต.','ชื่อ-สกุล','เลขที่ตำแหน่ง','ตำแหน่ง','ระดับ','กลุ่มงาน','หลักสูตรที่ต้องการเข้ารับการอบรม (เลือกได้หลายหลักสูตร)'];
  const ce=canEdit()&&intake(),cd=canDel();
- const body=rows.length?rows.map(d=>`<tr><td class="n">${no.get(d.id)}</td><td>${esc(d.amphoe)}</td><td>${esc(d.unit)}</td><td>${esc(d.name)}</td><td>${esc(d.posno)}</td><td>${esc(d.pos)}</td><td>${esc(d.level)}</td><td>${esc(d.grp||'')}</td><td>${(d.courses||[]).map(id=>{const c=COURSES.find(c=>c.id===id);return c?'• '+esc(c.n):''}).filter(Boolean).join('<br>')}</td>${ce?`<td style="white-space:nowrap"><button class="btn sec sm" type="button" data-act="edit" data-i="${esc(d.id)}">แก้ไข</button>${cd?` <button class="btn sec sm" type="button" data-act="del" data-i="${esc(d.id)}" style="color:var(--bad)">ลบ</button>`:''}</td>`:''}</tr>`).join(''):`<tr><td colspan="${H.length+(ce?1:0)}" class="empty">ยังไม่มีข้อมูล</td></tr>`;
+ const body=rows.length?rows.map(d=>`<tr><td class="n">${no.get(d.id)}</td><td>${esc(d.amphoe)}</td><td>${esc(d.unit)}</td><td>${esc(d.name)}</td><td>${esc(d.posno)}</td><td>${esc(d.pos)}</td><td>${esc(d.level)}</td><td>${esc(d.grp||'')}</td><td>${(d.courses||[]).map(id=>{const c=COURSES.find(c=>c.id===id);return c?'• '+esc(c.n):''}).filter(Boolean).join('<br>')}</td>${ce?`<td style="white-space:nowrap"><button class="btn sec sm" type="button" data-act="edit" data-i="${esc(d.id)}">แก้ไข</button>${cd?` <button class="btn sec sm" type="button" data-act="del" data-i="${esc(d.id)}" style="color:var(--bad)">ลบ</button>`:''}</td>`:''}</tr>`).join(''):`<tr><td colspan="${H.length+(ce?1:0)}" class="empty">${full.length?'ไม่พบข้อมูลที่ค้นหา':'ยังไม่มีข้อมูล'}</td></tr>`;
  const pb=(p,label,dis,cur)=>`<button class="btn ${cur?'':'sec '}sm" type="button" data-act="pg" data-i="${p}"${dis?' disabled':''}${cur?' aria-current="page"':''}>${label}</button>`;
  const pages=[];for(let p=1;p<=tp;p++)if(p===1||p===tp||Math.abs(p-tpage)<=1)pages.push(p);
  const nums=[];pages.forEach((p,i)=>{if(i&&p-pages[i-1]>1)nums.push('<span style="padding:0 4px">…</span>');nums.push(pb(p,p,false,p===tpage))});
- const pager=`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-top:12px"><span class="note" style="margin:0">${total?`แสดงคนที่ ${st0+1}–${st0+rows.length} จากทั้งหมด ${total} คน (หน้า ${tpage}/${tp})`:''}</span>${tp>1?`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">${pb(tpage-1,'‹ ก่อนหน้า',tpage<=1)}${nums.join('')}${pb(tpage+1,'ถัดไป ›',tpage>=tp)}</div>`:''}</div>`;
- return `<div class="glass card" id="dtbl"><h2>ตารางข้อมูลสำรวจความต้องการฝึกอบรม ปีงบประมาณ 2570 <span class="note">(ทั้งหมด ${total} รายการ)</span></h2><div class="tw" style="max-height:none"><table><thead><tr>${H.map(x=>`<th>${x}</th>`).join('')}${ce?'<th>จัดการ</th>':''}</tr></thead><tbody>${body}</tbody></table></div>${pager}</div>`;
+ const pager=`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-top:12px"><span class="note" style="margin:0">${total?`${qs.length?`พบ ${total} จาก ${full.length} คน · `:''}แสดงคนที่ ${st0+1}–${st0+rows.length} จากทั้งหมด ${total} คน (หน้า ${tpage}/${tp})`:(qs.length?`พบ 0 จาก ${full.length} คน`:'')}</span>${tp>1?`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">${pb(tpage-1,'‹ ก่อนหน้า',tpage<=1)}${nums.join('')}${pb(tpage+1,'ถัดไป ›',tpage>=tp)}</div>`:''}</div>`;
+ return `<div class="tw" style="max-height:none"><table><thead><tr>${H.map(x=>`<th>${x}</th>`).join('')}${ce?'<th>จัดการ</th>':''}</tr></thead><tbody>${body}</tbody></table></div>${pager}`;
 }
 function report(){
  const adm=st.role==='admin';
@@ -491,6 +498,10 @@ function bindSurvey(){
   f.querySelectorAll('input[name=c]').forEach(x=>x.checked=cur.courses.includes(x.value));
  }else st.edit=null;
 }
+$('#view').addEventListener('input',e=>{
+ if(!e.target||e.target.id!=='tq')return;
+ tq=e.target.value;tpage=1;const el=$('#dinner');if(el)el.innerHTML=dataInner();
+});
 $('#view').onclick=e=>{
  const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
  if((a==='sopen'||a==='sclose')&&!isAdm()||(a==='edit'||a==='cancel')&&!(canEdit()&&intake())||(a==='del'&&!canDel()||(a==='clear'||a==='demo')&&st.role!=='admin')||a.startsWith('u_')&&st.role!=='admin')return;
@@ -504,7 +515,8 @@ $('#view').onclick=e=>{
  else if(a==='sopen'||a==='sclose'){const v=a==='sopen';if(confirm(v?'เปิดรับข้อมูลแบบสำรวจความต้องการฝึกอบรม 2570 ?':'ปิดรับข้อมูลแบบสำรวจความต้องการฝึกอบรม 2570 ?\nผู้ใช้อื่นจะส่งหรือแก้ไขข้อมูลไม่ได้ จนกว่าจะเปิดรับอีกครั้ง')){setOpen(v).then(()=>{st.msg=v?'เปิดรับข้อมูลแบบสำรวจแล้ว':'ปิดรับข้อมูลแบบสำรวจแล้ว';render()}).catch(e=>alert('บันทึกสถานะไม่สำเร็จ: '+((e&&e.code==='PERMISSION_DENIED')?'ไม่มีสิทธิ์เขียน path settings ใน Firebase Rules':((e&&e.message)||e))))}}
  else if(a==='xlsx')xlsx();
  else if(a==='demo')demo();
- else if(a==='pg'){tpage=+b.dataset.i||1;const el=$('#dtbl');if(el)el.outerHTML=dataTable()}
+ else if(a==='pg'){tpage=+b.dataset.i||1;const el=$('#dinner');if(el)el.innerHTML=dataInner()}
+ else if(a==='tclr'){tq='';tpage=1;const i=$('#tq');if(i)i.value='';const el=$('#dinner');if(el)el.innerHTML=dataInner()}
  else if(a==='cancel'){st.edit=null;st.msg='';render()}
  else if(a==='edit'){const d=DATA.find(x=>x.id===b.dataset.i);if(d){st.edit=d.id;st.msg='กำลังแก้ไขข้อมูลของ '+d.name;render();scrollTo(0,0)}}
  else if(a==='del'){const _d=DATA.find(x=>String(x.id)===b.dataset.i);if(confirm('ลบข้อมูลของ '+(_d?_d.name:'รายการนี้')+' ?')){dbDel(b.dataset.i).then(()=>{if(db)DATA=DATA.filter(d=>d.id!==b.dataset.i);render()}).catch(e=>alert(fbErr(e)))}}
