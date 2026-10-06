@@ -23,6 +23,8 @@ aside.glass{padding:18px 14px;position:sticky;top:18px;height:calc(100vh - 36px)
 .brand{display:flex;gap:12px;align-items:center;font-weight:700;font-size:1.02rem;line-height:1.35;padding:4px 6px 14px;border-bottom:1px solid rgba(255,255,255,.18);margin-bottom:6px}
 .brand small{display:block;font-weight:500;color:#C3DDE6;font-size:.8rem}
 .logo{flex:none;width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#FFD26B,#F2A900);color:#1A1200;display:grid;place-items:center;font-size:1.3rem;box-shadow:0 4px 12px rgba(0,0,0,.28)}
+#mbtn,#scrim,#mclose{display:none}
+#mclose{width:100%;margin-top:4px;background:rgba(255,255,255,.12);color:#fff;border:0;border-radius:14px;padding:10px;font-weight:600}
 nav{display:flex;flex-direction:column;gap:4px}
 nav button{display:flex;gap:12px;align-items:center;text-align:left;background:none;border:0;padding:7px 10px;border-radius:14px;font-size:.93rem;font-weight:500;color:#E9F5F8}
 nav button:hover{background:rgba(255,255,255,.12)}
@@ -112,13 +114,14 @@ dialog::backdrop{background:rgba(5,20,30,.55);backdrop-filter:blur(4px)}
 .m.u{align-self:flex-end;background:var(--btn);color:var(--btx);font-weight:500}
 [hidden]{display:none!important}
 @media(max-width:860px){
-.app{grid-template-columns:1fr;padding:10px 10px 90px}
-aside.glass{position:fixed;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom,0px));top:auto;height:auto;flex-direction:row;padding:6px;z-index:4}
-.brand,.side-foot{display:none}
-nav{flex-direction:row;width:100%;justify-content:space-around}
-nav button{flex-direction:column;gap:2px;padding:5px 2px;font-size:.62rem;text-align:center;flex:1}
-nav .i{width:30px;height:30px}
-nav button span.t{display:block;max-width:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.app{grid-template-columns:1fr;padding:10px}
+/* เมนูมือถือ: แถบเลื่อนจากด้านซ้าย ซ่อน/แสดงได้ */
+aside.glass{position:fixed;left:0;top:0;bottom:0;right:auto;width:min(290px,84vw);height:auto;overflow-y:auto;border-radius:0 24px 24px 0;padding:calc(14px + env(safe-area-inset-top,0px)) 12px calc(14px + env(safe-area-inset-bottom,0px));z-index:30;transform:translateX(-105%);visibility:hidden;transition:transform .25s ease,visibility .25s}
+body.menu-open aside.glass{transform:none;visibility:visible;box-shadow:0 0 40px rgba(0,0,0,.45)}
+#scrim{display:block;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:29;opacity:0;pointer-events:none;transition:opacity .25s}
+body.menu-open #scrim{opacity:1;pointer-events:auto}
+#mbtn{display:grid}
+#mclose{display:block}
 h1{font-size:1.4rem}
 .glass.hero{padding:20px}
 .search kbd,.top label{display:none}
@@ -130,7 +133,7 @@ h1{font-size:1.4rem}
 .kpi span{font-size:.82rem}
 .cols{grid-template-columns:1fr}
 .bar{grid-template-columns:120px 1fr 44px}
-#bot{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+#bot{bottom:calc(16px + env(safe-area-inset-bottom,0px))}
 }
 @media(prefers-reduced-motion:no-preference){.fill{transition:width .5s}.btn,.opt{transition:filter .15s,border-color .15s,box-shadow .15s}}
 h3{margin:16px 0 8px;font-size:1rem;font-weight:700}
@@ -184,7 +187,7 @@ button,.btn,.opt,.search{touch-action:manipulation}
 :root{--sh:0 6px 20px rgba(10,40,70,.12)}
 body{font-size:15.5px}
 body::before{background:radial-gradient(380px 300px at 0% 0%,var(--b1),transparent 70%),radial-gradient(420px 340px at 100% 8%,var(--b2),transparent 70%),radial-gradient(420px 340px at 50% 100%,var(--b3),transparent 70%)}
-.app{padding:8px 10px calc(96px + env(safe-area-inset-bottom,0px));gap:12px}
+.app{padding:8px 10px calc(16px + env(safe-area-inset-bottom,0px));gap:12px}
 main,#view{gap:12px}
 /* แถบบน: ติดขอบบน แคบ กระชับ */
 .top{position:sticky;top:6px;z-index:3;padding:8px 10px;gap:8px;flex-wrap:nowrap;border-radius:18px}
@@ -192,18 +195,10 @@ main,#view{gap:12px}
 #who{display:none}
 .top .btn.sm,.icon{min-height:42px;border-radius:99px;padding:0 14px;white-space:nowrap}
 .icon{width:42px;padding:0;display:grid;place-items:center}
-/* แถบเมนูล่าง: ลอย เลื่อนซ้ายขวาได้ ปุ่มที่เลือกเป็นแคปซูล */
-aside.glass{left:10px;right:10px;border-radius:26px;padding:6px;background:rgba(10,38,56,.88);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.2);box-shadow:0 12px 34px rgba(0,0,0,.35)}
-nav{overflow-x:auto;scrollbar-width:none;justify-content:flex-start;gap:2px}
-nav::-webkit-scrollbar{display:none}
-nav button{flex:1 0 64px;min-height:54px;border-radius:20px;justify-content:center;font-size:.68rem;font-weight:600;line-height:1.2}
+aside.glass{background:rgba(10,38,56,.96);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+nav button{min-height:46px}
 nav button[aria-current="page"]{background:linear-gradient(135deg,#FFD26B,#F2A900);box-shadow:0 4px 14px rgba(242,169,0,.4)}
-nav .i{background:none;width:26px;height:26px;font-size:1.2rem}
-nav button span.t{max-width:64px}
-nav button.sub{margin-left:0;padding:0;font-size:.68rem;border-left:0;border-radius:20px}
-nav button.sub .i{width:26px;height:26px;font-size:1.2rem}
-nav .chev{display:none}
-#bot{right:12px;bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+#bot{right:12px;bottom:calc(16px + env(safe-area-inset-bottom,0px))}
 #botbtn{width:50px;height:50px;font-size:1.3rem}
 #botbox{width:calc(100vw - 24px);bottom:60px}
 /* หัวเรื่อง การ์ด */
@@ -265,9 +260,11 @@ dialog .glass,#udc,#lgc,.pal{border-radius:26px 26px 0 0;padding-bottom:calc(20p
 </head>
 <body>
 <div class="app">
-<aside class="glass"><div class="brand"><span class="logo" aria-hidden="true">✚</span><span>ระบบบริหารงานบุคคล<small>กองสาธารณสุข อบจ.สกลนคร</small></span></div><nav id="nav" aria-label="เมนูหลัก"></nav><div class="side-foot">ต้นแบบหน้าจอ · ข้อมูลทั้งหมดเป็นตัวอย่าง</div></aside>
+<div id="scrim"></div>
+<aside class="glass" id="side"><div class="brand"><span class="logo" aria-hidden="true">✚</span><span>ระบบบริหารงานบุคคล<small>กองสาธารณสุข อบจ.สกลนคร</small></span></div><nav id="nav" aria-label="เมนูหลัก"></nav><button id="mclose" type="button">‹ ซ่อนเมนู</button><div class="side-foot">ต้นแบบหน้าจอ · ข้อมูลทั้งหมดเป็นตัวอย่าง</div></aside>
 <main>
 <div class="top glass">
+<button class="icon" id="mbtn" type="button" aria-label="เปิดเมนู" aria-controls="side" aria-expanded="false">☰</button>
 <button class="search" id="sbtn">ค้นหาเมนู บุคลากร ระเบียบ… <kbd>Ctrl + K</kbd></button>
 <span id="who" class="note"></span><button class="btn sec sm" id="pwb" hidden>🔑 รหัสผ่าน</button><button class="btn sm" id="lgb">เข้าสู่ระบบ</button>
 <button class="icon" id="theme" aria-label="สลับโหมดสว่าง/มืด">🌓</button>
@@ -339,7 +336,7 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 function renderNav(){
  const vis=MENUS.filter(m=>CAN[st.role].includes(m.id));
  const kids=id=>vis.filter(x=>x.p===id);
- const lab=m=>esc(innerWidth<=860?m.s:m.t);
+ const lab=m=>esc(m.t);
  const btn=(m,extra)=>`<button data-go="${m.id}" ${m.id===st.view?'aria-current="page"':''}${extra||''}><span class="i">${m.i}</span><span class="t">${lab(m)}</span>${kids(m.id).length?'<span class="chev" aria-hidden="true">'+(st.exp[m.id]?'▾':'▸')+'</span>':''}</button>`;
  $('#nav').innerHTML=vis.filter(m=>!m.p||!vis.some(x=>x.id===m.p)).map(m=>{
   const k=kids(m.id);
@@ -895,7 +892,12 @@ pal.onclick=e=>{if(e.target===pal)pal.close()};
 addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();pal.open?pal.close():openPal()}});
 
 /* Nav, role, theme */
-$('#nav').onclick=e=>{const b=e.target.closest('[data-go]');if(!b)return;const id=b.dataset.go;
+const menuSet=o=>{document.body.classList.toggle('menu-open',o);$('#mbtn').setAttribute('aria-expanded',o);$('#mbtn').setAttribute('aria-label',o?'ซ่อนเมนู':'เปิดเมนู')};
+$('#mbtn').onclick=()=>menuSet(!document.body.classList.contains('menu-open'));
+$('#scrim').onclick=$('#mclose').onclick=()=>menuSet(false);
+addEventListener('keydown',e=>{if(e.key==='Escape')menuSet(false)});
+addEventListener('resize',()=>{if(innerWidth>860)menuSet(false)});
+$('#nav').onclick=e=>{const b=e.target.closest('[data-go]');if(!b)return;const id=b.dataset.go;if(!b.dataset.par)menuSet(false);
  if(b.dataset.par){if(st.view===id||MENUS.some(x=>x.p===id&&x.id===st.view)){st.exp[id]=!(st.exp[id]||MENUS.some(x=>x.p===id&&x.id===st.view));renderNav();return}st.exp[id]=true}
  go(id)};
 /* ===== ระบบลงชื่อเข้าใช้ (ฝั่งเบราว์เซอร์: รหัสผ่านเก็บเป็นค่าแฮช ไม่เก็บตัวอักษรจริง) ===== */
