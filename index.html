@@ -27,6 +27,9 @@ nav{display:flex;flex-direction:column;gap:4px}
 nav button{display:flex;gap:12px;align-items:center;text-align:left;background:none;border:0;padding:7px 10px;border-radius:14px;font-size:.93rem;font-weight:500;color:#E9F5F8}
 nav button:hover{background:rgba(255,255,255,.12)}
 nav button[aria-current="page"]{background:var(--amber);color:#1A1200;font-weight:700}
+nav button.sub{margin-left:22px;padding:5px 10px;font-size:.88rem;border-left:2px solid rgba(255,255,255,.22);border-radius:0 14px 14px 0}
+nav button.sub .i{width:28px;height:28px;font-size:.95rem}
+nav .chev{margin-left:auto;font-size:.8rem;opacity:.75}
 nav .i{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:rgba(255,255,255,.14);font-size:1.05rem;flex:none}
 nav button[aria-current="page"] .i{background:rgba(26,18,0,.14)}
 .side-foot{margin-top:auto;font-size:.78rem;color:#C3DDE6;padding:6px}
@@ -194,6 +197,9 @@ nav button{flex:1 0 64px;min-height:54px;border-radius:20px;justify-content:cent
 nav button[aria-current="page"]{background:linear-gradient(135deg,#FFD26B,#F2A900);box-shadow:0 4px 14px rgba(242,169,0,.4)}
 nav .i{background:none;width:26px;height:26px;font-size:1.2rem}
 nav button span.t{max-width:64px}
+nav button.sub{margin-left:0;padding:0;font-size:.68rem;border-left:0;border-radius:20px}
+nav button.sub .i{width:26px;height:26px;font-size:1.2rem}
+nav .chev{display:none}
 #bot{right:12px;bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 #botbtn{width:50px;height:50px;font-size:1.3rem}
 #botbox{width:calc(100vw - 24px);bottom:60px}
@@ -304,8 +310,8 @@ const MENUS=[
 {id:'dir',t:'ข้อมูลอัตรากำลัง',s:'อัตรากำลัง',i:'👥'},
 {id:'hr',t:'งานบริหารทรัพยากรบุคคล',s:'งานบุคคล',i:'🗂️'},
 {id:'hrd',t:'พัฒนาบุคลากรและศูนย์การเรียนรู้',s:'อบรม',i:'🎓'},
+{id:'survey',p:'hrd',t:'สำรวจความต้องการฝึกอบรม ปีงบประมาณ 2570',s:'สำรวจ 2570',i:'📝'},
 {id:'wel',t:'สวัสดิการและบริการ',s:'สวัสดิการ',i:'🛠️'},
-{id:'survey',t:'สำรวจความต้องการฝึกอบรม ปีงบประมาณ 2570',s:'สำรวจ 2570',i:'📝'},
 {id:'users',t:'จัดการผู้ใช้งาน',s:'ผู้ใช้',i:'🔐'}];
 /* RBAC: สิทธิ์การมองเห็นเมนูตามบทบาท (ฝั่งจริงต้องบังคับที่ API/DB ด้วย) */
 const CAN={admin:['dash','dir','hr','hrd','wel','survey','users'],exec:['dash','dir','hr','hrd','wel','survey'],staff:['dash','dir','hr','hrd','wel','survey'],guest:['dash']};
@@ -323,17 +329,25 @@ const GROUPS=['ผู้อำนวยการ รพ.สต.','กลุ่�
 const LEVELS=[['ประเภททั่วไป',['ปฏิบัติงาน','ชำนาญงาน','อาวุโส','ทักษะพิเศษ']],['ประเภทวิชาการ',['ปฏิบัติการ','ชำนาญการ','ชำนาญการพิเศษ','เชี่ยวชาญ','ทรงคุณวุฒิ']]];
 const LVL=LEVELS.flatMap(g=>g[1].map(l=>[g[0],l]));
 const typeOf=l=>(LVL.find(x=>x[1]===l)||[''])[0];
-const st={role:'guest',user:null,view:'dash',msg:'',edit:null};
+const st={role:'guest',user:null,view:'dash',msg:'',edit:null,exp:{}};
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 function renderNav(){
- $('#nav').innerHTML=MENUS.filter(m=>CAN[st.role].includes(m.id)).map(m=>
- `<button data-go="${m.id}" ${m.id===st.view?'aria-current="page"':''}><span class="i">${m.i}</span><span class="t">${esc(innerWidth<=860?m.s:m.t)}</span></button>`).join('');
+ const vis=MENUS.filter(m=>CAN[st.role].includes(m.id));
+ const kids=id=>vis.filter(x=>x.p===id);
+ const lab=m=>esc(innerWidth<=860?m.s:m.t);
+ const btn=(m,extra)=>`<button data-go="${m.id}" ${m.id===st.view?'aria-current="page"':''}${extra||''}><span class="i">${m.i}</span><span class="t">${lab(m)}</span>${kids(m.id).length?'<span class="chev" aria-hidden="true">'+(st.exp[m.id]?'▾':'▸')+'</span>':''}</button>`;
+ $('#nav').innerHTML=vis.filter(m=>!m.p||!vis.some(x=>x.id===m.p)).map(m=>{
+  const k=kids(m.id);
+  if(!k.length)return btn(m,m.p?' class="sub"':'');
+  const open=!!st.exp[m.id]||k.some(x=>x.id===st.view);
+  return btn(m,` data-par="1" aria-expanded="${open}"`)+(open?k.map(x=>btn(x,' class="sub"')).join(''):'');
+ }).join('');
 }
 function go(id){
  if(!CAN[st.role].includes(id)) id=CAN[st.role][0];
- st.view=id;st.msg='';st.edit=null;renderNav();render();scrollTo(0,0);
+ st.view=id;st.msg='';st.edit=null;{const mm=MENUS.find(x=>x.id===id);if(mm&&mm.p)st.exp[mm.p]=true}renderNav();render();scrollTo(0,0);
 }
 function render(){
  const v=st.view;
@@ -845,7 +859,9 @@ pal.onclick=e=>{if(e.target===pal)pal.close()};
 addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();pal.open?pal.close():openPal()}});
 
 /* Nav, role, theme */
-$('#nav').onclick=e=>{const b=e.target.closest('[data-go]');if(b)go(b.dataset.go)};
+$('#nav').onclick=e=>{const b=e.target.closest('[data-go]');if(!b)return;const id=b.dataset.go;
+ if(b.dataset.par){if(st.view===id||MENUS.some(x=>x.p===id&&x.id===st.view)){st.exp[id]=!(st.exp[id]||MENUS.some(x=>x.p===id&&x.id===st.view));renderNav();return}st.exp[id]=true}
+ go(id)};
 /* ===== ระบบลงชื่อเข้าใช้ (ฝั่งเบราว์เซอร์: รหัสผ่านเก็บเป็นค่าแฮช ไม่เก็บตัวอักษรจริง) ===== */
 const ROLES={admin:'ผู้ดูแลระบบ',exec:'ผู้บริหาร',staff:'เจ้าหน้าที่ รพ.สต.',guest:'บุคคลทั่วไป'};
 function sha256(m){
