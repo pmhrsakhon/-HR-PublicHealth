@@ -23,7 +23,7 @@ aside.glass{padding:18px 14px;position:sticky;top:18px;height:calc(100vh - 36px)
 .brand{display:flex;gap:12px;align-items:center;font-weight:700;font-size:1.02rem;line-height:1.35;padding:4px 6px 14px;border-bottom:1px solid rgba(255,255,255,.18);margin-bottom:6px}
 .brand small{display:block;font-weight:500;color:#C3DDE6;font-size:.8rem}
 .logo{flex:none;width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#FFD26B,#F2A900);color:#1A1200;display:grid;place-items:center;font-size:1.3rem;box-shadow:0 4px 12px rgba(0,0,0,.28)}
-#mbtn,#scrim,#mclose{display:none}
+#mbtn,#scrim,#mclose,#mtools{display:none}
 #mclose{width:100%;margin-top:4px;background:rgba(255,255,255,.12);color:#fff;border:0;border-radius:14px;padding:10px;font-weight:600}
 nav{display:flex;flex-direction:column;gap:4px}
 nav button{display:flex;gap:12px;align-items:center;text-align:left;background:none;border:0;padding:7px 10px;border-radius:14px;font-size:.93rem;font-weight:500;color:#E9F5F8}
@@ -193,6 +193,12 @@ main,#view{gap:12px}
 .top{position:sticky;top:6px;z-index:3;padding:8px 10px;gap:8px;flex-wrap:nowrap;border-radius:18px}
 .search{flex:1;min-width:0;padding:10px 14px;border-radius:99px;font-size:.9rem}
 #who{display:none}
+.top{width:fit-content;padding:4px;gap:0;border-radius:99px}
+#mtools{display:flex;flex-direction:column;gap:8px;padding:10px 4px 12px;border-bottom:1px solid rgba(255,255,255,.18);margin-bottom:6px}
+#mtools #who{display:block;color:#fff;font-weight:600;font-size:.9rem;margin:0;overflow-wrap:anywhere}
+#mtools .search{flex:none;width:100%;text-align:left}
+#mtools .btn{width:100%;min-height:42px}
+#mtools .icon{width:100%;border-radius:14px;min-height:42px}
 .top .btn.sm,.icon{min-height:42px;border-radius:99px;padding:0 14px;white-space:nowrap}
 .icon{width:42px;padding:0;display:grid;place-items:center}
 aside.glass{background:rgba(10,38,56,.96);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
@@ -261,7 +267,7 @@ dialog .glass,#udc,#lgc,.pal{border-radius:26px 26px 0 0;padding-bottom:calc(20p
 <body>
 <div class="app">
 <div id="scrim"></div>
-<aside class="glass" id="side"><div class="brand"><span class="logo" aria-hidden="true">✚</span><span>ระบบบริหารงานบุคคล<small>กองสาธารณสุข อบจ.สกลนคร</small></span></div><nav id="nav" aria-label="เมนูหลัก"></nav><button id="mclose" type="button">‹ ซ่อนเมนู</button><div class="side-foot">ต้นแบบหน้าจอ · ข้อมูลทั้งหมดเป็นตัวอย่าง</div></aside>
+<aside class="glass" id="side"><div class="brand"><span class="logo" aria-hidden="true">✚</span><span>ระบบบริหารงานบุคคล<small>กองสาธารณสุข อบจ.สกลนคร</small></span></div><div id="mtools"></div><nav id="nav" aria-label="เมนูหลัก"></nav><button id="mclose" type="button">‹ ซ่อนเมนู</button><div class="side-foot">ต้นแบบหน้าจอ · ข้อมูลทั้งหมดเป็นตัวอย่าง</div></aside>
 <main>
 <div class="top glass">
 <button class="icon" id="mbtn" type="button" aria-label="เปิดเมนู" aria-controls="side" aria-expanded="false">☰</button>
@@ -892,9 +898,12 @@ pal.onclick=e=>{if(e.target===pal)pal.close()};
 addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();pal.open?pal.close():openPal()}});
 
 /* Nav, role, theme */
+function layoutTop(){const t=innerWidth<=860?$('#mtools'):$('.top');['sbtn','who','pwb','lgb','theme'].forEach(id=>{const el=$('#'+id);if(el&&el.parentNode!==t)t.appendChild(el)})}
+layoutTop();addEventListener('resize',layoutTop);
 const menuSet=o=>{document.body.classList.toggle('menu-open',o);$('#mbtn').setAttribute('aria-expanded',o);$('#mbtn').setAttribute('aria-label',o?'ซ่อนเมนู':'เปิดเมนู')};
 $('#mbtn').onclick=()=>menuSet(!document.body.classList.contains('menu-open'));
 $('#scrim').onclick=$('#mclose').onclick=()=>menuSet(false);
+$('#mtools').addEventListener('click',e=>{if(e.target.closest('#sbtn,#lgb,#pwb'))menuSet(false)});
 addEventListener('keydown',e=>{if(e.key==='Escape')menuSet(false)});
 addEventListener('resize',()=>{if(innerWidth>860)menuSet(false)});
 $('#nav').onclick=e=>{const b=e.target.closest('[data-go]');if(!b)return;const id=b.dataset.go;if(!b.dataset.par)menuSet(false);
