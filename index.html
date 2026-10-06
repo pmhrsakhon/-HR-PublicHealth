@@ -354,7 +354,7 @@ function go(id){
 }
 function render(){
  const v=st.view;
- $('#view').innerHTML=v==='dash'?dash():v==='survey'?survey():v==='dir'?dirPage():v==='users'?usersPage():stub(v);
+ $('#view').innerHTML=v==='dash'?dash():v==='hr'?hrPage():v==='hrd'?hrdPage():v==='survey'?survey():v==='dir'?dirPage():v==='users'?usersPage():stub(v);
  if(v==='survey')bindSurvey();
  if(v==='dir')bindDir();
 }
@@ -625,6 +625,7 @@ $('#view').onclick=e=>{
  if(a.startsWith('u_'))return userAct(a,b);
  if(a==='uedit')openEdit(+b.dataset.i);
  else if(a==='unit'){if(canSee())openUnit(+b.dataset.i)}
+ else if(a==='hrcopy'){const el=$(b.dataset.t||'#hrsum');if(el&&navigator.clipboard)navigator.clipboard.writeText(el.innerText).then(()=>alert('คัดลอกสรุปแล้ว นำไปวางในรายงานหรือไลน์ได้เลย')).catch(()=>alert('คัดลอกไม่สำเร็จ'))}
  else if(a==='go')go(b.dataset.i);
  else if(a==='dx')dirXlsx();
  else if(a==='miss'){const l=$('#misslist');if(l){l.hidden=!l.hidden;b.setAttribute('aria-expanded',String(!l.hidden));const n=missingUnits().length;b.textContent=l.hidden?'ดูรายชื่อ รพ.สต. ที่ยังไม่กรอก ('+n+' แห่ง)':'ซ่อนรายชื่อ'}}
@@ -816,6 +817,55 @@ function ana(){
  const rt=D.filter(u=>u.rt),rt1=rt.filter(u=>u.dr),mv=D.filter(u=>u.mv),hp=D.filter(u=>u.hp);
  const pri=[...D].sort((a,b)=>b.sc-a.sc).slice(0,10);
  return{gt,ft,ct,al,fr,inf,gap:fr-inf,p:pc0(inf,fr),job,am,sz,nod,nodk,nodn,rn0,rn1,pt0,dn0,g2,rt,rt1,mv,hp,pri,sh:pc0(ft+ct,al)};
+}
+
+
+/* ===== หน้า พัฒนาบุคลากรและศูนย์การเรียนรู้: สรุปจากเมนูย่อย (สำรวจความต้องการฝึกอบรม 2570) ===== */
+function hrdPage(){
+ const sub=MENUS.filter(m=>m.p==='hrd'&&CAN[st.role].includes(m.id)),n=DATA.length;
+ const hero=`<div class="glass hero"><h1>🎓 พัฒนาบุคลากรและศูนย์การเรียนรู้</h1><p class="sub">สรุปจาก ${sub.map(m=>esc(m.t)).join(', ')} · สถานะรับข้อมูล: ${SOPEN?'🟢 เปิดรับ':'🔴 ปิดรับ'}</p><div class="hchips"><span>${COURSES.length} หลักสูตร</span><span>${UL.length} รพ.สต.</span><span>${n} ผู้ตอบ</span></div></div>`;
+ const toSurvey=`<div class="actions"><button class="btn sm" type="button" data-act="go" data-i="survey">ไปหน้าสำรวจความต้องการฝึกอบรม</button></div>`;
+ if(!n)return hero+`<div class="glass card"><h2>สรุปสำหรับผู้บริหาร (AI วิเคราะห์)</h2><div class="insight"><b>ยังไม่มีผู้ตอบแบบสำรวจ</b><br>ระบบจะสรุปความต้องการอบรมให้อัตโนมัติเมื่อมีผู้ตอบ</div>${toSurvey}</div>`;
+ const miss=missingUnits(),done=UL.length-miss.length,cp=pc0(done,UL.length),gt=S(D,'gt');
+ const top=(a,kf)=>{const m=new Map();a.forEach(d=>{const k=kf(d);if(k)m.set(k,(m.get(k)||0)+1)});return[...m].sort((x,y)=>y[1]-x[1])[0]||['-',0]};
+ const cs2=[...COURSES].sort((x,y)=>cnt(y.id)-cnt(x.id)),t1=cs2[0],t2=cs2[1];
+ const am=AMPHOE.map(a=>[a,DATA.filter(d=>d.amphoe===a).length]).sort((x,y)=>y[1]-x[1]);
+ const mby=AMPHOE.map(a=>[a,miss.filter(m=>m[0]===a).length]).filter(x=>x[1]).sort((x,y)=>y[1]-x[1]);
+ const multi=DATA.filter(d=>d.courses.length>1).length;
+ const rows=COURSES.map(c=>{const ds=DATA.filter(d=>d.courses.includes(c.id));return`<tr><td>${esc(c.s)}</td><td class="n">${ds.length}</td><td class="n">${pc0(ds.length,n)}%</td><td>${esc(top(ds,d=>d.level)[0])}</td><td>${esc(top(ds,d=>d.pos)[0])}</td><td>${esc(top(ds,d=>d.amphoe)[0])}</td></tr>`}).join('');
+ return hero+`<div class="kpis"><div class="glass kpi"><b>${n}</b><span>ผู้ตอบแบบสำรวจ (คน) · ${pc0(n,gt)}% ของข้าราชการ ${f(gt)} คน</span></div><div class="glass kpi"><b>${cp}%</b><span>รพ.สต. ที่กรอกแล้ว ${done} จาก ${UL.length} แห่ง</span></div><div class="glass kpi"><b>${esc(t1.s)}</b><span>หลักสูตรที่ต้องการมากสุด ${cnt(t1.id)} คน (${pc0(cnt(t1.id),n)}%)</span></div><div class="glass kpi"><b>${miss.length}</b><span>รพ.สต. ที่ยังไม่กรอก</span></div></div>
+ <div class="glass card" id="hrdsum"><h2>สรุปสำหรับผู้บริหาร (AI วิเคราะห์)</h2>
+ <p style="margin:0 0 8px;font-weight:500">มีผู้ตอบแบบสำรวจ ${n} คน จาก ${done} รพ.สต. (${cp}% ของ ${UL.length} แห่ง) หลักสูตรที่ต้องการมากที่สุดคือ ${esc(t1.s)} ${cnt(t1.id)} คน รองลงมา ${esc(t2.s)} ${cnt(t2.id)} คน</p>
+ <h3>ประเด็นสำคัญและข้อเสนอแนะ</h3><ol class="notes">
+ <li><b>ความต้องการสูงสุด: ${esc(t1.n)}</b> ${cnt(t1.id)} คน (${pc0(cnt(t1.id),n)}%) พบมากในระดับ ${esc(top(DATA.filter(d=>d.courses.includes(t1.id)),d=>d.level)[0])} → ใช้เป็นหลักสูตรลำดับแรกในแผนฝึกอบรม 2570 และเตรียมงบ/วิทยากรให้พอกับจำนวนนี้</li>
+ <li><b>ข้อมูลยังไม่ครบ ${miss.length} แห่ง</b>${mby.length?' อำเภอที่ยังไม่กรอกมากสุด '+mby.slice(0,3).map(x=>esc(x[0])+' '+x[1]).join(', '):''} → ติดตามให้ครบก่อนสรุปจำนวนผู้เข้าอบรมจริง ตัวเลขข้างต้นอาจยังต่ำกว่าความต้องการจริง</li>
+ <li><b>ผู้ตอบมากสุดรายอำเภอ: ${esc(am[0][0])}</b> ${am[0][1]} คน → พิจารณาจัดอบรมแบบกลุ่มในพื้นที่ที่มีผู้ต้องการหนาแน่น เพื่อลดค่าเดินทาง</li>
+ <li><b>ต้องการอบรมมากกว่า 1 หลักสูตร ${multi} คน</b> (${pc0(multi,n)}%) → จัดตารางไม่ให้ซ้อนกัน และจัดลำดับก่อนหลังตามความจำเป็นของตำแหน่ง</li></ol>
+ <div class="actions"><button class="btn sec sm" type="button" data-act="hrcopy" data-t="#hrdsum">📋 คัดลอกสรุป</button><button class="btn sm" type="button" data-act="go" data-i="survey">ไปหน้าสำรวจความต้องการฝึกอบรม</button></div>
+ <p class="note">วิเคราะห์ด้วยกฎคำนวณจากข้อมูลจริงในระบบ ตัวเลขเปลี่ยนตามผู้ตอบแบบสำรวจแบบเรียลไทม์ (ยังไม่ได้เชื่อมบริการ <code>/api/ai/insights</code>)</p></div>
+ <div class="cols"><div class="glass card"><h2>ความต้องการแต่ละหลักสูตร</h2>${bars(cs2.map(c=>[c.n,cnt(c.id),pc0(cnt(c.id),n)+'% ของผู้ตอบ']))}<h3>อำเภอที่มีผู้ตอบมากสุด 5 อันดับ</h3>${bars(am.slice(0,5).map(x=>[x[0],x[1],'']))}</div>
+ <div class="glass card"><h2>ใครต้องการหลักสูตรไหน</h2><div class="tw"><table><thead><tr>${['หลักสูตร','คน','ร้อยละ','ระดับที่พบมากสุด','ตำแหน่งที่พบมากสุด','อำเภอสูงสุด'].map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div><h3>ความครอบคลุมการตอบ</h3><div class="bar"><span>รพ.สต. ที่กรอกแล้ว<small>${done} จาก ${UL.length} แห่ง</small></span><div class="track"><div class="fill" style="width:${cp}%"></div></div><b>${cp}%</b></div></div></div>`;
+}
+/* ===== หน้า งานบริหารทรัพยากรบุคคล: สรุปข้อมูลจากเมนูย่อย (ข้อมูลอัตรากำลัง) ===== */
+function hrPage(){
+ const a=ana(),low=a.am.slice(0,3),sub=MENUS.filter(m=>m.p==='hr'&&CAN[st.role].includes(m.id));
+ const nd=a.nod.length,k=a.nodk.length,jb=[...a.job].sort((x,y)=>y[1]-x[1]);
+ const ins=(c,t,body,act)=>`<div class="insight ${c}"><b>${t}</b><br>${body}${act?`<span class="act">▶ ควรทำ: ${act}</span>`:''}</div>`;
+ const pri=a.pri.slice(0,5).map((u,i)=>`<tr${canSee()?` data-act="unit" data-i="${u.i}"`:''}><td>${i+1}</td><td>${esc(u.n)}</td><td>${esc(u.a)}</td><td class="n">${pc0(u.inf,u.fr)}%</td><td>${u.tg.map(t=>`<span class="tag${t[1]?' r':''}">${t[0]}</span>`).join('')}</td></tr>`).join('');
+ return `<div class="glass hero"><h1>🗂️ งานบริหารทรัพยากรบุคคล</h1><p class="sub">สรุปจาก ${sub.map(m=>esc(m.t)).join(', ')} · ขอบเขต: ${SCOPE[st.role]} · ข้อมูล ณ วันที่ ${AS_OF}</p><div class="hchips"><span>${D.length} รพ.สต.</span><span>${AM.length} อำเภอ</span><span>${f(a.al)} คน</span></div></div>
+ <div class="kpis"><div class="glass kpi"><b>${f(a.al)}</b><span>บุคลากรทั้งหมด · ข้าราชการ ${f(a.gt)} · จ้าง ${f(a.ft+a.ct)}</span></div><div class="glass kpi"><b>${a.p}%</b><span>ครองกรอบอัตรากำลัง · ขาด ${f(a.gap)} อัตรา</span></div><div class="glass kpi"><b>${nd}</b><span>ผอ.รพ.สต. ว่าง · มี รก. ${k} แห่ง</span></div><div class="glass kpi"><b>${a.rn0.length+a.rn1.length}</b><span>แห่งที่พยาบาลฯ ไม่มี/มีคนเดียว</span></div></div>
+ <div class="glass card" id="hrsum"><h2>สรุปสำหรับผู้บริหาร (AI วิเคราะห์)</h2>
+ <p style="margin:0 0 8px;font-weight:500">กองสาธารณสุขมีบุคลากร ${f(a.al)} คน ใน ${D.length} รพ.สต. ครองกรอบอัตรากำลังได้ ${a.p}% (ขาด ${f(a.gap)} อัตรา) และพึ่งพาพนักงานจ้าง ${a.sh}% จุดเสี่ยงหลักคือ ผอ.รพ.สต. ว่าง ${nd} แห่ง (${pc0(nd,D.length)}%) และพยาบาลวิชาชีพที่ไม่มีหรือมีเพียงคนเดียว ${a.rn0.length+a.rn1.length} แห่ง</p>
+ <h3>ประเด็นที่ต้องตัดสินใจ เรียงตามความเร่งด่วน</h3><ol class="notes">
+ <li><b>ผอ.รพ.สต. ว่าง ${nd} แห่ง</b> — มีผู้รักษาการ ${k} แห่ง${a.nodn.length?' ยังไม่ระบุ '+a.nodn.length+' แห่ง ('+lst(a.nodn,4)+')':''} → แต่งตั้งผู้รักษาการให้ครบ และเริ่มสรรหา/เลื่อน ผอ. ล่วงหน้า</li>
+ <li><b>พยาบาลวิชาชีพ</b> ไม่มี ${a.rn0.length} แห่ง มีคนเดียว ${a.rn1.length} แห่ง → จัดลำดับการบรรจุให้แห่งที่ไม่มีก่อน และวางระบบหมุนเวียนระดับอำเภอ</li>
+ <li><b>อัตรากำลังขาด ${f(a.gap)} อัตรา</b> อำเภอที่ครองกรอบต่ำสุด ${low.map(r=>esc(r.a)+' '+r.p+'% (ขาด '+r.gap+')').join(', ')} → ใช้เป็นฐานเสนอขอบรรจุ/จ้างเพิ่ม</li>
+ <li><b>พึ่งพาพนักงานจ้าง ${a.sh}%</b> และมีข้าราชการไม่เกิน 2 คน ${a.g2.length} แห่ง → ประเมินงบเงินบำรุงรองรับค่าจ้าง และเร่งสรรหาข้าราชการ</li>
+ <li><b>ความเคลื่อนไหวตามหมายเหตุ</b> เกษียณ ${a.rt.length} · ย้าย/ลาออก ${a.mv.length} · ช่วยราชการ ${a.hp.length} แห่ง → ปรับข้อมูลหลัง 1 ต.ค. 69 ให้ตรงจริง</li></ol>
+ <div class="actions"><button class="btn sec sm" type="button" data-act="hrcopy">📋 คัดลอกสรุป</button>${canSee()?'<button class="btn sm" type="button" data-act="go" data-i="dir">ดูข้อมูลอัตรากำลังทั้งหมด</button>':''}</div>
+ <p class="note">วิเคราะห์ด้วยกฎคำนวณจากข้อมูลจริงในระบบ ตัวเลขอัปเดตตามข้อมูลอัตรากำลังเสมอ (ยังไม่ได้เชื่อมบริการ <code>/api/ai/insights</code>)</p></div>
+ <div class="cols"><div class="glass card"><h2>โครงสร้างกำลังพลตามสายงาน</h2>${bars(jb)}<h3>ครองกรอบรายอำเภอ (ต่ำสุด 5 อันดับ)</h3>${a.am.slice(0,5).map(r=>`<div class="bar"><span>${esc(r.a)}<small>ขาด ${r.gap} อัตรา</small></span><div class="track"><div class="fill" style="width:${r.p}%"></div></div><b>${r.p}%</b></div>`).join('')}</div>
+ <div class="glass card"><h2>รพ.สต. ที่ควรเร่งดูแลก่อน 5 แห่ง</h2><div class="tw"><table><thead><tr>${['ที่','รพ.สต.','อำเภอ','ครองกรอบ','ปัจจัยเสี่ยง'].map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${pri}</tbody></table></div>${canSee()?'<p class="note">คลิกแถวเพื่อดูรายละเอียด</p>':''}</div></div>`;
 }
 function dash(){
  const a=ana();
