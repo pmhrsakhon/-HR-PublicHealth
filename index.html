@@ -767,7 +767,8 @@ function applyEdit(u){
  if(!e){u.G=[...b.G];u.F=[...b.F];u.O=[...b.O];u.C=[...b.C];u.gt=b.gt;u.fc=b.fc;u.fo=b.fo;u.ct=b.ct;u.note=b.note;u.ed=null}
  else{u.G=toArr(e.G,b.G.length);u.F=toArr(e.F,b.F.length);u.O=toArr(e.O,b.O.length);u.C=toArr(e.C,b.C.length);
   u.gt=Math.max(0,b.gt+sm(u.G)-sm(b.G));u.fc=Math.max(0,b.fc+sm(u.F)-sm(b.F));u.fo=Math.max(0,b.fo+sm(u.O)-sm(b.O));u.ct=Math.max(0,b.ct+sm(u.C)-sm(b.C));
-  u.note=e.note!=null?String(e.note).trim():b.note;u.ed={by:e.by||'',at:e.at||''}}
+  u.note=e.note!=null?String(e.note).trim():b.note;
+   const same=['G','F','O','C'].every(k=>u[k].join()===b[k].join())&&u.note===b.note;u.ed=same?null:{by:e.by||'',at:e.at||''}}
  u.ft=u.fc+u.fo;u.all=u.gt+u.ft+u.ct;u.inf=u.gt+u.fc;u.dif=u.fr-u.inf;
 }
 const applyAll=()=>D.forEach(applyEdit);
@@ -866,6 +867,8 @@ function edBind(){
   const u=D[EW.i];
   if(!canEditUnit(u)){alert('คุณไม่มีสิทธิ์แก้ไขข้อมูลของ รพ.สต. นี้');return}
   if(a.dataset.ed==='save'){
+   {const b=u.base,nt=($('#udnote').value||'').trim(),same=['G','F','O','C'].every(k=>EW[k].join()===b[k].join())&&nt===b.note;
+    if(same){if(u.ed){if(!confirm('ข้อมูลตรงกับข้อมูลเดิมแล้ว ต้องการล้างสถานะการแก้ไขหรือไม่?'))return;eDel(u).then(()=>{if(db)delete EDITS[u.cd];applyEdit(u);dlgE.close();EW=null;render()}).catch(err=>{$('#ede').textContent=fbErr(err)})}else $('#ede').textContent='ยังไม่มีการเปลี่ยนแปลงข้อมูล · หากข้อมูลถูกต้องแล้วให้ปิดหน้าต่างนี้และกด "ยืนยันข้อมูลเดิม"';return}}
    a.disabled=true;a.textContent='กำลังบันทึก...';
    const rec={G:EW.G.join(','),F:EW.F.join(','),O:EW.O.join(','),C:EW.C.join(','),note:($('#udnote').value||'').trim(),by:(USERS.find(x=>x.u===st.user)||{}).name||st.user,at:new Date().toISOString()};
    eSet(u,rec).then(()=>{if(db)EDITS[u.cd]=rec;applyEdit(u);dlgE.close();EW=null;render()}).catch(err=>{$('#ede').textContent=fbErr(err);a.disabled=false;a.textContent='บันทึก'});
