@@ -709,6 +709,8 @@ $('#view').onclick=e=>{
  if((a==='sopen'||a==='sclose')&&!isAdm()||(a==='edit'||a==='cancel')&&!(canEdit()&&intake())||(a==='del'&&!canDel()||(a==='clear'||a==='demo')&&st.role!=='admin')||a.startsWith('u_')&&st.role!=='admin')return;
  if(a.startsWith('u_'))return userAct(a,b);
  if(a==='uedit')openEdit(+b.dataset.i);
+  else if(a==='uconf')uConf(+b.dataset.i);
+  else if(a==='dpdf'){if(canSee())dirPdf()}
  else if(a==='unit'){if(canSee())openUnit(+b.dataset.i)}
  else if(a==='hrcopy'){const el=$(b.dataset.t||'#hrsum');if(el&&navigator.clipboard)navigator.clipboard.writeText(el.innerText).then(()=>alert('คัดลอกสรุปแล้ว นำไปวางในรายงานหรือไลน์ได้เลย')).catch(()=>alert('คัดลอกไม่สำเร็จ'))}
  else if(a==='go')go(b.dataset.i);
@@ -772,6 +774,50 @@ const applyAll=()=>D.forEach(applyEdit);
 applyAll();
 async function eSet(u,rec){if(!db){EDITS[u.cd]=rec;eSave();return}await db.ref(EPATH+'/'+u.cd).set(rec)}
 async function eDel(u){if(!db){delete EDITS[u.cd];eSave();return}await db.ref(EPATH+'/'+u.cd).remove()}
+/* ยืนยันข้อมูลเดิม: เก็บในโหนดเดียวกับการแก้ไข ด้วยคีย์ <รหัส 5 หลัก>_ok (ไม่ต้องเพิ่ม path ใหม่ใน Firebase Rules) */
+const CK=u=>u.cd+'_ok',cOf=u=>EDITS[CK(u)]||null;
+const isOwn=u=>st.role==='staff'&&!!st.user&&st.user===u.cd;
+const stOf=u=>u.ed?'edited':cOf(u)?'confirmed':'pending';
+async function cSet(u,rec){if(!db){EDITS[CK(u)]=rec;eSave();return}await db.ref(EPATH+'/'+CK(u)).set(rec)}
+const DOT='<span aria-hidden="true" style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#16a34a;box-shadow:0 0 0 3px rgba(22,163,74,.25);vertical-align:-2px"></span>';
+const fmtAt=t=>t?new Date(t).toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'}):'';
+function stBadge(u){const s=stOf(u);
+ if(s==='edited')return `<span role="img" aria-label="แก้ไขข้อมูลแล้ว" title="${esc(u.ed.by||'')} ${esc(fmtAt(u.ed.at))}">${DOT}</span> <small>แก้ไขข้อมูลแล้ว</small>`;
+ if(s==='confirmed'){const c=cOf(u);return `<span role="img" aria-label="ยืนยันข้อมูลเดิมแล้ว" title="${esc(c.by||'')} ${esc(fmtAt(c.at))}">${DOT}</span> <small>ยืนยันข้อมูลเดิมแล้ว</small>`}
+ return '<small style="opacity:.65">ยังไม่ดำเนินการ</small>'}
+function dirCounts(){let c=0,e=0;D.forEach(u=>{const s=stOf(u);if(s==='confirmed')c++;else if(s==='edited')e++});return{c,e,p:D.length-c-e}}
+function sumHtml(){const k=dirCounts();
+ return `<div class="insight" style="margin-top:14px"><b>สรุปผลการแก้ไข/ยืนยันข้อมูล (ทั้งหมด ${D.length} รพ.สต.)</b><ol style="margin:6px 0 0;padding-left:22px"><li>ยืนยันข้อมูลเดิม จำนวน <b>${k.c}</b> รพ.สต.</li><li>แก้ไขข้อมูลใหม่แล้ว จำนวน <b>${k.e}</b> รพ.สต.</li><li>ยังไม่ดำเนินการ จำนวน <b>${k.p}</b> รพ.สต.</li></ol><div class="actions" style="margin-top:10px"><button class="btn" type="button" data-act="dpdf">ดาวน์โหลด PDF สรุปผลการดำเนินงาน</button></div></div>`}
+function uConf(i){const u=D[i];
+ if(!isOwn(u)){alert('ยืนยันข้อมูลได้เฉพาะ รพ.สต. ของตนเอง (ตามรหัส 5 หลัก)');return}
+ if(stOf(u)!=='pending')return;
+ if(!confirm('ยืนยันว่าข้อมูลบุคลากรของ '+u.n+' ถูกต้องตามข้อมูลเดิม ไม่มีการแก้ไข ?'))return;
+ const rec={by:(USERS.find(x=>x.u===st.user)||{}).name||st.user,at:new Date().toISOString()};
+ cSet(u,rec).then(()=>{if(db)EDITS[CK(u)]=rec;render()}).catch(e=>alert(fbErr(e)))}
+function dirPdf(){
+ const k=dirCounts(),dt=new Date().toLocaleDateString('th-TH',{year:'numeric',month:'long',day:'numeric'});
+ const lab={confirmed:'ยืนยันข้อมูลเดิม',edited:'แก้ไขข้อมูลใหม่แล้ว',pending:'ยังไม่ดำเนินการ'};
+ const who=u=>{const s=stOf(u),x=s==='edited'?u.ed:s==='confirmed'?cOf(u):null;return x?[x.by||'',fmtAt(x.at)]:['','']};
+ const by=AM.map(a=>{const d=D.filter(u=>u.a===a),n=s=>d.filter(u=>stOf(u)===s).length;return[a,d.length,n('confirmed'),n('edited'),n('pending')]});
+ const rows=D.map((u,i)=>{const s=stOf(u),w=who(u);return `<tr><td class="n">${i+1}</td><td>${esc(u.cd)}</td><td>${esc(u.n)}</td><td>${esc(u.a)}</td><td>${s==='pending'?'':'<span style="color:#16a34a">●</span> '}${lab[s]}</td><td>${esc(w[0])}</td><td>${esc(w[1])}</td></tr>`}).join('');
+ const html=`<!doctype html><html lang="th"><head><meta charset="utf-8"><title>สรุปผลการดำเนินงานข้อมูลอัตรากำลัง รพ.สต.</title><style>
+ @page{size:A4;margin:14mm}body{font-family:'Sarabun','TH Sarabun New','Noto Sans Thai',Tahoma,sans-serif;color:#000;font-size:12px}
+ h1{font-size:18px;margin:0 0 4px}h2{font-size:14px;margin:14px 0 4px}p{margin:2px 0 6px}table{border-collapse:collapse;width:100%;margin-top:6px}
+ th,td{border:1px solid #444;padding:3px 6px;text-align:left}th{background:#e6eef2}thead{display:table-header-group}tr{page-break-inside:avoid}
+ .n{text-align:center;width:36px}.c{text-align:center}</style></head><body>
+ <h1>สรุปผลการยืนยัน/แก้ไขข้อมูลอัตรากำลัง รายโรงพยาบาลส่งเสริมสุขภาพตำบล</h1>
+ <p>กองสาธารณสุข องค์การบริหารส่วนจังหวัดสกลนคร · ข้อมูลอัตรากำลัง ณ วันที่ ${esc(AS_OF)} · พิมพ์เมื่อ ${esc(dt)}</p>
+ <h2>สรุปภาพรวม (ทั้งหมด ${D.length} รพ.สต.)</h2>
+ <table style="width:auto"><tbody><tr><td>1. ยืนยันข้อมูลเดิม</td><td class="c"><b>${k.c}</b></td><td>รพ.สต.</td></tr><tr><td>2. แก้ไขข้อมูลใหม่แล้ว</td><td class="c"><b>${k.e}</b></td><td>รพ.สต.</td></tr><tr><td>3. ยังไม่ดำเนินการ</td><td class="c"><b>${k.p}</b></td><td>รพ.สต.</td></tr></tbody></table>
+ <h2>สรุปรายอำเภอ</h2>
+ <table><thead><tr><th>อำเภอ</th><th class="c">รพ.สต.ทั้งหมด</th><th class="c">ยืนยันข้อมูลเดิม</th><th class="c">แก้ไขข้อมูลใหม่</th><th class="c">ยังไม่ดำเนินการ</th></tr></thead><tbody>${by.map(x=>`<tr><td>${esc(x[0])}</td><td class="c">${x[1]}</td><td class="c">${x[2]}</td><td class="c">${x[3]}</td><td class="c">${x[4]}</td></tr>`).join('')}</tbody></table>
+ <h2>รายละเอียดรายโรงพยาบาลส่งเสริมสุขภาพตำบล</h2>
+ <table><thead><tr><th class="n">ที่</th><th>รหัส 5 หลัก</th><th>รพ.สต.</th><th>อำเภอ</th><th>สถานะ</th><th>ผู้ดำเนินการ</th><th>วันที่-เวลา</th></tr></thead><tbody>${rows}</tbody></table>
+ </body></html>`;
+ const fr=document.createElement('iframe');fr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.appendChild(fr);
+ const d=fr.contentWindow.document;d.open();d.write(html);d.close();
+ setTimeout(()=>{try{fr.contentWindow.focus();fr.contentWindow.print()}catch(e){alert('เปิดหน้าต่างพิมพ์ไม่ได้')}setTimeout(()=>fr.remove(),60000)},300);
+}
 if(db){db.ref(EPATH).on('value',snap=>{
  EDITS=snap.val()||{};applyAll();
  const ae=document.activeElement,typing=ae&&ae.closest&&ae.closest('.fl');
@@ -844,15 +890,26 @@ function unitDetail(i){
 }
 function dirPage(){
  return `<div class="glass card"><h2>รายละเอียดรายโรงพยาบาลส่งเสริมสุขภาพตำบล</h2><div class="fl"><input id="dq" type="search" placeholder="ค้นหาชื่อ รพ.สต. อำเภอ หรือรหัส 5 หลัก" aria-label="ค้นหา"><select id="da" aria-label="อำเภอ"><option value="">ทุกอำเภอ</option>${AM.map(a=>`<option>${esc(a)}</option>`).join('')}</select><select id="ds" aria-label="ขนาด"><option value="">ทุกขนาด</option><option value="L">ขนาดใหญ่ (L)</option><option value="M">ขนาดกลาง (M)</option><option value="S">ขนาดเล็ก (S)</option></select><button class="btn" data-act="dx">ดาวน์โหลด Excel</button></div>
- <div class="tw" style="max-height:560px"><table><thead><tr>${['ที่','รหัส 5 หลัก','รพ.สต.','อำเภอ','ขนาด','ตามกรอบ','ผอ.','ขรก. พว.','ขรก. นวก.สธ.','ขรก. จพ.สธ.','ขรก. แพทย์แผนไทย','ขรก. ทันตะ','ขรก. รวม','จ้างเงินบำรุง','จ้างเหมา','รวมทั้งหมด','เทียบกรอบ'].map(x=>`<th>${x}</th>`).join('')}${anyEdit()?'<th>จัดการ</th>':''}</tr></thead><tbody id="utb"></tbody></table></div>${st.role==='admin'?'<p class="insight">👤 ผู้ดูแลระบบ: แก้ไขบุคลากรได้ทุก รพ.สต. กดปุ่ม ✏️ แก้ไข ท้ายแถว</p>':(anyEdit()?'<p class="insight">👤 เจ้าหน้าที่ '+esc((D.find(u=>u.cd===st.user)||{}).n||'')+': แก้ไขได้เฉพาะ รพ.สต. ของท่าน กดปุ่ม ✏️ แก้ไข ท้ายแถว</p>':'')}<p class="note" id="dcnt"></p><p class="note">คลิกที่แถวเพื่อดูจำนวนบุคลากรทุกตำแหน่งและหมายเหตุ · ✏️ ข้างชื่อ = มีการแก้ไขข้อมูลในระบบ · ⚠️ = รหัสควรตรวจสอบยืนยัน (รหัส 05522 จับคู่โดยวิธีคัดออก) · 📝 = มีหมายเหตุ · เทียบกรอบ: ตัวเลขสีแดง = ขาดอัตรา, + = เกินกรอบ</p></div>`;
+ <div class="tw" style="max-height:none"><table><thead><tr>${['ที่','รหัส 5 หลัก','รพ.สต.','อำเภอ','ขนาด','ตามกรอบ','ผอ.','ขรก. พว.','ขรก. นวก.สธ.','ขรก. จพ.สธ.','ขรก. แพทย์แผนไทย','ขรก. ทันตะ','ขรก. รวม','จ้างเงินบำรุง','จ้างเหมา','รวมทั้งหมด','เทียบกรอบ'].map(x=>`<th>${x}</th>`).join('')}${anyEdit()?'<th>จัดการ</th>':''}<th>สถานะ</th></tr></thead><tbody id="utb"></tbody></table></div><div id="dpg"></div><div id="dsum"></div>${st.role==='admin'?'<p class="insight">👤 ผู้ดูแลระบบ: แก้ไขบุคลากรได้ทุก รพ.สต. กดปุ่ม ✏️ แก้ไข ท้ายแถว</p>':(anyEdit()?'<p class="insight">👤 เจ้าหน้าที่ '+esc((D.find(u=>u.cd===st.user)||{}).n||'')+': แก้ไขได้เฉพาะ รพ.สต. ของท่าน กดปุ่ม ✏️ แก้ไข ท้ายแถว</p>':'')}<p class="note" id="dcnt"></p><p class="note">คลิกที่แถวเพื่อดูจำนวนบุคลากรทุกตำแหน่งและหมายเหตุ · ✏️ ข้างชื่อ = มีการแก้ไขข้อมูลในระบบ · ⚠️ = รหัสควรตรวจสอบยืนยัน (รหัส 05522 จับคู่โดยวิธีคัดออก) · 📝 = มีหมายเหตุ · เทียบกรอบ: ตัวเลขสีแดง = ขาดอัตรา, + = เกินกรอบ · 🟢 สถานะสีเขียว = ยืนยันข้อมูลเดิมหรือแก้ไขข้อมูลแล้ว (เจ้าหน้าที่กดยืนยัน/แก้ไขได้เฉพาะ รพ.สต. ที่รหัส 5 หลักตรงกับชื่อผู้ใช้ของตน)</p></div>`;
 }
+let dpage=1;const DPER=10;
 function bindDir(){
  const q=$('#dq');if(!q)return;
  const up=()=>{const k=q.value.trim(),a=$('#da').value,s=$('#ds').value;
-  const r=D.filter(u=>(!a||u.a===a)&&(!s||u.s===s)&&(!k||(u.n+u.a+u.cd).includes(k)));
-  $('#utb').innerHTML=r.length?r.map(u=>`<tr data-act="unit" data-i="${u.i}"><td>${u.i+1}</td><td>${cdTag(u.cd)}</td><td>${esc(u.n)}${u.note?' 📝':''}${u.ed?' ✏️':''}</td><td>${esc(u.a)}</td><td>${u.s}</td><td class="n">${u.fr}</td><td class="n">${dd(u.G[0]+u.G[1]+u.G[2])}</td><td class="n">${dd(u.G[3])}</td><td class="n">${dd(u.G[4])}</td><td class="n">${dd(u.G[8])}</td><td class="n">${dd(u.G[7])}</td><td class="n">${dd(u.G[5]+u.G[6])}</td><td class="n">${u.gt}</td><td class="n">${u.ft}</td><td class="n">${dd(u.ct)}</td><td class="n"><b>${u.all}</b></td><td class="n"${u.dif>0?' style="color:var(--bad)"':''}>${u.dif>0?'−'+u.dif:u.dif<0?'+'+(-u.dif):'ครบ'}</td>${anyEdit()?`<td>${canEditUnit(u)?`<button class="btn sm" type="button" data-act="uedit" data-i="${u.i}">✏️ แก้ไข</button>`:''}</td>`:''}</tr>`).join(''):`<tr><td colspan="${anyEdit()?18:17}" class="empty">ไม่พบรายการ</td></tr>`;
-  $('#dcnt').textContent='แสดง '+r.length+' จาก '+D.length+' แห่ง'};
- q.oninput=up;$('#da').onchange=up;$('#ds').onchange=up;up();
+  const all=D.filter(u=>(!a||u.a===a)&&(!s||u.s===s)&&(!k||(u.n+u.a+u.cd).includes(k)));
+  const tp=Math.max(1,Math.ceil(all.length/DPER));if(dpage>tp)dpage=tp;if(dpage<1)dpage=1;
+  const s0=(dpage-1)*DPER,r=all.slice(s0,s0+DPER);
+  $('#utb').innerHTML=r.length?r.map(u=>`<tr data-act="unit" data-i="${u.i}"><td>${u.i+1}</td><td>${cdTag(u.cd)}</td><td>${esc(u.n)}${u.note?' 📝':''}${u.ed?' ✏️':''}</td><td>${esc(u.a)}</td><td>${u.s}</td><td class="n">${u.fr}</td><td class="n">${dd(u.G[0]+u.G[1]+u.G[2])}</td><td class="n">${dd(u.G[3])}</td><td class="n">${dd(u.G[4])}</td><td class="n">${dd(u.G[8])}</td><td class="n">${dd(u.G[7])}</td><td class="n">${dd(u.G[5]+u.G[6])}</td><td class="n">${u.gt}</td><td class="n">${u.ft}</td><td class="n">${dd(u.ct)}</td><td class="n"><b>${u.all}</b></td><td class="n"${u.dif>0?' style="color:var(--bad)"':''}>${u.dif>0?'−'+u.dif:u.dif<0?'+'+(-u.dif):'ครบ'}</td>${anyEdit()?`<td style="white-space:nowrap">${canEditUnit(u)?`<button class="btn sm" type="button" data-act="uedit" data-i="${u.i}">✏️ แก้ไข</button>`:''}${isOwn(u)&&stOf(u)==='pending'?` <button class="btn sec sm" type="button" data-act="uconf" data-i="${u.i}">✔ ยืนยันข้อมูลเดิม</button>`:''}</td>`:''}<td style="white-space:nowrap">${stBadge(u)}</td></tr>`).join(''):`<tr><td colspan="${anyEdit()?19:18}" class="empty">ไม่พบรายการ</td></tr>`;
+  $('#dcnt').textContent=all.length?'แสดงแห่งที่ '+(s0+1)+'–'+(s0+r.length)+' จากที่ค้นพบ '+all.length+' แห่ง (ทั้งหมด '+D.length+' แห่ง) · หน้า '+dpage+'/'+tp:'ไม่พบรายการ (ทั้งหมด '+D.length+' แห่ง)';
+  const pb=(p,label,dis,cur)=>`<button class="btn ${cur?'':'sec '}sm" type="button" data-dpg="${p}"${dis?' disabled':''}${cur?' aria-current="page"':''}>${label}</button>`;
+  const ps=[];for(let p=1;p<=tp;p++)if(p===1||p===tp||Math.abs(p-dpage)<=1)ps.push(p);
+  const nums=[];ps.forEach((p,i)=>{if(i&&p-ps[i-1]>1)nums.push('<span style="padding:0 4px">…</span>');nums.push(pb(p,p,false,p===dpage))});
+  $('#dsum').innerHTML=sumHtml();
+  $('#dpg').innerHTML=tp>1?`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:center;margin-top:12px">${pb(dpage-1,'‹ ก่อนหน้า',dpage<=1)}${nums.join('')}${pb(dpage+1,'ถัดไป ›',dpage>=tp)}</div>`:''};
+ const rs=()=>{dpage=1;up()};
+ q.oninput=rs;$('#da').onchange=rs;$('#ds').onchange=rs;
+ $('#dpg').onclick=e=>{const b=e.target.closest('[data-dpg]');if(!b||b.disabled)return;dpage=+b.dataset.dpg||1;up();const tw=$('#utb').closest('.tw');if(tw)tw.scrollIntoView({block:'nearest'})};
+ up();
 }
 function openUnit(i){$('#udc').innerHTML=unitDetail(i)+'<div class="actions">'+(canEditUnit(D[i])?'<button class="btn" type="button" data-ed-open="'+i+'">✏️ แก้ไขบุคลากร</button>':'')+'<button class="btn sec" data-x>ปิด</button></div>';$('#ud').showModal()}
 $('#ud').onclick=e=>{const o=e.target.closest('[data-ed-open]');if(o){openEdit(+o.dataset.edOpen);return}if(e.target===e.currentTarget||e.target.closest('[data-x]'))e.currentTarget.close()};
