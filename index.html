@@ -711,6 +711,7 @@ $('#view').onclick=e=>{
  if(a==='uedit')openEdit(+b.dataset.i);
   else if(a==='uconf')uConf(+b.dataset.i);
   else if(a==='dpdf'){if(canSee())dirPdf()}
+  else if(a==='ereset')eResetAll();
  else if(a==='unit'){if(canSee())openUnit(+b.dataset.i)}
  else if(a==='hrcopy'){const el=$(b.dataset.t||'#hrsum');if(el&&navigator.clipboard)navigator.clipboard.writeText(el.innerText).then(()=>alert('คัดลอกสรุปแล้ว นำไปวางในรายงานหรือไลน์ได้เลย')).catch(()=>alert('คัดลอกไม่สำเร็จ'))}
  else if(a==='go')go(b.dataset.i);
@@ -788,7 +789,16 @@ function stBadge(u){const s=stOf(u);
  return '<small style="opacity:.65">ยังไม่ดำเนินการ</small>'}
 function dirCounts(){let c=0,e=0;D.forEach(u=>{const s=stOf(u);if(s==='confirmed')c++;else if(s==='edited')e++});return{c,e,p:D.length-c-e}}
 function sumHtml(){const k=dirCounts();
- return `<div class="insight" style="margin-top:14px"><b>สรุปผลการแก้ไข/ยืนยันข้อมูล (ทั้งหมด ${D.length} รพ.สต.)</b><ol style="margin:6px 0 0;padding-left:22px"><li>ยืนยันข้อมูลเดิม จำนวน <b>${k.c}</b> รพ.สต.</li><li>แก้ไขข้อมูลใหม่แล้ว จำนวน <b>${k.e}</b> รพ.สต.</li><li>ยังไม่ดำเนินการ จำนวน <b>${k.p}</b> รพ.สต.</li></ol><div class="actions" style="margin-top:10px"><button class="btn" type="button" data-act="dpdf">ดาวน์โหลด PDF สรุปผลการดำเนินงาน</button></div></div>`}
+ return `<div class="insight" style="margin-top:14px"><b>สรุปผลการแก้ไข/ยืนยันข้อมูล (ทั้งหมด ${D.length} รพ.สต.)</b><ol style="margin:6px 0 0;padding-left:22px"><li>ยืนยันข้อมูลเดิม จำนวน <b>${k.c}</b> รพ.สต.</li><li>แก้ไขข้อมูลใหม่แล้ว จำนวน <b>${k.e}</b> รพ.สต.</li><li>ยังไม่ดำเนินการ จำนวน <b>${k.p}</b> รพ.สต.</li></ol><div class="actions" style="margin-top:10px"><button class="btn" type="button" data-act="dpdf">ดาวน์โหลด PDF สรุปผลการดำเนินงาน</button>${st.role==='admin'&&k.e>0?`<button class="btn sec" type="button" data-act="ereset" style="color:var(--bad)">รีเซ็ตข้อมูลที่แก้ไข (${k.e} แห่ง) ให้เป็น 0</button>`:''}</div></div>`}
+async function eResetAll(){
+ if(st.role!=='admin'){alert('เฉพาะผู้ดูแลระบบเท่านั้น');return}
+ const L=D.filter(u=>u.ed);if(!L.length)return;
+ if(!confirm('รีเซ็ตข้อมูลที่แก้ไขของ '+L.length+' รพ.สต. กลับเป็นข้อมูลเดิมจากไฟล์ต้นทาง ?\n\n'+L.map(u=>'• '+u.n).join('\n')+'\n\nการรีเซ็ตย้อนกลับไม่ได้ (แนะนำให้กดดาวน์โหลด Excel สำรองไว้ก่อน)'))return;
+ try{
+  if(db){const m={};L.forEach(u=>m[u.cd]=null);await db.ref(EPATH).update(m)}
+  L.forEach(u=>delete EDITS[u.cd]);eSave();applyAll();render();
+ }catch(e){alert(fbErr(e))}
+}
 function uConf(i){const u=D[i];
  if(!isOwn(u)){alert('ยืนยันข้อมูลได้เฉพาะ รพ.สต. ของตนเอง (ตามรหัส 5 หลัก)');return}
  if(stOf(u)!=='pending')return;
