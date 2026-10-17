@@ -247,20 +247,6 @@ dialog .glass,#udc,#lgc,.pal{border-radius:26px 26px 0 0;padding-bottom:calc(20p
 .ed-add{flex-wrap:wrap}
 #edb{max-height:52vh}
 }
-/* ตารางข้อมูลสำรวจ → การ์ดรายคน บนจอเล็ก */
-@media(max-width:640px){
-#dtbl .tw{border:0;max-height:none;overflow:visible;border-radius:0}
-#dtbl table,#dtbl tbody,#dtbl tr,#dtbl td{display:block;width:100%}
-#dtbl thead{display:none}
-#dtbl tbody tr,#dtbl tbody tr:nth-child(even){background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:10px 14px;margin:0 0 10px;box-shadow:0 3px 12px rgba(10,40,70,.08)}
-#dtbl td{display:flex;justify-content:space-between;gap:12px;white-space:normal;border:0;padding:5px 0;text-align:right;font-size:.88rem}
-#dtbl td[data-label]::before{content:attr(data-label);flex:none;max-width:42%;color:var(--mut);font-weight:600;font-size:.8rem;text-align:left}
-#dtbl td.n{justify-content:flex-start;gap:8px;font-weight:700;color:var(--ac);border-bottom:1px dashed var(--line);padding-bottom:7px;margin-bottom:3px}
-#dtbl td:nth-child(9){flex-direction:column;gap:4px;text-align:left}
-#dtbl td:nth-child(10){justify-content:flex-start;gap:8px;padding-top:8px}
-#dtbl td:nth-child(10) .btn{flex:1}
-#dtbl td.empty{display:block;text-align:center}
-}
 </style>
 <style id="ui-v3">
 :root{--bg:#EEF1FF;--b1:rgba(6,182,212,.38);--b2:rgba(109,74,255,.34);--b3:rgba(236,72,153,.22);--glass:rgba(255,255,255,.95);--gb:#fff;--line:rgba(30,27,107,.26);--tx:#0B1230;--mut:#33405F;--ac:#5B3DF5;--acs:rgba(91,61,245,.12);--amber:#FFB020;--bad:#C80F3A;--panel:#fff;--btn:linear-gradient(135deg,#6D4AFF,#2563EB 58%,#06B6D4);--btx:#fff;--th:linear-gradient(135deg,#1E1B6B,#3B30B5);--side:linear-gradient(175deg,#0E1040,#1B1F6B 58%,#0A5C7C);--hero:linear-gradient(120deg,#2A1FA6,#5B3DF5 48%,#06A6C9);--sh:0 12px 34px rgba(30,27,107,.16)}
@@ -335,25 +321,13 @@ table{font-size:.84rem}th,td{padding:8px 6px}
 #bot{bottom:calc(88px + env(safe-area-inset-bottom,0px))}
 .actions.full{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 }
-@media(max-width:640px){#dtbl td{font-size:.95rem}}
-/* ===== มือถือ: แสดงแถบเมนูด้านซ้ายตลอดเหมือน PC (แบบย่อ ไอคอน+ชื่อสั้น) · กด ☰ เพื่อขยายเป็นเมนูเต็ม ===== */
+
+/* ===== มือถือ: ซ่อนเมนูด้านซ้ายไว้ กดปุ่ม ☰ เพื่อเปิด ===== */
 nav .s{display:none}
 @media(max-width:860px){
-aside.glass{transform:none!important;visibility:visible!important;width:76px;padding:calc(10px + env(safe-area-inset-top,0px)) 5px calc(10px + env(safe-area-inset-bottom,0px));border-radius:0 22px 22px 0;gap:4px;transition:width .22s ease}
-body.menu-open aside.glass{width:min(290px,84vw);padding:calc(14px + env(safe-area-inset-top,0px)) 12px calc(14px + env(safe-area-inset-bottom,0px))}
-.app{padding:8px 10px calc(16px + env(safe-area-inset-bottom,0px)) 86px!important}
+.app{padding:8px 10px calc(16px + env(safe-area-inset-bottom,0px))!important}
 #bot{bottom:calc(16px + env(safe-area-inset-bottom,0px))}
-.actions.full{bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 html{scroll-padding-bottom:120px}
-/* โหมดย่อ */
-body:not(.menu-open) .brand{padding:2px 0 8px;margin-bottom:4px;gap:0}
-body:not(.menu-open) .brand .bt,body:not(.menu-open) #mtools,body:not(.menu-open) #mclose,body:not(.menu-open) .side-foot{display:none}
-body:not(.menu-open) .logo-img{width:52px;height:52px}
-body:not(.menu-open) nav button,body:not(.menu-open) nav button.sub{flex-direction:column;justify-content:flex-start;gap:3px;min-height:60px;padding:6px 2px;margin-left:0;text-align:center;border-left:0;border-radius:14px}
-body:not(.menu-open) nav button .t,body:not(.menu-open) nav .chev{display:none}
-body:not(.menu-open) nav button .s{display:block;font-size:.68rem;line-height:1.2;font-weight:700;overflow-wrap:anywhere}
-body:not(.menu-open) nav .i,body:not(.menu-open) nav button.sub .i{width:36px;height:36px}
-body:not(.menu-open) nav button.sub:not([aria-current="page"]){background:rgba(255,210,107,.12)}
 }
 
 /* ===== มือถือ: ฟอร์มสำรวจค่าจ้าง + ตารางเป็นการ์ด (ข้อมูลอัตรากำลัง / สำรวจค่าจ้าง) ===== */
@@ -367,21 +341,6 @@ html{scroll-padding-bottom:170px}
 #wf .wdl input{font-size:20px;font-weight:800;color:var(--ac);text-align:center}
 #wf .actions.full .btn{min-height:54px;font-size:1.05rem}
 .kpi b{font-size:clamp(1.15rem,5.6vw,1.7rem)}
-}
-@media(max-width:640px){
-.tw:has(#utb,#wtb){border:0;overflow:visible;background:none}
-.tw:has(#utb,#wtb) table,.tw:has(#utb,#wtb) tbody,.tw:has(#utb,#wtb) tfoot{display:block;width:100%}
-.tw:has(#utb,#wtb) thead{display:none}
-.tw:has(#utb,#wtb) tr{display:flex;flex-direction:column;width:100%;background:var(--panel)!important;border:1px solid var(--line);border-radius:18px;padding:10px 14px;margin:0 0 10px;box-shadow:0 3px 12px rgba(10,40,70,.08)}
-.tw:has(#utb,#wtb) tr.tot{background:rgba(255,176,32,.28)!important}
-.tw:has(#utb,#wtb) td{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;border:0;padding:5px 0;text-align:right;white-space:normal;font-size:.95rem}
-.tw:has(#utb,#wtb) td[data-l]:not([data-l=""])::before{content:attr(data-l);flex:none;max-width:48%;color:var(--mut);font-weight:600;font-size:.82rem;text-align:left}
-.tw:has(#utb,#wtb) td[data-e]{display:none}
-.tw:has(#utb,#wtb) td[data-t]{order:-1;justify-content:flex-start;text-align:left;font-weight:800;font-size:1.05rem;border-bottom:1px dashed var(--line);padding-bottom:8px;margin-bottom:4px}
-.tw:has(#utb,#wtb) td[colspan]{justify-content:flex-start;text-align:left;font-weight:800}
-.tw:has(#utb,#wtb) td:has(.btn){justify-content:flex-start;gap:8px;padding-top:8px}
-.tw:has(#utb,#wtb) td .btn{flex:1;min-height:44px}
-.tw:has(#utb,#wtb) td.empty{display:block;text-align:center}
 }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -893,7 +852,20 @@ function dirPdf(){
  @page{size:A4;margin:14mm}body{font-family:'Sarabun','TH Sarabun New','Noto Sans Thai',Tahoma,sans-serif;color:#000;font-size:12px}
  h1{font-size:18px;margin:0 0 4px}h2{font-size:14px;margin:14px 0 4px}p{margin:2px 0 6px}table{border-collapse:collapse;width:100%;margin-top:6px}
  th,td{border:1px solid #444;padding:3px 6px;text-align:left}th{background:#e6eef2}thead{display:table-header-group}tr{page-break-inside:avoid}
- .n{text-align:center;width:36px}.c{text-align:center}</style></head><body>
+ .n{text-align:center;width:36px}.c{text-align:center}
+/* ===== มือถือ: ตารางแสดงแบบเดียวกับ PC (เลื่อนซ้าย-ขวาได้) · ไม่มีแถบลอยด้านล่าง ===== */
+@media(max-width:860px){
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tw table{width:max-content;min-width:100%}
+.tw th,.tw td{white-space:nowrap;overflow-wrap:normal}
+.actions.full{position:static!important;margin:8px 0 0;padding:0;background:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+}
+@media(max-width:860px){
+/* ตรึงคอลัมน์ชื่อ รพ.สต. ไว้ซ้ายเมื่อเลื่อนตารางดูคอลัมน์อื่น */
+.tw:has(#utb) td:nth-child(3),.tw:has(#wtb) td:nth-child(4){position:sticky;left:0;z-index:1;background:var(--panel);font-weight:700;box-shadow:2px 0 0 var(--line)}
+.tw:has(#utb) th:nth-child(3),.tw:has(#wtb) th:nth-child(4){position:sticky;left:0;z-index:2;background:var(--th);box-shadow:2px 0 0 var(--line)}
+}
+</style></head><body>
  <h1>สรุปผลการยืนยัน/แก้ไขข้อมูลอัตรากำลัง รายโรงพยาบาลส่งเสริมสุขภาพตำบล</h1>
  <p>กองสาธารณสุข องค์การบริหารส่วนจังหวัดสกลนคร · ข้อมูลอัตรากำลัง ณ วันที่ ${esc(AS_OF)} · พิมพ์เมื่อ ${esc(dt)}</p>
  <h2>สรุปภาพรวม (ทั้งหมด ${D.length} รพ.สต.)</h2>
@@ -1402,10 +1374,6 @@ function run(){try{
  document.querySelectorAll('.hero h1').forEach(h=>{if(h.dataset.h)return;h.dataset.h=1;strip(h);h.insertAdjacentHTML('afterbegin','<span class="hic">'+svg(typeof st!=='undefined'?st.view:'dash')+'</span>')});
  document.querySelectorAll('.kpi').forEach(k=>{if(k.dataset.k)return;k.dataset.k=1;const i=[...k.parentNode.children].indexOf(k);k.insertAdjacentHTML('afterbegin','<span class="kic">'+svg(['users','gauge','alert','trend'][i%4])+'</span>')});
 
- document.querySelectorAll('#utb,#wtb,#wtf').forEach(tb=>{const t=tb.closest('table');if(!t||!t.tHead)return;const h=[...t.tHead.rows[0].cells].map(x=>x.textContent.trim());
-  [...tb.rows].forEach(r=>{let i=0;[...r.cells].forEach(c=>{if(c.dataset.l===undefined){const tx=c.textContent.trim(),hd=h[i]||'';
-   if(/^(ชื่อ )?รพ\.สต\.$/.test(hd)){c.dataset.t='1';c.dataset.l=''}else c.dataset.l=(hd==='จัดการ'||hd==='ที่')?'':hd;
-   if(tx===''||tx==='–')c.dataset.e='1'}i+=c.colSpan||1})})});
  dock();
 }catch(e){console.warn(e)}}
 new MutationObserver(()=>{cancelAnimationFrame(raf);raf=requestAnimationFrame(run)}).observe(document.body,{childList:true,subtree:true});
