@@ -341,6 +341,27 @@ table{font-size:.84rem}th,td{padding:8px 6px}
 #dock button[aria-current="page"]{background:var(--acs);color:var(--ac)}
 }
 @media(max-width:640px){#dtbl td{font-size:.95rem}}
+/* ===== มือถือ: แสดงแถบเมนูด้านซ้ายตลอดเหมือน PC (แบบย่อ ไอคอน+ชื่อสั้น) · กด ☰ เพื่อขยายเป็นเมนูเต็ม ===== */
+nav .s{display:none}
+@media(max-width:860px){
+aside.glass{transform:none!important;visibility:visible!important;width:76px;padding:calc(10px + env(safe-area-inset-top,0px)) 5px calc(10px + env(safe-area-inset-bottom,0px));border-radius:0 22px 22px 0;gap:4px;transition:width .22s ease}
+body.menu-open aside.glass{width:min(290px,84vw);padding:calc(14px + env(safe-area-inset-top,0px)) 12px calc(14px + env(safe-area-inset-bottom,0px))}
+.app{padding:8px 10px calc(16px + env(safe-area-inset-bottom,0px)) 86px!important}
+#dock{display:none!important}
+#bot{bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+.actions.full{bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+html{scroll-padding-bottom:120px}
+/* โหมดย่อ */
+body:not(.menu-open) .brand{padding:2px 0 8px;margin-bottom:4px;gap:0}
+body:not(.menu-open) .brand .bt,body:not(.menu-open) #mtools,body:not(.menu-open) #mclose,body:not(.menu-open) .side-foot{display:none}
+body:not(.menu-open) .logo-img{width:52px;height:52px}
+body:not(.menu-open) nav button,body:not(.menu-open) nav button.sub{flex-direction:column;justify-content:flex-start;gap:3px;min-height:60px;padding:6px 2px;margin-left:0;text-align:center;border-left:0;border-radius:14px}
+body:not(.menu-open) nav button .t,body:not(.menu-open) nav .chev{display:none}
+body:not(.menu-open) nav button .s{display:block;font-size:.68rem;line-height:1.2;font-weight:700;overflow-wrap:anywhere}
+body:not(.menu-open) nav .i,body:not(.menu-open) nav button.sub .i{width:36px;height:36px}
+body:not(.menu-open) nav button.sub:not([aria-current="page"]){background:rgba(255,210,107,.12)}
+}
+
 /* ===== มือถือ: ฟอร์มสำรวจค่าจ้าง + ตารางเป็นการ์ด (ข้อมูลอัตรากำลัง / สำรวจค่าจ้าง) ===== */
 @media(max-width:860px){
 html{scroll-padding-bottom:170px}
@@ -424,7 +445,7 @@ const MENUS=[
 {id:'dash',t:'ภาพรวมและข้อมูลเชิงลึกจาก AI',s:'ภาพรวม',i:'📊'},
 {id:'hr',t:'งานบริหารทรัพยากรบุคคล',s:'งานบุคคล',i:'🗂️'},
 {id:'dir',p:'hr',t:'ข้อมูลอัตรากำลัง',s:'อัตรากำลัง',i:'👥'},
-{id:'wg',p:'hr',t:'สำรวจค่าจ้างลูกจ้างฯ.หลังปรับฐาน',s:'ค่าจ้างหลังปรับฐาน',i:'💰'},
+{id:'wg',p:'hr',t:'สำรวจค่าจ้างลูกจ้างฯ.หลังปรับฐาน',s:'ค่าจ้างฯ ปรับฐาน',i:'💰'},
 {id:'hrd',t:'พัฒนาบุคลากรและศูนย์การเรียนรู้',s:'อบรม',i:'🎓'},
 {id:'survey',p:'hrd',t:'สำรวจความต้องการฝึกอบรม ปีงบประมาณ 2570',s:'สำรวจ 2570',i:'📝'},
 {id:'wel',t:'สวัสดิการและบริการ',s:'สวัสดิการ',i:'🛠️'},
@@ -453,7 +474,7 @@ function renderNav(){
  const vis=MENUS.filter(m=>CAN[st.role].includes(m.id));
  const kids=id=>vis.filter(x=>x.p===id);
  const lab=m=>esc(m.t);
- const btn=(m,extra)=>`<button data-go="${m.id}" ${m.id===st.view?'aria-current="page"':''}${extra||''}><span class="i">${m.i}</span><span class="t">${lab(m)}</span>${kids(m.id).length?'<span class="chev" aria-hidden="true">'+(st.exp[m.id]?'▾':'▸')+'</span>':''}</button>`;
+ const btn=(m,extra)=>`<button data-go="${m.id}" ${m.id===st.view?'aria-current="page"':''}${extra||''}><span class="i">${m.i}</span><span class="t">${lab(m)}</span><span class="s">${esc(m.s)}</span>${kids(m.id).length?'<span class="chev" aria-hidden="true">'+(st.exp[m.id]?'▾':'▸')+'</span>':''}</button>`;
  $('#nav').innerHTML=vis.filter(m=>!m.p||!vis.some(x=>x.id===m.p)).map(m=>{
   const k=kids(m.id);
   if(!k.length)return btn(m,m.p?' class="sub"':'');
