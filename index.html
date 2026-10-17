@@ -341,6 +341,33 @@ table{font-size:.84rem}th,td{padding:8px 6px}
 #dock button[aria-current="page"]{background:var(--acs);color:var(--ac)}
 }
 @media(max-width:640px){#dtbl td{font-size:.95rem}}
+/* ===== มือถือ: ฟอร์มสำรวจค่าจ้าง + ตารางเป็นการ์ด (ข้อมูลอัตรากำลัง / สำรวจค่าจ้าง) ===== */
+@media(max-width:860px){
+html{scroll-padding-bottom:170px}
+#wf{grid-template-columns:1fr 1fr;gap:12px}
+#wf>.fw,#wf>.full{grid-column:1/-1}
+#wf label{font-size:.95rem}
+#wf input:not([readonly]){font-size:18px;font-weight:700;letter-spacing:.2px}
+#wf input[readonly]{opacity:.85}
+#wf .wdl input{font-size:20px;font-weight:800;color:var(--ac);text-align:center}
+#wf .actions.full .btn{min-height:54px;font-size:1.05rem}
+.kpi b{font-size:clamp(1.15rem,5.6vw,1.7rem)}
+}
+@media(max-width:640px){
+.tw:has(#utb,#wtb){border:0;overflow:visible;background:none}
+.tw:has(#utb,#wtb) table,.tw:has(#utb,#wtb) tbody,.tw:has(#utb,#wtb) tfoot{display:block;width:100%}
+.tw:has(#utb,#wtb) thead{display:none}
+.tw:has(#utb,#wtb) tr{display:flex;flex-direction:column;width:100%;background:var(--panel)!important;border:1px solid var(--line);border-radius:18px;padding:10px 14px;margin:0 0 10px;box-shadow:0 3px 12px rgba(10,40,70,.08)}
+.tw:has(#utb,#wtb) tr.tot{background:rgba(255,176,32,.28)!important}
+.tw:has(#utb,#wtb) td{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;border:0;padding:5px 0;text-align:right;white-space:normal;font-size:.95rem}
+.tw:has(#utb,#wtb) td[data-l]:not([data-l=""])::before{content:attr(data-l);flex:none;max-width:48%;color:var(--mut);font-weight:600;font-size:.82rem;text-align:left}
+.tw:has(#utb,#wtb) td[data-e]{display:none}
+.tw:has(#utb,#wtb) td[data-t]{order:-1;justify-content:flex-start;text-align:left;font-weight:800;font-size:1.05rem;border-bottom:1px dashed var(--line);padding-bottom:8px;margin-bottom:4px}
+.tw:has(#utb,#wtb) td[colspan]{justify-content:flex-start;text-align:left;font-weight:800}
+.tw:has(#utb,#wtb) td:has(.btn){justify-content:flex-start;gap:8px;padding-top:8px}
+.tw:has(#utb,#wtb) td .btn{flex:1;min-height:44px}
+.tw:has(#utb,#wtb) td.empty{display:block;text-align:center}
+}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -718,6 +745,7 @@ $('#view').onclick=e=>{
  else if(a==='hrcopy'){const el=$(b.dataset.t||'#hrsum');if(el&&navigator.clipboard)navigator.clipboard.writeText(el.innerText).then(()=>alert('คัดลอกสรุปแล้ว นำไปวางในรายงานหรือไลน์ได้เลย')).catch(()=>alert('คัดลอกไม่สำเร็จ'))}
  else if(a==='go')go(b.dataset.i);
  else if(a==='dx')dirXlsx();
+  else if(a==='frx'){if(canSee())frXlsx()}
  else if(a==='miss'){const l=$('#misslist');if(l){l.hidden=!l.hidden;b.setAttribute('aria-expanded',String(!l.hidden));const n=missingUnits().length;b.textContent=l.hidden?'ดูรายชื่อ รพ.สต. ที่ยังไม่กรอก ('+n+' แห่ง)':'ซ่อนรายชื่อ'}}
  else if(a==='misspdf')missPdf();
  else if(a==='sopen'||a==='sclose'){const v=a==='sopen';if(confirm(v?'เปิดรับข้อมูลแบบสำรวจความต้องการฝึกอบรม 2570 ?':'ปิดรับข้อมูลแบบสำรวจความต้องการฝึกอบรม 2570 ?\nผู้ใช้อื่นจะส่งหรือแก้ไขข้อมูลไม่ได้ จนกว่าจะเปิดรับอีกครั้ง')){setOpen(v).then(()=>{st.msg=v?'เปิดรับข้อมูลแบบสำรวจแล้ว':'ปิดรับข้อมูลแบบสำรวจแล้ว';render()}).catch(e=>alert('บันทึกสถานะไม่สำเร็จ: '+((e&&e.code==='PERMISSION_DENIED')?'ไม่มีสิทธิ์เขียน path settings ใน Firebase Rules':((e&&e.message)||e))))}}
@@ -807,6 +835,39 @@ function uConf(i){const u=D[i];
  if(!confirm('ยืนยันว่าข้อมูลบุคลากรของ '+u.n+' ถูกต้องตามข้อมูลเดิม ไม่มีการแก้ไข ?'))return;
  const rec={by:(USERS.find(x=>x.u===st.user)||{}).name||st.user,at:new Date().toISOString()};
  cSet(u,rec).then(()=>{if(db)EDITS[CK(u)]=rec;render()}).catch(e=>alert(fbErr(e)))}
+/* ===== รายงาน: พนักงานจ้างเงินบำรุง ตำแหน่งตามกรอบ (พว./แผนไทย/ทันตะ) เพื่อวางแผนสอบบรรจุ ขรก. กรณีมีเหตุพิเศษ · ดึงจากข้อมูลอัตรากำลังปัจจุบัน (รวมที่แก้ไขแล้ว) ===== */
+const FRP=[['พยาบาลวิชาชีพ',0],['แพทย์แผนไทย',8],['เจ้าพนักงานทันตสาธารณสุข',6]];
+const frN=(u,j)=>[u.F[j]||0,u.F[j+1]||0];
+function frHtml(){
+ const pos=FRP.map(([n,j])=>{const a=cs('F',j),b=cs('F',j+1);return[n,a,b,a+b,D.filter(u=>(u.F[j]||0)+(u.F[j+1]||0)>0).length]});
+ const T=pos.reduce((x,r)=>[x[0]+r[1],x[1]+r[2],x[2]+r[3]],[0,0,0]);
+ const am=AM.map(a=>{const d=D.filter(u=>u.a===a),s=j=>d.reduce((x,u)=>x+(u.F[j]||0)+(u.F[j+1]||0),0),v=FRP.map(p=>s(p[1]));return[a,d.length,...v,v[0]+v[1]+v[2]]});
+ return `<div class="glass card" style="margin-top:14px"><h2>รายงาน: พนักงานจ้างเงินบำรุง ตำแหน่งตามกรอบ</h2>
+ <p class="note" style="margin:0 0 10px">ข้อมูลพนักงานจ้างตำแหน่ง พว./แผนไทย/ทันตะ เพื่อวางแผนสอบบรรจุ ขรก. กรณีมีเหตุพิเศษ · เฉพาะตำแหน่งตามกรอบ ${FRP.map(p=>p[0]).join(', ')} · ข้อมูล ณ วันที่ ${AS_OF}</p>
+ <div class="kpis"><div class="glass kpi"><b>${f(T[2])}</b><span>พนักงานจ้างรวม (คน) · พกส. ${f(T[0])} · ลจช. ${f(T[1])}</span></div>${pos.map(r=>`<div class="glass kpi"><b>${f(r[3])}</b><span>${esc(r[0])} (คน) · ${r[4]} รพ.สต.</span></div>`).join('')}</div>
+ <h3>ภาพรวมรายตำแหน่ง</h3>${tbl(['ตำแหน่ง','จ้าง พกส. (คน)','จ้างชั่วคราว ลจช. (คน)','รวม (คน)','จำนวน รพ.สต. ที่มี'],[...pos.map(r=>[r[0],f(r[1]),f(r[2]),f(r[3]),r[4]]),['รวม',f(T[0]),f(T[1]),f(T[2]),'']])}
+ <h3>ภาพรวมรายอำเภอ (รวม พกส. + ลจช.)</h3>${tbl(['อำเภอ','รพ.สต. (แห่ง)',...FRP.map(p=>p[0]+' (คน)'),'รวม (คน)'],[...am.map(r=>r.map((x,i)=>i>=1?f(x):x)),['รวม',f(D.length),...FRP.map((p,i)=>f(am.reduce((x,r)=>x+r[2+i],0))),f(am.reduce((x,r)=>x+r[5],0))]])}
+ <div class="actions" style="margin-top:10px"><button class="btn" type="button" data-act="frx">ดาวน์โหลด Excel รายงานสรุปรายหน่วยบริการ</button></div></div>`;
+}
+function frXlsx(){
+ if(!window.XLSX){alert('โหลดตัวสร้างไฟล์ Excel ไม่ได้ (ต้องเชื่อมต่ออินเทอร์เน็ต)');return}
+ const H=['ลำดับ','รหัสสถานบริการ (5 หลัก)','อำเภอ','ชื่อ รพ.สต.','ขนาด',...FRP.flatMap(p=>[p[0]+' (พกส.)',p[0]+' (ลจช.)']),'รวม พกส.','รวม ลจช.','รวมทั้งหมด'];
+ const R=D.map(u=>{const v=FRP.flatMap(p=>frN(u,p[1])),a=v[0]+v[2]+v[4],b=v[1]+v[3]+v[5];return[u.i+1,u.cd,u.a,u.n,u.s,...v,a,b,a+b]});
+ const n=R.length+1,tot=['','','','','รวม'];for(let c=5;c<14;c++)tot.push(R.reduce((x,r)=>x+r[c],0));
+ const ws=XLSX.utils.aoa_to_sheet([H,...R,tot]),L='FGHIJKLMN';
+ R.forEach((r,k)=>{const x=k+2;ws['L'+x]={t:'n',f:`F${x}+H${x}+J${x}`,v:r[11]};ws['M'+x]={t:'n',f:`G${x}+I${x}+K${x}`,v:r[12]};ws['N'+x]={t:'n',f:`L${x}+M${x}`,v:r[13]}});
+ [...L].forEach((c,i)=>{ws[c+(n+1)]={t:'n',f:`SUM(${c}2:${c}${n})`,v:tot[5+i]}});
+ ws['!cols']=widths([H,...R]);
+ const pos=[['ตำแหน่ง','จ้าง พกส. (คน)','จ้างชั่วคราว ลจช. (คน)','รวม (คน)','จำนวน รพ.สต. ที่มี'],...FRP.map(([nm,j])=>{const a=cs('F',j),b=cs('F',j+1);return[nm,a,b,a+b,D.filter(u=>(u.F[j]||0)+(u.F[j+1]||0)>0).length]})];
+ pos.push(['รวม',...[1,2,3].map(c=>pos.slice(1).reduce((x,r)=>x+r[c],0)),'']);
+ const am=[['อำเภอ','รพ.สต. (แห่ง)',...FRP.map(p=>p[0]+' (พกส.+ลจช.)'),'รวม'],...AM.map(a=>{const d=D.filter(u=>u.a===a),v=FRP.map(p=>d.reduce((x,u)=>x+(u.F[p[1]]||0)+(u.F[p[1]+1]||0),0));return[a,d.length,...v,v[0]+v[1]+v[2]]})];
+ am.push(['รวม',...[1,2,3,4,5].map(c=>am.slice(1).reduce((x,r)=>x+r[c],0))]);
+ const wb=XLSX.utils.book_new();
+ [['ภาพรวมรายตำแหน่ง',pos],['ภาพรวมรายอำเภอ',am]].forEach(([nm,a])=>{const s=XLSX.utils.aoa_to_sheet(a);s['!cols']=widths(a);XLSX.utils.book_append_sheet(wb,s,nm)});
+ XLSX.utils.book_append_sheet(wb,ws,'รายหน่วยบริการ');
+ XLSX.writeFile(wb,'รายงานพนักงานจ้างเงินบำรุง_ตำแหน่งตามกรอบ_30092569.xlsx');
+}
+
 function dirPdf(){
  const k=dirCounts(),dt=new Date().toLocaleDateString('th-TH',{year:'numeric',month:'long',day:'numeric'});
  const lab={confirmed:'ยืนยันข้อมูลเดิม',edited:'แก้ไขข้อมูลใหม่แล้ว',pending:'ยังไม่ดำเนินการ'};
@@ -919,7 +980,7 @@ function bindDir(){
   const pb=(p,label,dis,cur)=>`<button class="btn ${cur?'':'sec '}sm" type="button" data-dpg="${p}"${dis?' disabled':''}${cur?' aria-current="page"':''}>${label}</button>`;
   const ps=[];for(let p=1;p<=tp;p++)if(p===1||p===tp||Math.abs(p-dpage)<=1)ps.push(p);
   const nums=[];ps.forEach((p,i)=>{if(i&&p-ps[i-1]>1)nums.push('<span style="padding:0 4px">…</span>');nums.push(pb(p,p,false,p===dpage))});
-  $('#dsum').innerHTML=sumHtml();
+  $('#dsum').innerHTML=sumHtml()+frHtml();
   $('#dpg').innerHTML=tp>1?`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:center;margin-top:12px">${pb(dpage-1,'‹ ก่อนหน้า',dpage<=1)}${nums.join('')}${pb(dpage+1,'ถัดไป ›',dpage>=tp)}</div>`:''};
  const rs=()=>{dpage=1;up()};
  q.oninput=rs;$('#da').onchange=rs;$('#ds').onchange=rs;
@@ -959,21 +1020,21 @@ function wgForm(){
  if(st.role==='staff'){const m=WGU.find(x=>x.cd===st.user);wgSel=m?m.cd:''}
  const u=WGU.find(x=>x.cd===wgSel)||null;if(u)wgAm=u.a;
  const r=u?wgOf(u):null,dis=u?'':' disabled';
- const ro=(l,v)=>`<label>${l}<input type="text" readonly tabindex="-1" value="${esc(v||'')}" placeholder="—" style="background:var(--acs)"></label>`;
+ const ro=(l,v,fw)=>`<label${fw?' class="fw"':''}>${l}<input type="text" readonly tabindex="-1" value="${esc(v||'')}" placeholder="—" style="background:var(--acs)"></label>`;
  const val=k=>r&&r[k]!=null?esc(r[k]):'';
- const sel=adm?`<label>อำเภอ<select id="wfa"><option value="">เลือกอำเภอ</option>${WGA.map(a=>`<option${a===wgAm?' selected':''}>${esc(a)}</option>`).join('')}</select></label>
- <label>ชื่อ รพ.สต.<select id="wfu"${wgAm?'':' disabled'}><option value="">${wgAm?'เลือก รพ.สต.':'เลือกอำเภอก่อน'}</option>${WGU.filter(x=>x.a===wgAm).map(x=>`<option value="${x.cd}"${x.cd===wgSel?' selected':''}>${esc(x.n)}</option>`).join('')}</select></label>
+ const sel=adm?`<label class="fw">อำเภอ<select id="wfa"><option value="">เลือกอำเภอ</option>${WGA.map(a=>`<option${a===wgAm?' selected':''}>${esc(a)}</option>`).join('')}</select></label>
+ <label class="fw">ชื่อ รพ.สต.<select id="wfu"${wgAm?'':' disabled'}><option value="">${wgAm?'เลือก รพ.สต.':'เลือกอำเภอก่อน'}</option>${WGU.filter(x=>x.a===wgAm).map(x=>`<option value="${x.cd}"${x.cd===wgSel?' selected':''}>${esc(x.n)}</option>`).join('')}</select></label>
  ${ro('รหัสสถานบริการ (5 หลัก)',u&&u.cd)}${ro('ขนาด',u&&u.s)}`
- :`${ro('รหัสสถานบริการ (5 หลัก)',u&&u.cd)}${ro('อำเภอ',u&&u.a)}${ro('ชื่อ รพ.สต.',u&&u.n)}${ro('ขนาด',u&&u.s)}`;
+ :`${ro('รหัสสถานบริการ (5 หลัก)',u&&u.cd)}${ro('อำเภอ',u&&u.a,1)}${ro('ชื่อ รพ.สต.',u&&u.n,1)}${ro('ขนาด',u&&u.s)}`;
  const d=r?wgDif(r):'';
  const who=r?`<div class="insight">✅ ${esc(u.n)} กรอกข้อมูลแล้ว · บันทึกล่าสุดโดย ${esc(r.by||'')}${r.at?' · '+esc(fmtAt(r.at)):''} (แก้ไขและบันทึกซ้ำได้)</div>`:'';
  return `${st.msg?`<div class="insight" role="status">${esc(st.msg)}</div>`:''}${!u&&!adm?'<div class="insight bad">ไม่พบ รพ.สต. ของบัญชีนี้ในรายการสำรวจ</div>':''}${who}
  <form id="wf" class="form" novalidate>${sel}
- <label>ลูกจ้าง พกส. (คน)<input type="text" name="p" inputmode="numeric" autocomplete="off" placeholder="เช่น 3" value="${val('p')}"${dis}></label>
- <label>ลูกจ้างชั่วคราว (คน)<input type="text" name="t" inputmode="numeric" autocomplete="off" placeholder="เช่น 2" value="${val('t')}"${dis}></label>
- <label>ค่าจ้างพนักงานจ้างทั้งหมด ก่อนปรับฐาน (บาท)<input type="text" name="b" inputmode="decimal" autocomplete="off" placeholder="เช่น 45000" value="${val('b')}"${dis}></label>
- <label>ค่าจ้างพนักงานจ้างทั้งหมด หลังปรับฐาน (บาท)<input type="text" name="a" inputmode="decimal" autocomplete="off" placeholder="เช่น 48000" value="${val('a')}"${dis}></label>
- <label>ส่วนต่างที่เพิ่มขึ้น (+) (บาท) · คำนวณอัตโนมัติ<input type="text" id="wdf" readonly tabindex="-1" value="${d===''?'':esc(wgSgn(d))}" placeholder="—" style="background:var(--acs)"></label>
+ <label>ลูกจ้าง พกส. (คน)<input type="text" name="p" inputmode="numeric" enterkeyhint="next" autocomplete="off" placeholder="เช่น 3" value="${val('p')}"${dis}></label>
+ <label>ลูกจ้างชั่วคราว (คน)<input type="text" name="t" inputmode="numeric" enterkeyhint="next" autocomplete="off" placeholder="เช่น 2" value="${val('t')}"${dis}></label>
+ <label class="fw">ค่าจ้างพนักงานจ้างทั้งหมด ก่อนปรับฐาน (บาท)<input type="text" name="b" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="เช่น 45000" value="${val('b')}"${dis}></label>
+ <label class="fw">ค่าจ้างพนักงานจ้างทั้งหมด หลังปรับฐาน (บาท)<input type="text" name="a" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="เช่น 48000" value="${val('a')}"${dis}></label>
+ <label class="fw wdl">ส่วนต่างที่เพิ่มขึ้น (+) (บาท) · คำนวณอัตโนมัติ<input type="text" id="wdf" readonly tabindex="-1" value="${d===''?'':esc(wgSgn(d))}" placeholder="—" style="background:var(--acs)"></label>
  <div class="actions full"><button class="btn" type="submit"${dis}>${r?'บันทึกการแก้ไข':'บันทึกข้อมูล'}</button><span class="err" id="wferr" role="alert"></span></div></form>`;
 }
 function bindWgForm(){
@@ -983,6 +1044,9 @@ function bindWgForm(){
  if(fa)fa.onchange=()=>{wgAm=fa.value;wgSel='';st.msg='';refresh()};
  if(fu)fu.onchange=()=>{wgSel=fu.value;st.msg='';refresh()};
  f.oninput=()=>{const b=wgNum(f.elements.b.value),a=wgNum(f.elements.a.value);$('#wdf').value=(isNaN(a)||isNaN(b))?'':wgSgn(Math.round((a-b)*100)/100)};
+ /* มือถือ: Enter = ไปช่องถัดไป (ไม่ส่งฟอร์มก่อนกรอกครบ) · แตะช่องแล้วเลือกข้อความทั้งช่อง และเลื่อนช่องให้พ้นคีย์บอร์ด/แถบเมนู */
+ f.addEventListener('keydown',e=>{if(e.key!=='Enter'||e.target.tagName!=='INPUT')return;const o=['p','t','b','a'],i=o.indexOf(e.target.name);if(i<0||i===3)return;e.preventDefault();f.elements[o[i+1]].focus()});
+ f.addEventListener('focusin',e=>{const t=e.target;if(t.tagName!=='INPUT'||t.readOnly)return;try{t.select()}catch(x){}setTimeout(()=>{try{t.scrollIntoView({block:'center',behavior:'smooth'})}catch(x){}},300)});
  f.onsubmit=e=>{
   e.preventDefault();const err=$('#wferr'),u=WGU.find(x=>x.cd===wgSel);
   if(!u){err.textContent='กรุณาเลือก รพ.สต.';return}
@@ -1329,6 +1393,11 @@ function run(){try{
  document.querySelectorAll('nav button[data-go] .i').forEach(s=>{if(s.dataset.s)return;s.dataset.s=1;s.innerHTML=svg(s.parentNode.dataset.go)});
  document.querySelectorAll('.hero h1').forEach(h=>{if(h.dataset.h)return;h.dataset.h=1;strip(h);h.insertAdjacentHTML('afterbegin','<span class="hic">'+svg(typeof st!=='undefined'?st.view:'dash')+'</span>')});
  document.querySelectorAll('.kpi').forEach(k=>{if(k.dataset.k)return;k.dataset.k=1;const i=[...k.parentNode.children].indexOf(k);k.insertAdjacentHTML('afterbegin','<span class="kic">'+svg(['users','gauge','alert','trend'][i%4])+'</span>')});
+
+ document.querySelectorAll('#utb,#wtb,#wtf').forEach(tb=>{const t=tb.closest('table');if(!t||!t.tHead)return;const h=[...t.tHead.rows[0].cells].map(x=>x.textContent.trim());
+  [...tb.rows].forEach(r=>{let i=0;[...r.cells].forEach(c=>{if(c.dataset.l===undefined){const tx=c.textContent.trim(),hd=h[i]||'';
+   if(/^(ชื่อ )?รพ\.สต\.$/.test(hd)){c.dataset.t='1';c.dataset.l=''}else c.dataset.l=(hd==='จัดการ'||hd==='ที่')?'':hd;
+   if(tx===''||tx==='–')c.dataset.e='1'}i+=c.colSpan||1})})});
  dock();
 }catch(e){console.warn(e)}}
 new MutationObserver(()=>{cancelAnimationFrame(raf);raf=requestAnimationFrame(run)}).observe(document.body,{childList:true,subtree:true});
