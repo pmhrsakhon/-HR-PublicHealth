@@ -996,7 +996,7 @@ const canWg=u=>!!u&&(st.role==='admin'||(st.role==='staff'&&!!st.user&&st.user==
 const wgAny=()=>st.role==='admin'||(st.role==='staff'&&WGU.some(u=>u.cd===st.user));
 const wgNum=v=>{const s=String(v==null?'':v).replace(/,/g,'').trim();if(s==='')return NaN;const n=Number(s);return isFinite(n)?n:NaN};
 const wgDif=x=>Math.round(((+x.a||0)-(+x.b||0))*100)/100;
-const wgSgn=n=>(n>0?'+':'')+f2(n);
+const wgYr=x=>Math.round(wgDif(x)*12*100)/100,wgSgn=n=>(n>0?'+':'')+f2(n);
 let wgSel='',wgAm='',wgq='',wgFa='',wgFs='',wgFst='',wgp=1;const WPER=15;
 async function wgSet(u,rec){if(!db){EDITS[WK(u)]=rec;eSave();return}await db.ref(EPATH+'/'+WK(u)).set(rec);EDITS[WK(u)]=rec}
 async function wgDelRec(u){if(!db){delete EDITS[WK(u)];eSave();return}await db.ref(EPATH+'/'+WK(u)).remove();delete EDITS[WK(u)]}
@@ -1019,9 +1019,10 @@ function wgForm(){
  <form id="wf" class="form" novalidate>${sel}
  <label>ลูกจ้าง พกส. (คน)<input type="text" name="p" inputmode="numeric" enterkeyhint="next" autocomplete="off" placeholder="เช่น 3" value="${val('p')}"${dis}></label>
  <label>ลูกจ้างชั่วคราว (คน)<input type="text" name="t" inputmode="numeric" enterkeyhint="next" autocomplete="off" placeholder="เช่น 2" value="${val('t')}"${dis}></label>
- <label class="fw">ค่าจ้างพนักงานจ้างทั้งหมด ก่อนปรับฐาน (บาท)<input type="text" name="b" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="เช่น 45000" value="${val('b')}"${dis}></label>
- <label class="fw">ค่าจ้างพนักงานจ้างทั้งหมด หลังปรับฐาน (บาท)<input type="text" name="a" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="เช่น 48000" value="${val('a')}"${dis}></label>
- <label class="fw wdl">ส่วนต่างที่เพิ่มขึ้น (+) (บาท) · คำนวณอัตโนมัติ<input type="text" id="wdf" readonly tabindex="-1" value="${d===''?'':esc(wgSgn(d))}" placeholder="—" style="background:var(--acs)"></label>
+ <label class="fw">ค่าจ้างพนักงานจ้างทั้งหมด ก่อนปรับฐาน (บาท)/เดือน<input type="text" name="b" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="เช่น 45000" value="${val('b')}"${dis}></label>
+ <label class="fw">ค่าจ้างพนักงานจ้างทั้งหมด หลังปรับฐาน (บาท)/เดือน<input type="text" name="a" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="เช่น 48000" value="${val('a')}"${dis}></label>
+ <label class="fw wdl">ส่วนต่างที่เพิ่มขึ้น (+) (บาท)/เดือน · คำนวณอัตโนมัติ<input type="text" id="wdf" readonly tabindex="-1" value="${d===''?'':esc(wgSgn(d))}" placeholder="—" style="background:var(--acs)"></label>
+ <label class="fw wdl">ส่วนต่างที่เพิ่มขึ้น (+) (บาท)/ปี · คำนวณอัตโนมัติ (ส่วนต่าง/เดือน × 12)<input type="text" id="wdy" readonly tabindex="-1" value="${d===''?'':esc(wgSgn(Math.round(d*12*100)/100))}" placeholder="—" style="background:var(--acs)"></label>
  <div class="actions full"><button class="btn" type="submit"${dis}>${r?'บันทึกการแก้ไข':'บันทึกข้อมูล'}</button><span class="err" id="wferr" role="alert"></span></div></form>`;
 }
 function bindWgForm(){
@@ -1030,7 +1031,7 @@ function bindWgForm(){
  const fa=$('#wfa'),fu=$('#wfu');
  if(fa)fa.onchange=()=>{wgAm=fa.value;wgSel='';st.msg='';refresh()};
  if(fu)fu.onchange=()=>{wgSel=fu.value;st.msg='';refresh()};
- f.oninput=()=>{const b=wgNum(f.elements.b.value),a=wgNum(f.elements.a.value);$('#wdf').value=(isNaN(a)||isNaN(b))?'':wgSgn(Math.round((a-b)*100)/100)};
+ f.oninput=()=>{const b=wgNum(f.elements.b.value),a=wgNum(f.elements.a.value),ok=!(isNaN(a)||isNaN(b)),d=ok?Math.round((a-b)*100)/100:0;$('#wdf').value=ok?wgSgn(d):'';$('#wdy').value=ok?wgSgn(Math.round(d*12*100)/100):''};
  /* มือถือ: Enter = ไปช่องถัดไป (ไม่ส่งฟอร์มก่อนกรอกครบ) · แตะช่องแล้วเลือกข้อความทั้งช่อง และเลื่อนช่องให้พ้นคีย์บอร์ด/แถบเมนู */
  f.addEventListener('keydown',e=>{if(e.key!=='Enter'||e.target.tagName!=='INPUT')return;const o=['p','t','b','a'],i=o.indexOf(e.target.name);if(i<0||i===3)return;e.preventDefault();f.elements[o[i+1]].focus()});
  f.addEventListener('focusin',e=>{const t=e.target;if(t.tagName!=='INPUT'||t.readOnly)return;try{t.select()}catch(x){}setTimeout(()=>{try{t.scrollIntoView({block:'center',behavior:'smooth'})}catch(x){}},300)});
@@ -1050,9 +1051,9 @@ function bindWgForm(){
  };
 }
 function wgAmphoeTable(){
- const rows=WGA.map(a=>{const l=WGU.filter(u=>u.a===a),s=wgSum(l);return[a,l.length,s.n,f(s.p),f(s.t),f2(s.b),f2(s.a),wgSgn(s.a-s.b)]});
+ const rows=WGA.map(a=>{const l=WGU.filter(u=>u.a===a),s=wgSum(l);return[a,l.length,s.n,f(s.p),f(s.t),f2(s.b),f2(s.a),wgSgn(s.a-s.b),wgSgn((s.a-s.b)*12)]});
  const T=wgSum(WGU);
- return tbl(['อำเภอ','รพ.สต. (แห่ง)','กรอกแล้ว (แห่ง)','พกส. (คน)','ลูกจ้างชั่วคราว (คน)','ค่าจ้างก่อนปรับฐาน','ค่าจ้างหลังปรับฐาน','ส่วนต่างที่เพิ่มขึ้น (+)'],[...rows,['รวม',WGU.length,T.n,f(T.p),f(T.t),f2(T.b),f2(T.a),wgSgn(T.a-T.b)]]);
+ return tbl(['อำเภอ','รพ.สต. (แห่ง)','กรอกแล้ว (แห่ง)','พกส. (คน)','ลูกจ้างชั่วคราว (คน)','ค่าจ้างก่อนปรับฐาน (บาท)/เดือน','ค่าจ้างหลังปรับฐาน (บาท)/เดือน','ส่วนต่างที่เพิ่มขึ้น (+) (บาท)/เดือน','ส่วนต่างที่เพิ่มขึ้น (+) (บาท)/ปี'],[...rows,['รวม',WGU.length,T.n,f(T.p),f(T.t),f2(T.b),f2(T.a),wgSgn(T.a-T.b),wgSgn((T.a-T.b)*12)]]);
 }
 function wgPage(){
  const T=wgSum(WGU),pc=Math.round(T.n/WGU.length*100),adm=st.role==='admin';
@@ -1060,12 +1061,12 @@ function wgPage(){
   :`<div class="glass card"><div class="insight">${st.role==='exec'?'บทบาทผู้บริหารดูข้อมูลและดาวน์โหลด Excel ได้ · การกรอกข้อมูลทำได้เฉพาะเจ้าหน้าที่ รพ.สต. (ชื่อผู้ใช้ = รหัส 5 หลัก) และผู้ดูแลระบบ':'บัญชีนี้ไม่มีสิทธิ์กรอกข้อมูลในหน้านี้'}</div></div>`;
  const act=wgAny();
  return `<div class="glass hero"><h1>💰 สำรวจค่าจ้างลูกจ้างฯ.หลังปรับฐาน</h1><p class="sub">ข้อมูลรายโรงพยาบาลส่งเสริมสุขภาพตำบล ตามแบบตาราง Excel · ขอบเขต: ${SCOPE[st.role]}</p><div class="hchips"><span>${WGU.length} รพ.สต.</span><span>${WGA.length} อำเภอ</span><span>กรอกแล้ว ${T.n} แห่ง</span></div></div>
- <div class="kpis"><div class="glass kpi"><b>${T.n}/${WGU.length}</b><span>รพ.สต. ที่กรอกแล้ว (ร้อยละ ${pc})</span></div><div class="glass kpi"><b>${f2(T.b)}</b><span>ค่าจ้างรวมก่อนปรับฐาน (บาท)</span></div><div class="glass kpi"><b>${f2(T.a)}</b><span>ค่าจ้างรวมหลังปรับฐาน (บาท)</span></div><div class="glass kpi"><b>${wgSgn(T.a-T.b)}</b><span>ส่วนต่างที่เพิ่มขึ้น (บาท) · พกส. ${f(T.p)} คน · ชั่วคราว ${f(T.t)} คน</span></div></div>
+ <div class="kpis"><div class="glass kpi"><b>${T.n}/${WGU.length}</b><span>รพ.สต. ที่กรอกแล้ว (ร้อยละ ${pc})</span></div><div class="glass kpi"><b>${f2(T.b)}</b><span>ค่าจ้างรวมก่อนปรับฐาน (บาท/เดือน)</span></div><div class="glass kpi"><b>${f2(T.a)}</b><span>ค่าจ้างรวมหลังปรับฐาน (บาท/เดือน)</span></div><div class="glass kpi"><b>${wgSgn(T.a-T.b)}</b><span>ส่วนต่างที่เพิ่มขึ้น (บาท/เดือน) · ปีละ ${wgSgn((T.a-T.b)*12)} บาท · พกส. ${f(T.p)} คน · ชั่วคราว ${f(T.t)} คน</span></div></div>
  ${form}
  <div class="glass card"><h2>ตารางข้อมูลรายโรงพยาบาลส่งเสริมสุขภาพตำบล</h2>
  <div class="fl"><input id="wq" type="search" value="${esc(wgq)}" placeholder="ค้นหาชื่อ รพ.สต. อำเภอ หรือรหัส 5 หลัก" aria-label="ค้นหา"><select id="wa2" aria-label="อำเภอ"><option value="">ทุกอำเภอ</option>${WGA.map(a=>`<option${a===wgFa?' selected':''}>${esc(a)}</option>`).join('')}</select><select id="ws2" aria-label="ขนาด"><option value="">ทุกขนาด</option>${[['L','ขนาดใหญ่ (L)'],['M','ขนาดกลาง (M)'],['S','ขนาดเล็ก (S)']].map(x=>`<option value="${x[0]}"${x[0]===wgFs?' selected':''}>${x[1]}</option>`).join('')}</select><select id="wst" aria-label="สถานะ"><option value="">ทุกสถานะ</option><option value="done"${wgFst==='done'?' selected':''}>กรอกแล้ว</option><option value="todo"${wgFst==='todo'?' selected':''}>ยังไม่กรอก</option></select><button class="btn" type="button" data-wg="xlsx">ดาวน์โหลด Excel</button></div>
  <p class="note" id="wcnt" style="margin:0 0 8px"></p>
- <div class="tw" style="max-height:none"><table><thead><tr>${['ที่','รหัส 5 หลัก','อำเภอ','ชื่อ รพ.สต.','ขนาด','ลูกจ้าง พกส. (คน)','ลูกจ้างชั่วคราว (คน)','ค่าจ้างก่อนปรับฐาน (บาท)','ค่าจ้างหลังปรับฐาน (บาท)','ส่วนต่างที่เพิ่มขึ้น (+)','สถานะ'].map(x=>`<th>${x}</th>`).join('')}${act?'<th>จัดการ</th>':''}</tr></thead><tbody id="wtb"></tbody><tfoot id="wtf"></tfoot></table></div><div id="wpg"></div></div>
+ <div class="tw" style="max-height:none"><table><thead><tr>${['ที่','รหัส 5 หลัก','อำเภอ','ชื่อ รพ.สต.','ขนาด','ลูกจ้าง พกส. (คน)','ลูกจ้างชั่วคราว (คน)','ค่าจ้างก่อนปรับฐาน (บาท)/เดือน','ค่าจ้างหลังปรับฐาน (บาท)/เดือน','ส่วนต่างที่เพิ่มขึ้น (+) (บาท)/เดือน','ส่วนต่างที่เพิ่มขึ้น (+) (บาท)/ปี','สถานะ'].map(x=>`<th>${x}</th>`).join('')}${act?'<th>จัดการ</th>':''}</tr></thead><tbody id="wtb"></tbody><tfoot id="wtf"></tfoot></table></div><div id="wpg"></div></div>
  <div class="glass card"><h2>สรุปรายอำเภอ</h2>${wgAmphoeTable()}<p class="note">นับรวมเฉพาะ รพ.สต. ที่กรอกข้อมูลแล้ว</p></div>`;
 }
 function bindWg(){
@@ -1075,11 +1076,11 @@ function bindWg(){
   const all=wgFilter(),tp=Math.max(1,Math.ceil(all.length/WPER));if(wgp>tp)wgp=tp;if(wgp<1)wgp=1;
   const s0=(wgp-1)*WPER,r=all.slice(s0,s0+WPER),act=wgAny(),blank='<td class="n"></td>';
   $('#wtb').innerHTML=r.length?r.map(u=>{const x=wgOf(u);
-   const nums=x?`<td class="n">${f(+x.p||0)}</td><td class="n">${f(+x.t||0)}</td><td class="n">${f2(x.b)}</td><td class="n">${f2(x.a)}</td><td class="n">${wgSgn(wgDif(x))}</td>`:blank.repeat(5);
+   const nums=x?`<td class="n">${f(+x.p||0)}</td><td class="n">${f(+x.t||0)}</td><td class="n">${f2(x.b)}</td><td class="n">${f2(x.a)}</td><td class="n">${wgSgn(wgDif(x))}</td><td class="n">${wgSgn(wgYr(x))}</td>`:blank.repeat(6);
    const stt=x?`<span role="img" aria-label="กรอกแล้ว" title="${esc(x.by||'')} ${esc(fmtAt(x.at))}">${DOT}</span> <small>กรอกแล้ว</small>`:'<small style="opacity:.65">ยังไม่กรอก</small>';
    const ac=act?`<td>${canWg(u)?`<button class="btn sec sm" type="button" data-wg="edit" data-c="${u.cd}">${x?'แก้ไข':'กรอกข้อมูล'}</button>`:''}${x&&st.role==='admin'?` <button class="btn sec sm" type="button" data-wg="del" data-c="${u.cd}">ลบ</button>`:''}</td>`:'';
-   return `<tr><td>${u.i+1}</td><td>${u.cd}</td><td>${esc(u.a)}</td><td>${esc(u.n)}</td><td>${u.s}</td>${nums}<td>${stt}</td>${ac}</tr>`}).join(''):`<tr><td colspan="${act?12:11}" class="empty">ไม่พบรายการ</td></tr>`;
-  const row=(lab,s)=>`<tr class="tot"><td colspan="5">${lab}</td><td class="n">${f(s.p)}</td><td class="n">${f(s.t)}</td><td class="n">${f2(s.b)}</td><td class="n">${f2(s.a)}</td><td class="n">${wgSgn(s.a-s.b)}</td><td colspan="${act?2:1}"></td></tr>`;
+   return `<tr><td>${u.i+1}</td><td>${u.cd}</td><td>${esc(u.a)}</td><td>${esc(u.n)}</td><td>${u.s}</td>${nums}<td>${stt}</td>${ac}</tr>`}).join(''):`<tr><td colspan="${act?13:12}" class="empty">ไม่พบรายการ</td></tr>`;
+  const row=(lab,s)=>`<tr class="tot"><td colspan="5">${lab}</td><td class="n">${f(s.p)}</td><td class="n">${f(s.t)}</td><td class="n">${f2(s.b)}</td><td class="n">${f2(s.a)}</td><td class="n">${wgSgn(s.a-s.b)}</td><td class="n">${wgSgn((s.a-s.b)*12)}</td><td colspan="${act?2:1}"></td></tr>`;
   $('#wtf').innerHTML=(all.length<WGU.length?row('รวมตามผลการค้นหา ('+all.length+' แห่ง)',wgSum(all)):'')+row('รวมทั้งหมด ('+WGU.length+' แห่ง)',wgSum(WGU));
   $('#wcnt').textContent=all.length?'แสดงแห่งที่ '+(s0+1)+'–'+(s0+r.length)+' จากที่ค้นพบ '+all.length+' แห่ง (ทั้งหมด '+WGU.length+' แห่ง) · หน้า '+wgp+'/'+tp:'ไม่พบรายการ (ทั้งหมด '+WGU.length+' แห่ง)';
   const pb=(p,label,dis,cur)=>`<button class="btn ${cur?'':'sec '}sm" type="button" data-wpg="${p}"${dis?' disabled':''}${cur?' aria-current="page"':''}>${label}</button>`;
@@ -1102,16 +1103,17 @@ $('#view').addEventListener('click',e=>{
 });
 function wgXlsx(){
  if(!window.XLSX){alert('โหลดตัวสร้างไฟล์ Excel ไม่ได้ (ต้องเชื่อมต่ออินเทอร์เน็ต)');return}
- const H=['ลำดับ','รหัสสถานบริการ (5 หลัก)','อำเภอ','ชื่อ รพ.สต.','ขนาด','ลูกจ้าง พกส. (คน)','ลูกจ้างชั่วคราว (คน)','ค่าจ้างพนักงานจ้างทั้งหมด (ก่อนปรับฐาน)','ค่าจ้างพนักงานจ้างทั้งหมด (หลังปรับฐาน)','ส่วนต่างที่เพิ่มขึ้น (+)'];
- const R=WGU.map(u=>{const x=wgOf(u);return[u.i+1,u.cd,u.a,u.n,u.s,x?+x.p:null,x?+x.t:null,x?+x.b:null,x?+x.a:null,null]});
- const last=R.length+1,T=wgSum(WGU),ws=XLSX.utils.aoa_to_sheet([H,...R,['','','','','รวม',null,null,null,null,null]]);
- WGU.forEach((u,k)=>{const x=wgOf(u),r=k+2;ws['J'+r]={t:'n',f:`I${r}-H${r}`,v:x?wgDif(x):0}});
+ const H=['ลำดับ','รหัสสถานบริการ (5 หลัก)','อำเภอ','ชื่อ รพ.สต.','ขนาด','ลูกจ้าง พกส. (คน)','ลูกจ้างชั่วคราว (คน)','ค่าจ้างพนักงานจ้างทั้งหมด (ก่อนปรับฐาน) (บาท)/เดือน','ค่าจ้างพนักงานจ้างทั้งหมด (หลังปรับฐาน) (บาท)/เดือน','ส่วนต่างที่เพิ่มขึ้น (+) (บาท)/เดือน','ส่วนต่างที่เพิ่มขึ้น (+) (บาท)/ปี'];
+ const R=WGU.map(u=>{const x=wgOf(u);return[u.i+1,u.cd,u.a,u.n,u.s,x?+x.p:null,x?+x.t:null,x?+x.b:null,x?+x.a:null,null,null]});
+ const last=R.length+1,T=wgSum(WGU),ws=XLSX.utils.aoa_to_sheet([H,...R,['','','','','รวม',null,null,null,null,null,null]]);
+ WGU.forEach((u,k)=>{const x=wgOf(u),r=k+2;ws['J'+r]={t:'n',f:`I${r}-H${r}`,v:x?wgDif(x):0};ws['K'+r]={t:'n',f:`J${r}*12`,v:x?wgYr(x):0}});
  [['F','p'],['G','t'],['H','b'],['I','a']].forEach(([c,k])=>{ws[c+(last+1)]={t:'n',f:`SUM(${c}2:${c}${last})`,v:T[k]}});
  ws['J'+(last+1)]={t:'n',f:`SUM(J2:J${last})`,v:Math.round((T.a-T.b)*100)/100};
- ws['!cols']=[{wch:8},{wch:14},{wch:16},{wch:34},{wch:8},{wch:16},{wch:18},{wch:24},{wch:24},{wch:20}];
- const A=[['อำเภอ','จำนวน รพ.สต.','กรอกแล้ว (แห่ง)','ลูกจ้าง พกส. (คน)','ลูกจ้างชั่วคราว (คน)','ค่าจ้างก่อนปรับฐาน','ค่าจ้างหลังปรับฐาน','ส่วนต่างที่เพิ่มขึ้น (+)'],
-  ...WGA.map(a=>{const l=WGU.filter(u=>u.a===a),s=wgSum(l);return[a,l.length,s.n,s.p,s.t,s.b,s.a,Math.round((s.a-s.b)*100)/100]}),
-  ['รวม',WGU.length,T.n,T.p,T.t,T.b,T.a,Math.round((T.a-T.b)*100)/100]];
+ ws['K'+(last+1)]={t:'n',f:`SUM(K2:K${last})`,v:Math.round((T.a-T.b)*12*100)/100};
+ ws['!cols']=[{wch:8},{wch:14},{wch:16},{wch:34},{wch:8},{wch:16},{wch:18},{wch:24},{wch:24},{wch:20},{wch:20}];
+ const A=[['อำเภอ','จำนวน รพ.สต.','กรอกแล้ว (แห่ง)','ลูกจ้าง พกส. (คน)','ลูกจ้างชั่วคราว (คน)','ค่าจ้างก่อนปรับฐาน (บาท)/เดือน','ค่าจ้างหลังปรับฐาน (บาท)/เดือน','ส่วนต่างที่เพิ่มขึ้น (+) (บาท)/เดือน','ส่วนต่างที่เพิ่มขึ้น (+) (บาท)/ปี'],
+  ...WGA.map(a=>{const l=WGU.filter(u=>u.a===a),s=wgSum(l);return[a,l.length,s.n,s.p,s.t,s.b,s.a,Math.round((s.a-s.b)*100)/100,Math.round((s.a-s.b)*12*100)/100]}),
+  ['รวม',WGU.length,T.n,T.p,T.t,T.b,T.a,Math.round((T.a-T.b)*100)/100,Math.round((T.a-T.b)*12*100)/100]];
  const ws2=XLSX.utils.aoa_to_sheet(A);ws2['!cols']=widths(A);
  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'รายรพ.สต.');XLSX.utils.book_append_sheet(wb,ws2,'สรุปรายอำเภอ');
  XLSX.writeFile(wb,'สำรวจค่าจ้างลูกจ้างฯ_หลังปรับฐาน.xlsx');
