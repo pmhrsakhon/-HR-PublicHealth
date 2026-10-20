@@ -403,6 +403,7 @@ async function uploadImage(file){
 }
 const MENUS=[
 {id:'dash',t:'ภาพรวมและข้อมูลเชิงลึกจาก AI',s:'ภาพรวม',i:'📊'},
+{id:'gov',t:'ภาพรวมอัตรากำลังวิเคราะห์เฉพาะจำนวนข้าราชการเท่านั้น',s:'เฉพาะข้าราชการ',i:'🏛️'},
 {id:'hr',t:'งานบริหารทรัพยากรบุคคล',s:'งานบุคคล',i:'🗂️'},
 {id:'dir',p:'hr',t:'ข้อมูลอัตรากำลัง',s:'อัตรากำลัง',i:'👥'},
 {id:'ps',p:'hr',t:'สำรวจลูกจ้าง พว.วิชาชีพ แพทย์แผนไทย จพ.ทันตกรรม',s:'สำรวจลูกจ้าง',i:'🩺'},
@@ -412,7 +413,7 @@ const MENUS=[
 {id:'wel',t:'สวัสดิการและบริการ',s:'สวัสดิการ',i:'🛠️'},
 {id:'users',t:'จัดการผู้ใช้งาน',s:'ผู้ใช้',i:'🔐'}];
 /* RBAC: สิทธิ์การมองเห็นเมนูตามบทบาท (ฝั่งจริงต้องบังคับที่ API/DB ด้วย) */
-const CAN={admin:['dash','dir','ps','wg','hr','hrd','wel','survey','users'],exec:['dash','dir','ps','wg','hr','hrd','wel','survey'],staff:['dash','dir','ps','wg','hr','hrd','wel','survey'],guest:['dash']};
+const CAN={admin:['dash','gov','dir','ps','wg','hr','hrd','wel','survey','users'],exec:['dash','gov','dir','ps','wg','hr','hrd','wel','survey'],staff:['dash','gov','dir','ps','wg','hr','hrd','wel','survey'],guest:['dash','gov']};
 const SCOPE={admin:'ทั้งกอง · 149 รพ.สต. + ส่วนกลาง',exec:'ทั้งกอง · 149 รพ.สต. + ส่วนกลาง',staff:'ทั้งกอง · 149 รพ.สต. + ส่วนกลาง',guest:'ทั้งกอง · 149 รพ.สต. (ดูภาพรวมอย่างเดียว)'};
 const COURSES=[
 {id:'np',n:'อบรมเวชปฏิบัติสาขาการพยาบาลเวชปฏิบัติทั่วไป (การรักษาโรคเบื้องต้น)',s:'เวชปฏิบัติ'},
@@ -449,7 +450,7 @@ function go(id){
 }
 function render(){
  const v=st.view;
- $('#view').innerHTML=v==='dash'?dash():v==='hr'?hrPage():v==='hrd'?hrdPage():v==='survey'?survey():v==='dir'?dirPage():v==='wg'?wgPage():v==='ps'?psPage():v==='users'?usersPage():stub(v);
+ $('#view').innerHTML=v==='dash'?dash():v==='gov'?govPage():v==='hr'?hrPage():v==='hrd'?hrdPage():v==='survey'?survey():v==='dir'?dirPage():v==='wg'?wgPage():v==='ps'?psPage():v==='users'?usersPage():stub(v);
  if(v==='survey')bindSurvey();
  if(v==='dir')bindDir();
  if(v==='wg')bindWg();
@@ -891,7 +892,7 @@ function dirPdf(){
 if(db){db.ref(EPATH).on('value',snap=>{
  EDITS=snap.val()||{};applyAll();
  const ae=document.activeElement,typing=ae&&ae.closest&&ae.closest('.fl,#wf,#psf');
- if(!typing&&!(st.view==='ps'&&psDirty)&&(st.view==='dir'||st.view==='dash'||st.view==='wg'||st.view==='ps')&&!$('#ud').open)render();
+ if(!typing&&!(st.view==='ps'&&psDirty)&&(st.view==='dir'||st.view==='dash'||st.view==='gov'||st.view==='wg'||st.view==='ps')&&!$('#ud').open)render();
 },e=>console.warn(fbErr(e)))}
 const eWho=u=>u.ed?`แก้ไขล่าสุดโดย ${esc(u.ed.by)}${u.ed.at?' · '+new Date(u.ed.at).toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'}):''}`:'';
 
@@ -1357,6 +1358,83 @@ function dash(){
  <p class="note">วิเคราะห์ด้วยกฎคำนวณจากข้อมูลจริงในระบบ (ยังไม่ได้เชื่อมบริการ <code>/api/ai/insights</code>)</p></div></div>
  <div class="glass card"><h2>รพ.สต. ที่ควรเร่งดูแลก่อน 10 แห่ง</h2><p class="note" style="margin:0 0 10px">จัดอันดับจากปัจจัยเสี่ยง: ไม่มี ผอ., ไม่มีพยาบาล, ข้าราชการน้อย, ผอ.ใกล้เกษียณ และจำนวนอัตราที่ขาด · คลิกแถวเพื่อดูรายละเอียด</p><div class="tw"><table><thead><tr>${['ที่','รหัส','รพ.สต.','อำเภอ','ครองกรอบ','ขาด (อัตรา)','ผอ.','พยาบาล','ปัจจัยเสี่ยง'].map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${tb}</tbody></table></div>${canSee()?'<div class="actions"><button class="btn" data-act="go" data-i="dir">ดูข้อมูลอัตรากำลังทั้งหมด</button></div>':''}</div>`;
 }
+/* ===== หน้า ภาพรวมอัตรากำลังวิเคราะห์เฉพาะจำนวนข้าราชการเท่านั้น: นับเฉพาะข้าราชการ ไม่รวมพนักงานจ้างทุกประเภท (พกส./ลจช./นอกกรอบ/จ้างเหมา) ===== */
+const gsum=(k,j)=>D.reduce((x,u)=>x+((u[k]||[])[j]||0),0);
+function govAna(){
+ const a=ana(),n=D.length;
+ D.forEach(u=>{
+  u.gdr=(u.G[0]||0)+(u.G[1]||0)+(u.G[2]||0);u.gn=(u.G[1]||0)+(u.G[3]||0);u.ggap=u.fr-u.gt;u.gp=pc0(u.gt,u.fr);u.hire=u.ft+u.ct;
+  const t=[];
+  if(!u.gdr)t.push(['ไม่มี ผอ. ข้าราชการ',1]);
+  if(!u.gn)t.push(['ไม่มีพยาบาลข้าราชการ',1]);else if(u.gn===1)t.push(['พยาบาลข้าราชการ 1 คน',0]);
+  if(u.gt<=2)t.push(['ข้าราชการ ≤ 2 คน',1]);
+  if(u.rt&&u.gdr)t.push(['ผอ.เกษียณ',1]);
+  if(u.gp<30)t.push(['ครองกรอบ ขรก. < 30%',0]);
+  if(u.gt<u.hire)t.push(['พนักงานจ้างมากกว่า ขรก.',0]);
+  u.gt2=t;
+  u.gsc=(u.gdr?0:3)+(u.gn?(u.gn===1?1.5:0):4)+(u.gt<=2?2:0)+(u.rt&&u.gdr?2:0)+(u.gp<30?1:0)+Math.max(0,u.ggap)*.3;
+ });
+ const GT=a.gt,FR=a.fr,FC=S(D,'fc'),HIRE=a.ft+a.ct;
+ const vs=D.map(u=>u.gt).sort((x,y)=>x-y),med=n?(n%2?vs[(n-1)/2]:(vs[n/2-1]+vs[n/2])/2):0;
+ const bk=[['ไม่เกิน 2 คน',u=>u.gt<=2],['3 คน',u=>u.gt===3],['4–5 คน',u=>u.gt>=4&&u.gt<=5],['6–7 คน',u=>u.gt>=6&&u.gt<=7],['8 คนขึ้นไป',u=>u.gt>=8]].map(([l,fn])=>[l,D.filter(fn).length]);
+ const am=AM.map(x=>{const d=D.filter(u=>u.a===x),g=S(d,'gt'),r=S(d,'fr');return{a:x,n:d.length,g,fr:r,p:pc0(g,r),gap:r-g,nod:d.filter(u=>!u.gdr).length,g2:d.filter(u=>u.gt<=2).length}}).sort((x,y)=>x.p-y.p);
+ const sz=['L','M','S'].map(s=>{const d=D.filter(u=>u.s===s),g=S(d,'gt'),r=S(d,'fr');return{l:{L:'ขนาดใหญ่ (L)',M:'ขนาดกลาง (M)',S:'ขนาดเล็ก (S)'}[s],n:d.length,g,fr:r,p:pc0(g,r),avg:d.length?(g/d.length).toFixed(1):'0',fav:d.length?(r/d.length).toFixed(1):'0'}}).filter(x=>x.n);
+ const g=j=>gsum('G',j),F=j=>gsum('F',j),C=j=>gsum('C',j);
+ const ln=[['ผอ.รพ.สต. (ทุกสายวิชาชีพ)',g(0)+g(1)+g(2),0],['พยาบาลวิชาชีพ (ไม่รวม ผอ.)',g(3),F(0)+F(1)+C(0)],['นักวิชาการสาธารณสุข (ไม่รวม ผอ.)',g(4),F(2)+F(3)+C(1)],['เจ้าพนักงานสาธารณสุข (ไม่รวม ผอ.)',g(8),0],['แพทย์แผนไทย',g(7),F(8)+F(9)+C(2)],['ทันตสาธารณสุข',g(5)+g(6),F(4)+F(5)+F(6)+F(7)],['เจ้าพนักงานธุรการ / การเงิน',g(9),F(10)+F(11)+C(4)+C(5)],['เภสัชกรรม',g(10),F(12)+F(13)+C(11)]].map(r=>({l:r[0],g:r[1],h:r[2],sh:pc0(r[1],r[1]+r[2])})).filter(r=>r.g+r.h>0);
+ const need=fn=>D.reduce((x,u)=>x+Math.max(0,fn(u)),0);
+ const sc=[
+  ['ทุกแห่งมี ผอ.รพ.สต. ข้าราชการอย่างน้อย 1 คน',need(u=>u.gdr?0:1)],
+  ['ทุกแห่งมีพยาบาลวิชาชีพข้าราชการอย่างน้อย 1 คน',need(u=>u.gn?0:1)],
+  ['ทุกแห่งมีข้าราชการอย่างน้อย 3 คน',need(u=>3-u.gt)],
+  ['ทุกแห่งมีข้าราชการไม่ต่ำกว่า 50% ของกรอบ',need(u=>Math.ceil(u.fr*.5)-u.gt)],
+  ['เติมช่องว่างกรอบทั้งหมดด้วยข้าราชการ (กรณีสูงสุด)',need(u=>u.fr-u.gt)]
+ ].map(r=>[r[0],r[1],pc0(GT+r[1],FR)]);
+ const lnH=ln.filter(r=>r.h>0).sort((x,y)=>x.sh-y.sh);
+ const pri=[...D].sort((x,y)=>y.gsc-x.gsc).slice(0,10);
+ return{a,n,GT,FR,GAP:FR-GT,P:pc0(GT,FR),FC,HIRE,avg:n?GT/n:0,med,bk,am,sz,ln,sc,lnH,pri,
+  nod:D.filter(u=>!u.gdr),gn0:D.filter(u=>!u.gn),gn1:D.filter(u=>u.gn===1),g2:D.filter(u=>u.gt<=2),g1:D.filter(u=>u.gt<=1),
+  lowp:D.filter(u=>u.gp<30),dep:D.filter(u=>u.gt<u.hire)};
+}
+function govPage(){
+ const x=govAna(),a=x.a,n=x.n,low=x.am.slice(0,3),hi=x.am[x.am.length-1],spread=hi.p-x.am[0].p,lsz=[...x.sz].sort((p,q)=>p.p-q.p)[0],ll=x.lnH[0];
+ const nodk=a.nodk.length,nodn=a.nodn.length;
+ const ins=(c,t,body,act)=>`<div class="insight ${c}"><b>${t}</b><br>${body}${act?`<span class="act">▶ ควรทำ: ${act}</span>`:''}</div>`;
+ const mx=Math.max(...x.bk.map(r=>r[1]),1);
+ const hist=x.bk.map(r=>`<div class="bar"><span>${r[0]}</span><div class="track"><div class="fill" style="width:${r[1]/mx*100}%"></div></div><b>${r[1]} แห่ง</b></div>`).join('');
+ const pbar=r=>`<div class="bar"><span>${esc(r.a||r.l)}<small>ข้าราชการ ${f(r.g)} จากกรอบ ${f(r.fr)} · ขาด ${f(r.fr-r.g)} อัตรา${r.avg?' · เฉลี่ย '+r.avg+' คน/แห่ง':''}</small></span><div class="track"><div class="fill" style="width:${r.p}%"></div></div><b>${r.p}%</b></div>`;
+ const lnTb=x.ln.map(r=>`<tr><td>${esc(r.l)}</td><td class="n">${f(r.g)}</td><td class="n">${f(r.h)}</td><td class="n">${r.h?r.sh+'%':'–'}</td></tr>`).join('');
+ const scTb=x.sc.map(r=>`<tr><td>${esc(r[0])}</td><td class="n">${f(r[1])}</td><td class="n">${r[2]}%</td></tr>`).join('');
+ const tb=x.pri.map((u,i)=>`<tr${canSee()?` data-act="unit" data-i="${u.i}"`:''}><td>${i+1}</td><td>${esc(u.n)}</td><td>${esc(u.a)}</td><td class="n">${u.gt}/${u.fr}</td><td class="n">${u.gp}%</td><td class="n">${u.gdr?'มี':'<b style="color:var(--bad)">ไม่มี</b>'}</td><td class="n">${u.gn}</td><td class="n">${u.hire}</td><td>${u.gt2.map(t=>`<span class="tag${t[1]?' r':''}">${t[0]}</span>`).join('')}</td></tr>`).join('');
+ const rec=(tag,cls,body)=>`<li><span class="tag${cls}">${tag}</span> ${body}</li>`;
+ return `<div class="glass hero"><h1>🏛️ ภาพรวมอัตรากำลัง (เฉพาะข้าราชการ)</h1><p class="sub">นับเฉพาะข้าราชการ ไม่รวม พกส. ลูกจ้างชั่วคราว จ้างนอกกรอบ และจ้างเหมาบริการ · ขอบเขต: ${SCOPE[st.role]} · ข้อมูล ณ วันที่ ${AS_OF}</p><div class="hchips"><span>${n} รพ.สต.</span><span>${AM.length} อำเภอ</span><span>ข้าราชการ ${f(x.GT)} คน</span></div></div>
+ <div class="kpis"><div class="glass kpi"><b>${f(x.GT)}</b><span>ข้าราชการทั้งหมด (คน) · เฉลี่ย ${x.avg.toFixed(1)} คน/แห่ง · มัธยฐาน ${x.med}</span></div><div class="glass kpi"><b>${x.P}%</b><span>ข้าราชการต่อกรอบอัตรากำลัง ${f(x.FR)} · ขาด ${f(x.GAP)} อัตรา</span></div><div class="glass kpi"><b>${x.nod.length}</b><span>รพ.สต. ที่ไม่มี ผอ. ข้าราชการ</span></div><div class="glass kpi"><b>${x.g2.length}</b><span>รพ.สต. ที่มีข้าราชการไม่เกิน 2 คน</span></div></div>
+ <div class="glass card" id="govsum"><h2>สรุปสำหรับผู้บริหาร (AI วิเคราะห์เฉพาะข้าราชการ)</h2>
+ <p style="margin:0 0 8px;font-weight:500">ข้าราชการมี ${f(x.GT)} คน ใน ${n} รพ.สต. คิดเป็น ${x.P}% ของกรอบ ${f(x.FR)} อัตรา (ขาด ${f(x.GAP)} อัตรา) พนักงานจ้างตามกรอบ ${f(x.FC)} คนช่วยเติมให้ครองกรอบรวมเป็น ${a.p}% แต่ยังไม่ใช่ข้าราชการ จุดเสี่ยงหลักคือ ผอ.รพ.สต. ที่เป็นข้าราชการขาด ${x.nod.length} แห่ง (${pc0(x.nod.length,n)}%) และ รพ.สต. ที่มีข้าราชการไม่เกิน 2 คน ${x.g2.length} แห่ง</p>
+ <h3>ข้อมูลเชิงลึก</h3>
+ ${ins('bad','ข้าราชการครองกรอบเพียง '+x.P+'% ('+f(x.GT)+' จาก '+f(x.FR)+')','เมื่อนับรวมพนักงานจ้างตามกรอบอีก '+f(x.FC)+' คน จะเป็น '+a.p+'% · พนักงานจ้างทุกประเภทรวม '+f(x.HIRE)+' คน เทียบกับข้าราชการ '+f(x.GT)+' คน · ไม่มี รพ.สต. ใดมีข้าราชการครบกรอบด้วยตนเอง','ใช้ช่องว่างของข้าราชการเป็นฐานจัดทำแผนบรรจุ/ขอกรอบ แยกจากช่องว่างที่พนักงานจ้างชดเชยอยู่')}
+ ${ins('bad','ผอ.รพ.สต. ข้าราชการขาด '+x.nod.length+' แห่ง ('+pc0(x.nod.length,n)+'%)',nodk+' แห่งมี รก.ผอ. ตามหมายเหตุ'+(nodn?' · ยังไม่ระบุผู้รักษาการ '+nodn+' แห่ง ('+lst(a.nodn,4)+')':'')+(a.rt1.length?'<br>ผอ.ที่มีหมายเหตุเกษียณและยังนับอยู่ในข้อมูล '+a.rt1.length+' แห่ง: '+lst(a.rt1,4):''),'แต่งตั้งผู้รักษาการให้ครบและวางแผนสรรหา/เลื่อน ผอ. ล่วงหน้า')}
+ ${ins('bad','ฐานข้าราชการบางแห่งบางมาก','ไม่เกิน 2 คน '+x.g2.length+' แห่ง ('+pc0(x.g2.length,n)+'%)'+(x.g1.length?' โดยมีเพียง 1 คน '+x.g1.length+' แห่ง ('+lst(x.g1,3)+')':'')+' · ข้าราชการเฉลี่ย '+x.avg.toFixed(1)+' คน/แห่ง · แห่งที่ข้าราชการน้อยกว่าพนักงานจ้าง '+x.dep.length+' แห่ง ('+pc0(x.dep.length,n)+'%)','จัดทีมสนับสนุน/หมุนเวียนระดับอำเภอให้กลุ่มนี้ก่อน และไม่ให้งานหลักผูกกับบุคคลเดียว')}
+ ${ins(x.gn0.length?'bad':'','พยาบาลวิชาชีพข้าราชการ','ไม่มีเลย '+x.gn0.length+' แห่ง'+(x.gn0.length?' ('+lst(x.gn0,4)+')':'')+' · มีคนเดียว '+x.gn1.length+' แห่ง ('+pc0(x.gn1.length,n)+'%) · นับรวมพยาบาลที่เป็น ผอ.','จัดลำดับการบรรจุ/ย้ายให้แห่งที่ไม่มีก่อน และวางผู้สำรองในแห่งที่มีคนเดียว')}
+ ${ins('','ความไม่สมดุลระหว่างอำเภอ',esc(hi.a)+' สูงสุด '+hi.p+'% ส่วน '+low.map(r=>esc(r.a)+' '+r.p+'% (ขาด '+r.gap+')').join(', ')+' · ห่างกัน '+spread+' จุดเปอร์เซ็นต์'+(lsz?' · '+esc(lsz.l)+' ต่ำสุด '+lsz.p+'% (เฉลี่ย '+lsz.avg+' คน จากกรอบ '+lsz.fav+')':''),'ใช้ลำดับนี้ประกอบการจัดสรรตำแหน่งใหม่และการย้ายประจำปี')}
+ ${ll?ins('','สายงานที่พึ่งพนักงานจ้างสูง',esc(ll.l)+' มีข้าราชการ '+f(ll.g)+' คน ต่อพนักงานจ้าง '+f(ll.h)+' คน (ข้าราชการ '+ll.sh+'% ของสายงาน)','พิจารณาเสนอกรอบข้าราชการสายนี้ หรือประเมินงบเงินบำรุงที่ต้องรองรับค่าจ้างต่อเนื่อง'):''}
+ ${ins('','ความเคลื่อนไหวตามหมายเหตุ','เกษียณ '+a.rt.length+' · ย้าย/ลาออก '+a.mv.length+' · ช่วยราชการ '+a.hp.length+' แห่ง ซึ่งกระทบจำนวนข้าราชการโดยตรง','ปรับข้อมูลหลังวันที่ 1 ต.ค. 69 ให้ตรงจริงก่อนใช้ตัวเลขนี้เสนอผู้บริหาร')}
+ <h3>ข้อเสนอแนะ เรียงตามความเร่งด่วน</h3><ol class="notes">
+ ${rec('ด่วน',' r','<b>ผอ.รพ.สต.</b> — แต่งตั้งผู้รักษาการให้ครบ '+x.nod.length+' แห่ง'+(nodn?' (ยังไม่ระบุ '+nodn+' แห่ง)':'')+' และเริ่มสรรหา/เลื่อน ผอ. ให้ตรงกับแห่งที่ว่างและแห่งที่จะเกษียณ')}
+ ${rec('ด่วน',' r','<b>แห่งที่ข้าราชการไม่เกิน 2 คน ('+x.g2.length+' แห่ง)</b> — จัดทีมพี่เลี้ยง/หมุนเวียนระดับอำเภอ และกำหนดผู้ปฏิบัติหน้าที่แทนล่วงหน้าเมื่อมีลา ย้าย หรือเกษียณ')}
+ ${rec('ด่วน',' r','<b>พยาบาลวิชาชีพข้าราชการ</b> — แห่งที่ไม่มี '+x.gn0.length+' แห่ง ให้หมุนเวียนหรือช่วยราชการจากอำเภอเดียวกัน และวางผู้สำรองในแห่งที่มีคนเดียว '+x.gn1.length+' แห่ง')}
+ ${rec('3–12 เดือน','','<b>แผนบรรจุ/ขอกรอบ</b> — เรียงลำดับ ผอ. → พยาบาล → แห่งที่ข้าราชการ ≤ 2 คน → อำเภอที่ครองกรอบต่ำสุด ('+low.map(r=>esc(r.a)).join(', ')+') · ดูตารางสถานการณ์จำลอง: เป้าหมายข้าราชการอย่างน้อย 3 คนทุกแห่งต้องบรรจุเพิ่ม '+f(x.sc[2][1])+' คน')}
+ ${rec('3–12 เดือน','','<b>ปรับสมดุลรายอำเภอ</b> — อำเภอห่างกัน '+spread+' จุดเปอร์เซ็นต์ ใช้การโอนย้ายประจำปีและตำแหน่งใหม่ไปยังอำเภอที่ต่ำสุดก่อน')}
+ ${ll?rec('3–12 เดือน','','<b>สายงาน'+esc(ll.l)+'</b> — ข้าราชการเพียง '+ll.sh+'% ของสายงาน ประเมินทั้งการขอกรอบข้าราชการและงบเงินบำรุงสำหรับค่าจ้าง'):''}
+ ${rec('ระยะยาว','','<b>แผนทดแทนเกษียณ</b> — ปัจจุบันระบบมีเพียงหมายเหตุเกษียณ '+a.rt.length+' แห่ง ควรเพิ่มข้อมูลปีเกษียณรายบุคคลเพื่อคาดการณ์กำลังพลข้าราชการล่วงหน้า 3–5 ปี')}
+ ${rec('ระยะยาว','','<b>ติดตามตัวชี้วัดรายไตรมาส</b> — ข้าราชการต่อกรอบ ('+x.P+'%), จำนวน รพ.สต. ที่ไม่มี ผอ. ('+x.nod.length+'), ข้าราชการ ≤ 2 คน ('+x.g2.length+'), พยาบาลข้าราชการ 0 คน ('+x.gn0.length+')')}
+ </ol>
+ <div class="actions"><button class="btn sec sm" type="button" data-act="hrcopy" data-t="#govsum">📋 คัดลอกสรุป</button>${canSee()?'<button class="btn sm" type="button" data-act="go" data-i="dir">ดูข้อมูลอัตรากำลังทั้งหมด</button>':''}<button class="btn sec sm" type="button" data-act="go" data-i="dash">ไปหน้าภาพรวมรวมพนักงานจ้าง</button></div>
+ <p class="note">นับเฉพาะข้าราชการ จึงต่างจากหน้า "ภาพรวมและข้อมูลเชิงลึกจาก AI" ซึ่งนับข้าราชการ + พนักงานจ้างตามกรอบเป็นการครองกรอบ · วิเคราะห์ด้วยกฎคำนวณจากข้อมูลจริงในระบบ (ยังไม่ได้เชื่อมบริการ <code>/api/ai/insights</code>)</p></div>
+ <div class="cols"><div class="glass card"><h2>การกระจายจำนวนข้าราชการต่อ รพ.สต.</h2>${hist}<p class="note">เฉลี่ย ${x.avg.toFixed(1)} คน/แห่ง · มัธยฐาน ${x.med} คน</p><h3>ข้าราชการต่อกรอบ ตามขนาด รพ.สต.</h3>${x.sz.map(pbar).join('')}<h3>ข้าราชการต่อกรอบ รายอำเภอ (ต่ำ → สูง)</h3>${x.am.map(pbar).join('')}</div>
+ <div class="glass card"><h2>ข้าราชการแยกตามสายงาน</h2><div class="tw"><table><thead><tr>${['สายงาน','ข้าราชการ (คน)','พนักงานจ้าง (คน)','ข้าราชการ % ของสายงาน'].map(t=>`<th>${t}</th>`).join('')}</tr></thead><tbody>${lnTb}</tbody></table></div><p class="note">ผอ.รพ.สต. นับแยกเป็นสายเดียว จึงไม่รวมในสายพยาบาล/นักวิชาการ/เจ้าพนักงานสาธารณสุข</p>
+ <h3>สถานการณ์จำลองความต้องการบรรจุข้าราชการ</h3><div class="tw"><table><thead><tr>${['เป้าหมาย','ต้องบรรจุเพิ่ม (คน)','ข้าราชการต่อกรอบหลังบรรจุ'].map(t=>`<th>${t}</th>`).join('')}</tr></thead><tbody>${scTb}</tbody></table></div><p class="note">แต่ละเป้าหมายคำนวณแยกกัน ห้ามนำมารวมกัน · คำนวณรายแห่ง ไม่ถัวเฉลี่ยข้ามแห่ง</p></div></div>
+ <div class="glass card"><h2>รพ.สต. ที่ควรเร่งดูแลก่อน 10 แห่ง (ตามจำนวนข้าราชการ)</h2><p class="note" style="margin:0 0 10px">จัดอันดับจากปัจจัยเสี่ยง: ไม่มี ผอ. ข้าราชการ, ไม่มีพยาบาลข้าราชการ, ข้าราชการ ≤ 2 คน, ผอ.ใกล้เกษียณ, ครองกรอบต่ำ และจำนวนอัตราที่ขาด${canSee()?' · คลิกแถวเพื่อดูรายละเอียด':''}</p><div class="tw"><table><thead><tr>${['ที่','รพ.สต.','อำเภอ','ข้าราชการ/กรอบ','ร้อยละ','ผอ.','พยาบาล ขรก.','พนักงานจ้าง','ปัจจัยเสี่ยง'].map(t=>`<th>${t}</th>`).join('')}</tr></thead><tbody>${tb}</tbody></table></div>${canSee()?'<div class="actions"><button class="btn" data-act="go" data-i="dir">ดูข้อมูลอัตรากำลังทั้งหมด</button></div>':''}</div>`;
+}
 function dashUnit(u,a){
  const A=D.filter(x=>x.a===u.a),ap=pc0(S(A,'inf'),S(A,'fr')),up=pc0(u.inf,u.fr);
  const ins=(c,t,b)=>`<div class="insight ${c}"><b>${t}</b><br>${b}</div>`;
@@ -1504,7 +1582,7 @@ setUser((()=>{try{return USERS.find(x=>x.u===sessionStorage.getItem(SK))||null}c
 </script>
 <script>
 (()=>{
-const P={dash:'<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',hr:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/>',dir:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.3c2.2.7 3.5 2.6 3.5 5.7"/>',wg:'<circle cx="12" cy="12" r="9"/><path d="M14.8 9.2c-.5-1-1.5-1.4-2.8-1.4-1.6 0-2.7.8-2.7 2 0 1.3 1.1 1.8 2.7 2.2 1.7.4 2.8.9 2.8 2.2 0 1.2-1.2 2-2.8 2-1.3 0-2.4-.5-2.9-1.5M12 6v1.8M12 16.2V18"/>',ps:'<circle cx="10" cy="7.5" r="3.5"/><path d="M3.5 20c0-3.6 2.9-6 6.5-6 1.2 0 2.3.3 3.2.8M18 14v6M15 17h6"/>',hrd:'<path d="M22 9 12 4 2 9l10 5 10-5Z"/><path d="M6 11.5V16c0 1.5 2.7 3 6 3s6-1.5 6-3v-4.5M22 9v6"/>',survey:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM9 14l2 2 4-4"/>',wel:'<path d="M12 20s-8-4.6-8-10.5A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 8 2.5C20 15.4 12 20 12 20Z"/>',users:'<path d="M12 3 4.5 6v5.5c0 4.6 3.2 8 7.5 9.5 4.3-1.5 7.5-4.9 7.5-9.5V6L12 3Z"/><path d="m9 12 2 2 4-4"/>',search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',login:'<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 8l4 4-4 4M14 12H3"/>',logout:'<path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3M16 8l4 4-4 4M20 12H9"/>',key:'<circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M16 7l3 3M14 9l2 2"/>',download:'<path d="M12 3v12M7 11l5 5 5-5M4 20h16"/>',file:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5M9 14h6M9 17h4"/>',copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',send:'<path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z"/>',check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',pencil:'<path d="M4 20h4L19 9l-4-4L4 16v4ZM13.5 6.5l4 4"/>',trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',x:'<path d="M6 6l12 12M18 6 6 18"/>',plus:'<path d="M12 5v14M5 12h14"/>',arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>',chevL:'<path d="m15 5-7 7 7 7"/>',chevR:'<path d="m9 5 7 7-7 7"/>',unlock:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/>',lock:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',undo:'<path d="M3 8h11a6 6 0 0 1 0 12H8M7 4 3 8l4 4"/>',menu:'<path d="M4 6h16M4 12h16M4 18h16"/>',theme:'<path d="M21 13.5A8.5 8.5 0 1 1 10.5 3a7 7 0 0 0 10.5 10.5Z"/>',bot:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3ZM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8L19 16Z"/>',gauge:'<path d="M4 18a8 8 0 1 1 16 0M12 18l4-6"/>',alert:'<path d="M12 4 2.5 20h19L12 4ZM12 10v4M12 17.5v.5"/>',trend:'<path d="M3 17l6-6 4 4 8-8M15 7h6v6"/>'};
+const P={gov:'<path d="M3 21h18M5 21V10M9 21V10M15 21V10M19 21V10M2.5 10 12 4l9.5 6h-19Z"/>',dash:'<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',hr:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/>',dir:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.3c2.2.7 3.5 2.6 3.5 5.7"/>',wg:'<circle cx="12" cy="12" r="9"/><path d="M14.8 9.2c-.5-1-1.5-1.4-2.8-1.4-1.6 0-2.7.8-2.7 2 0 1.3 1.1 1.8 2.7 2.2 1.7.4 2.8.9 2.8 2.2 0 1.2-1.2 2-2.8 2-1.3 0-2.4-.5-2.9-1.5M12 6v1.8M12 16.2V18"/>',ps:'<circle cx="10" cy="7.5" r="3.5"/><path d="M3.5 20c0-3.6 2.9-6 6.5-6 1.2 0 2.3.3 3.2.8M18 14v6M15 17h6"/>',hrd:'<path d="M22 9 12 4 2 9l10 5 10-5Z"/><path d="M6 11.5V16c0 1.5 2.7 3 6 3s6-1.5 6-3v-4.5M22 9v6"/>',survey:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM9 14l2 2 4-4"/>',wel:'<path d="M12 20s-8-4.6-8-10.5A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 8 2.5C20 15.4 12 20 12 20Z"/>',users:'<path d="M12 3 4.5 6v5.5c0 4.6 3.2 8 7.5 9.5 4.3-1.5 7.5-4.9 7.5-9.5V6L12 3Z"/><path d="m9 12 2 2 4-4"/>',search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',login:'<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 8l4 4-4 4M14 12H3"/>',logout:'<path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3M16 8l4 4-4 4M20 12H9"/>',key:'<circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M16 7l3 3M14 9l2 2"/>',download:'<path d="M12 3v12M7 11l5 5 5-5M4 20h16"/>',file:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5M9 14h6M9 17h4"/>',copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',send:'<path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z"/>',check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',pencil:'<path d="M4 20h4L19 9l-4-4L4 16v4ZM13.5 6.5l4 4"/>',trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',x:'<path d="M6 6l12 12M18 6 6 18"/>',plus:'<path d="M12 5v14M5 12h14"/>',arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>',chevL:'<path d="m15 5-7 7 7 7"/>',chevR:'<path d="m9 5 7 7-7 7"/>',unlock:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/>',lock:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',undo:'<path d="M3 8h11a6 6 0 0 1 0 12H8M7 4 3 8l4 4"/>',menu:'<path d="M4 6h16M4 12h16M4 18h16"/>',theme:'<path d="M21 13.5A8.5 8.5 0 1 1 10.5 3a7 7 0 0 0 10.5 10.5Z"/>',bot:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3ZM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8L19 16Z"/>',gauge:'<path d="M4 18a8 8 0 1 1 16 0M12 18l4-6"/>',alert:'<path d="M12 4 2.5 20h19L12 4ZM12 10v4M12 17.5v.5"/>',trend:'<path d="M3 17l6-6 4 4 8-8M15 7h6v6"/>'};
 const svg=n=>'<svg viewBox="0 0 24 24" aria-hidden="true">'+(P[n]||P.dash)+'</svg>';
 const EM=/^[\u{1F300}-\u{1FAFF}\u{2190}-\u{21FF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u2039\uFE0F\u200D\s]+/u;
 const K=[['ล้างการค้นหา','x'],['ค้นหา','search'],['ออกจากระบบ','logout'],['เข้าสู่ระบบ','login'],['รหัสผ่าน','key'],['PDF','file'],['ดาวน์โหลด','download'],['คัดลอก','copy'],['ส่งแบบสำรวจ','send'],['ปิดรับ','lock'],['เปิดรับ','unlock'],['ซ่อน','eye'],['ดูรายชื่อ','eye'],['คืนค่า','undo'],['ล้างข้อมูล','trash'],['บันทึก','check'],['ยกเลิก','x'],['แก้ไข','pencil'],['ลบ','trash'],['ปิด','x'],['เพิ่ม','plus'],['ก่อนหน้า','chevL'],['ถัดไป','chevR'],['ไปหน้า','arrow'],['ดู','arrow']];
