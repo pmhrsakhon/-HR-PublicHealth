@@ -616,9 +616,19 @@ function renderNav(){
   return btn(m,` data-par="1" aria-expanded="${open}"`)+(open?k.map(x=>btn(x,' class="sub"')).join(''):'');
  }).join('');
 }
+/* เปิดลิงก์ภายนอก: ลอง https ก่อน ถ้าเว็บปลายทางไม่รองรับ (หรือช้าเกิน 4 วินาที) ค่อยถอยกลับไปใช้ http เดิม */
+function openExt(url){
+ const w=window.open('about:blank','_blank');
+ if(!w){location.href=url;return}
+ try{w.opener=null}catch(e){}
+ const sec=url.replace(/^http:\/\//i,'https://');
+ if(sec===url){w.location.href=url;return}
+ const c=new AbortController(),t=setTimeout(()=>c.abort(),4000);
+ fetch(sec,{mode:'no-cors',signal:c.signal}).then(()=>{clearTimeout(t);w.location.href=sec}).catch(()=>{clearTimeout(t);w.location.href=url});
+}
 function go(id){
  if(!CAN[st.role].includes(id)) id=CAN[st.role][0];
- {const ex=MENUS.find(x=>x.id===id);if(ex&&ex.url){window.open(ex.url,'_blank','noopener');return}}
+ {const ex=MENUS.find(x=>x.id===id);if(ex&&ex.url){openExt(ex.url);return}}
  st.view=id;st.msg='';st.edit=null;{const mm=MENUS.find(x=>x.id===id);if(mm&&mm.p)st.exp[mm.p]=true}renderNav();render();scrollTo(0,0);
 }
 function render(){
