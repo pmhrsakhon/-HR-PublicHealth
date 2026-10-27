@@ -574,6 +574,7 @@ async function uploadImage(file){
 const MENUS=[
 {id:'dash',t:'ภาพรวมและข้อมูลเชิงลึกจาก AI',s:'ภาพรวม',i:'📊'},
 {id:'gov',t:'ภาพรวมอัตรากำลังวิเคราะห์เฉพาะจำนวนข้าราชการเท่านั้น',s:'เฉพาะข้าราชการ',i:'🏛️'},
+{id:'docs',t:'เอกสาร/แบบฟอร์มต่างๆ ของงานบุคลากร',s:'เอกสาร/แบบฟอร์ม',i:'📄',url:'http://korjor.atwebpages.com/government_documents.php?category=%E0%B9%81%E0%B8%9A%E0%B8%9A%E0%B8%9F%E0%B8%AD%E0%B8%A3%E0%B9%8C%E0%B8%A1%E0%B8%95%E0%B9%88%E0%B8%B2%E0%B8%87%E0%B9%86'},
 {id:'hr',t:'งานบริหารทรัพยากรบุคคล',s:'งานบุคคล',i:'🗂️'},
 {id:'dir',p:'hr',t:'ข้อมูลอัตรากำลัง',s:'อัตรากำลัง',i:'👥'},
 {id:'ps',p:'hr',t:'สำรวจลูกจ้าง พว.วิชาชีพ แพทย์แผนไทย จพ.ทันตกรรม',s:'สำรวจลูกจ้าง',i:'🩺'},
@@ -584,7 +585,7 @@ const MENUS=[
 {id:'wel',t:'สวัสดิการและบริการ',s:'สวัสดิการ',i:'🛠️'},
 {id:'users',t:'จัดการผู้ใช้งาน',s:'ผู้ใช้',i:'🔐'}];
 /* RBAC: สิทธิ์การมองเห็นเมนูตามบทบาท (ฝั่งจริงต้องบังคับที่ API/DB ด้วย) */
-const CAN={admin:['dash','gov','dir','ps','wg','prog','hr','hrd','wel','survey','users'],exec:['dash','gov','dir','ps','wg','prog','hr','hrd','wel','survey'],staff:['dash','gov','dir','ps','wg','prog','hr','hrd','wel','survey'],guest:['dash','gov']};
+const CAN={admin:['dash','gov','docs','dir','ps','wg','prog','hr','hrd','wel','survey','users'],exec:['dash','gov','docs','dir','ps','wg','prog','hr','hrd','wel','survey'],staff:['dash','gov','docs','dir','ps','wg','prog','hr','hrd','wel','survey'],guest:['dash','gov']};
 const SCOPE={admin:'ทั้งกอง · 149 รพ.สต. + ส่วนกลาง',exec:'ทั้งกอง · 149 รพ.สต. + ส่วนกลาง',staff:'ทั้งกอง · 149 รพ.สต. + ส่วนกลาง',guest:'ทั้งกอง · 149 รพ.สต. (ดูภาพรวมอย่างเดียว)'};
 const COURSES=[
 {id:'np',n:'อบรมเวชปฏิบัติสาขาการพยาบาลเวชปฏิบัติทั่วไป (การรักษาโรคเบื้องต้น)',s:'เวชปฏิบัติ'},
@@ -617,6 +618,7 @@ function renderNav(){
 }
 function go(id){
  if(!CAN[st.role].includes(id)) id=CAN[st.role][0];
+ {const ex=MENUS.find(x=>x.id===id);if(ex&&ex.url){window.open(ex.url,'_blank','noopener');return}}
  st.view=id;st.msg='';st.edit=null;{const mm=MENUS.find(x=>x.id===id);if(mm&&mm.p)st.exp[mm.p]=true}renderNav();render();scrollTo(0,0);
 }
 function render(){
