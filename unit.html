@@ -247,6 +247,15 @@ dialog .glass,#udc,#lgc,.pal{border-radius:26px 26px 0 0;padding-bottom:calc(20p
 .ed-add{flex-wrap:wrap}
 #edb{max-height:52vh}
 }
+.frg{grid-column:1/-1;margin:12px 0 0;font-size:1.02rem}
+.frr{grid-column:1/-1;border:1.5px solid var(--line);border-radius:16px;padding:12px 14px;background:var(--panel);display:grid;gap:10px}
+.frr .frh{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.frr .frno{display:inline-grid;place-items:center;min-width:28px;height:28px;border-radius:50%;background:var(--ac);color:#fff;font-weight:700;font-size:.85rem}
+.frr .frhint{font-size:.85rem;color:var(--mut);font-weight:500}
+.frr .fr4{display:grid;grid-template-columns:1.3fr 1.1fr 1.6fr 1fr;gap:12px}
+.frr .fr4 label.frv{flex-direction:row;align-items:center;gap:8px;font-weight:500;font-size:.9rem;margin-top:6px}
+@media(max-width:900px){.frr .fr4{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.frr .fr4{grid-template-columns:1fr}}
 </style>
 <style id="ui-v3">
 :root{--bg:#EEF1FF;--b1:rgba(6,182,212,.38);--b2:rgba(109,74,255,.34);--b3:rgba(236,72,153,.22);--glass:rgba(255,255,255,.95);--gb:#fff;--line:rgba(30,27,107,.26);--tx:#0B1230;--mut:#33405F;--ac:#5B3DF5;--acs:rgba(91,61,245,.12);--amber:#FFB020;--bad:#C80F3A;--panel:#fff;--btn:linear-gradient(135deg,#6D4AFF,#2563EB 58%,#06B6D4);--btx:#fff;--th:linear-gradient(135deg,#1E1B6B,#3B30B5);--side:linear-gradient(175deg,#0E1040,#1B1F6B 58%,#0A5C7C);--hero:linear-gradient(120deg,#2A1FA6,#5B3DF5 48%,#06A6C9);--sh:0 12px 34px rgba(30,27,107,.16)}
@@ -691,6 +700,8 @@ if(APP_MODE==='unit'){
  const ms=keep.map(id=>{const c={...MENUS.find(m=>m.id===id)};delete c.p;c.t=nm[id][0];c.s=nm[id][1];return c});
  MENUS.splice(0,MENUS.length,...ms);
  CAN.staff=keep.slice();CAN.guest=['dash'];CAN.admin=keep.slice();CAN.exec=['dash'];
+ /* เมนูย่อยของ "ข้อมูลอัตรากำลัง" */
+ {const k=MENUS.findIndex(m=>m.id==='dir');MENUS.splice(k+1,0,{id:'frame',p:'dir',t:'กรอบอัตรากำลังข้าราชการ',s:'กรอบข้าราชการ',i:'🏛️'});CAN.staff.push('frame');CAN.admin.push('frame')}
  SCOPE.staff='เฉพาะ รพ.สต. ของท่าน';SCOPE.guest='กรุณาเข้าสู่ระบบ';
 }
 const COURSES=[
@@ -744,6 +755,7 @@ function render(){
  if(v==='dir')bindDir();
  if(v==='wg')bindWg();
  if(v==='ps')bindPs();
+ if(v==='frame')bindFrame();
   if(v==='prog')bindProg();
 }
 function stub(v){const m=MENUS.find(x=>x.id===v);
@@ -1185,8 +1197,8 @@ function dirPdf(){
 }
 if(db){db.ref(EPATH).on('value',snap=>{
  EDITS=snap.val()||{};applyAll();
- const ae=document.activeElement,typing=ae&&ae.closest&&ae.closest('.fl,#wf,#psf');
- if(!typing&&!(st.view==='ps'&&psDirty)&&(st.view==='dir'||st.view==='dash'||st.view==='gov'||st.view==='wg'||st.view==='ps'||st.view==='prog')&&!$('#ud').open)render();
+ const ae=document.activeElement,typing=ae&&ae.closest&&ae.closest('.fl,#wf,#psf,#frf');
+ if(!typing&&!(st.view==='ps'&&psDirty)&&!(st.view==='frame'&&frDirty)&&(st.view==='dir'||st.view==='frame'||st.view==='dash'||st.view==='gov'||st.view==='wg'||st.view==='ps'||st.view==='prog')&&!$('#ud').open)render();
 },e=>console.warn(fbErr(e)))}
 const eWho=u=>u.ed?`แก้ไขล่าสุดโดย ${esc(u.ed.by)}${u.ed.at?' · '+new Date(u.ed.at).toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'}):''}`:'';
 
@@ -1847,6 +1859,85 @@ function unitDir(u){
  +`<div class="glass card"><div class="insight">สถานะ: ${stBadge(u)}</div><div class="actions" style="margin:10px 0 14px">${canEditUnit(u)?`<button class="btn" type="button" data-act="uedit" data-i="${u.i}">✏️ แก้ไขบุคลากร</button>`:''}${isOwn(u)&&s==='pending'?`<button class="btn sec" type="button" data-act="uconf" data-i="${u.i}">✔ ยืนยันข้อมูลเดิม</button>`:''}</div>${unitDetail(u.i)}</div>`;
 }
 
+/* ===== กรอบอัตรากำลังข้าราชการ (เมนูย่อยของข้อมูลอัตรากำลัง): แบบฟอร์มให้ รพ.สต. กรอกตามขนาด S/M/L · หลักการตามตารางที่ 6 กรอบอัตรากำลัง สอน./รพ.สต. (แบ่งตามกลุ่มงาน) ===== */
+/* ตำแหน่ง → สาย: v = สายวิชาชีพ, g = สายทั่วไป · ระดับที่ให้เลือกขึ้นกับสายของตำแหน่งที่เลือก */
+const FRPOS=[['นักวิชาการสาธารณสุข','v'],['นักสาธารณสุข','v'],['พยาบาลวิชาชีพ','v'],['เจ้าพนักงานสาธารณสุข','g'],['เจ้าพนักงานทันตสาธารณสุข','g'],['นักวิชาการสาธารณสุข (ทันตสาธารณสุข)','v'],['แพทย์แผนไทย','v'],['เจ้าพนักงานเภสัชกรรม','g'],['เภสัชกร','v'],['นักกายภาพบำบัด','v'],['เจ้าพนักงานสาธารณสุข (เวชกิจฉุกเฉิน)','g'],['เจ้าพนักงานฉุกเฉินการแพทย์','g'],['เจ้าพนักงานการเงินและบัญชี','g'],['เจ้าพนักงานธุรการ','g']];
+const FRL={v:['ปฏิบัติการ','ชำนาญการ','ชำนาญการพิเศษ','เชี่ยวชาญ'],g:['ปฏิบัติงาน','ชำนาญงาน','อาวุโส']};
+const FRLN={v:'สายวิชาชีพ',g:'สายทั่วไป'};
+const frLine=p=>(FRPOS.find(x=>x[0]===p)||[])[1]||'';
+const FRS=(()=>{
+ const NS='นักวิชาการสาธารณสุข / เจ้าพนักงานสาธารณสุข',RN='พยาบาลวิชาชีพ',AC='นักวิชาการสาธารณสุข',FN='เจ้าพนักงานการเงินและบัญชี',AD='เจ้าพนักงานธุรการ',
+  DT='นักวิชาการสาธารณสุข (ทันตสาธารณสุข) / เจ้าพนักงานทันตสาธารณสุข',TH='แพทย์แผนไทย / เจ้าพนักงานสาธารณสุข (วุฒิ ป.การแพทย์แผนไทย) (อายุรเวท)',PH='นักวิชาการสาธารณสุข (เภสัชกรรม) / เจ้าพนักงานเภสัชกรรม',
+  DR=['ผู้อำนวยการโรงพยาบาลส่งเสริมสุขภาพตำบล',['ผู้อำนวยการ รพ.สต.']];
+ const G=(a,b,c)=>[DR,['กลุ่มงานบริหารสาธารณสุข',a],['กลุ่มงานส่งเสริมป้องกันควบคุมโรค',b],['กลุ่มงานเวชปฏิบัติครอบครัว',c]];
+ return{
+  S:G([AC,FN+' หรือ '+AD+' (เลือก 1 ตำแหน่ง)'],[NS,RN],[RN,NS]),
+  M:G([AC,FN,AD],[NS,RN,DT],[RN,RN,NS,TH,PH]),
+  L:G([AC,FN,AD],[NS,NS,RN,DT],[RN,RN,NS,NS,TH,PH])};
+})();
+const FRZ={S:'ขนาดเล็ก (S)',M:'ขนาดกลาง (M)',L:'ขนาดใหญ่ (L)'};
+const FK=u=>u.cd+'_fr',frOf=u=>EDITS[FK(u)]||null;   /* เก็บในโหนด staffing2570 ด้วยคีย์ <รหัส 5 หลัก>_fr (ไม่ต้องเพิ่ม path ใหม่ใน Firebase Rules) */
+let frDirty=false;
+async function frSet(u,rec){if(!db){EDITS[FK(u)]=rec;eSave();return}await db.ref(EPATH+'/'+FK(u)).set(rec);EDITS[FK(u)]=rec}
+const frLvOpts=(pos,cur)=>{const ln=frLine(pos);return ln?`<option value="">เลือกระดับ (${FRLN[ln]})</option>`+FRL[ln].map(l=>`<option${l===cur?' selected':''}>${esc(l)}</option>`).join(''):'<option value="">เลือกตำแหน่งก่อน</option>'};
+function unitFrame(u){
+ frDirty=false;
+ const sz=String(u.s||'').trim().toUpperCase(),spec=FRS[sz],ed=canEditUnit(u);
+ const head=unitHead('🏛️','กรอบอัตรากำลังข้าราชการ',esc(u.n)+' · กรอกกรอบอัตรากำลังข้าราชการของ รพ.สต. ตามขนาด (S/M/L) · ชื่อ รพ.สต. ขึ้นให้อัตโนมัติ');
+ if(!spec)return head+`<div class="glass card"><div class="insight bad">ไม่พบขนาด (S/M/L) ของ ${esc(u.n)} ในข้อมูล จึงสร้างแบบฟอร์มไม่ได้ กรุณาติดต่อผู้ดูแลระบบ</div></div>`;
+ const r=frOf(u),saved=(r&&r.rows)||[],total=spec.reduce((a,g)=>a+g[1].length,0);
+ const ro=(l,v,fw)=>`<label${fw?' class="fw"':''}>${l}<input type="text" readonly tabindex="-1" value="${esc(v||'')}" placeholder="—" style="background:var(--acs)"></label>`;
+ const dis=ed?'':' disabled';
+ let n=0;
+ const body=spec.map(g=>`<h3 class="frg">${esc(g[0])} <span class="note">(${g[1].length} อัตรา)</span></h3>`+g[1].map(h=>{
+  const i=n++,x=saved[i]||{},vac=x.nm==='ว่าง',ln=frLine(x.pos);
+  return `<div class="frr" data-r="${i}"><div class="frh"><span class="frno">${i+1}</span><span class="frhint">ตามกรอบ: ${esc(h)}</span></div><div class="fr4">
+   <div><label>ชื่อ - สกุล<input type="text" data-f="nm" autocomplete="off" placeholder="เช่น นายสมชาย ใจดี" value="${esc(x.nm||'')}"${vac?' readonly style="background:var(--acs)"':''}${dis}></label><label class="frv"><input type="checkbox" data-f="vac"${vac?' checked':''}${dis}> ว่าง (ยังไม่มีผู้ครองตำแหน่ง)</label></div>
+   <label>เลขที่ตำแหน่ง<input type="text" data-f="no" autocomplete="off" placeholder="เช่น 56-1-06-3601-622 (ถ)" value="${esc(x.no||'')}"${dis}></label>
+   <label>ตำแหน่ง<select data-f="pos"${dis}><option value="">เลือกตำแหน่ง</option>${FRPOS.map(p=>`<option${p[0]===x.pos?' selected':''}>${esc(p[0])}</option>`).join('')}</select></label>
+   <label>ระดับ<select data-f="lv"${ln&&ed?'':' disabled'}>${frLvOpts(x.pos,x.lv)}</select></label></div></div>`}).join('')).join('');
+ const sumTxt=spec.map(g=>g[0].replace('ผู้อำนวยการโรงพยาบาลส่งเสริมสุขภาพตำบล','ผู้อำนวยการ')+' '+g[1].length).join(' · ');
+ const who=r?`<div class="insight">✅ กรอกข้อมูลแล้ว · บันทึกล่าสุดโดย ${esc(r.by||'')}${r.at?' · '+esc(fmtAt(r.at)):''} (แก้ไขและบันทึกซ้ำได้)</div>`:'<div class="insight">ยังไม่ได้กรอกข้อมูล · กรอกให้ครบทุกแถว แล้วกด “บันทึกข้อมูล”</div>';
+ return head+`<div class="glass card">${st.msg?`<div class="insight" role="status">${esc(st.msg)}</div>`:''}${who}
+ <div class="insight"><b>กรอบอัตรากำลังข้าราชการ ${FRZ[sz]} รวม ${total} อัตรา</b> · ${esc(sumTxt)}<br><small>ตำแหน่ง “ว่าง” ให้ติ๊กช่อง ว่าง · เมื่อเลือกตำแหน่งแล้ว ระดับจะแสดงเฉพาะสายของตำแหน่งนั้น (สายวิชาชีพ: ปฏิบัติการ–เชี่ยวชาญ · สายทั่วไป: ปฏิบัติงาน–อาวุโส)</small></div>
+ <form id="frf" class="form" novalidate>
+ ${ro('รหัสสถานบริการ (5 หลัก)',u.cd)}${ro('ขนาด รพ.สต.',FRZ[sz])}${ro('ชื่อ รพ.สต.',u.n,1)}${ro('อำเภอ',u.a)}${ro('จังหวัด / สังกัด','สกลนคร · องค์การบริหารส่วนจังหวัดสกลนคร')}
+ ${body}
+ <div class="actions full"><button class="btn" type="submit"${dis}>${r?'บันทึกการแก้ไข':'บันทึกข้อมูล'}</button><span class="err" id="frerr" role="alert"></span></div></form></div>`;
+}
+function bindFrame(){
+ const f=$('#frf');if(!f)return;
+ const row=el=>el.closest('.frr'),q=(r,k)=>r.querySelector(`[data-f="${k}"]`);
+ f.addEventListener('input',()=>{frDirty=true});
+ f.addEventListener('change',e=>{
+  const t=e.target,r=row(t);if(!r)return;frDirty=true;
+  if(t.dataset.f==='pos'){const lv=q(r,'lv'),cur=lv.value;lv.innerHTML=frLvOpts(t.value,cur);lv.disabled=!frLine(t.value)}
+  if(t.dataset.f==='vac'){const nm=q(r,'nm');if(t.checked){nm.value='ว่าง';nm.readOnly=true;nm.style.background='var(--acs)'}else{nm.value='';nm.readOnly=false;nm.style.background='';nm.focus()}}
+ });
+ f.addEventListener('keydown',e=>{if(e.key!=='Enter'||e.target.tagName!=='INPUT'||e.target.type==='checkbox')return;e.preventDefault();const a=[...f.querySelectorAll('input[type=text]:not([readonly]),select:not([disabled])')],i=a.indexOf(e.target);if(i>=0&&i<a.length-1)a[i+1].focus()});
+ f.addEventListener('focusin',e=>{const t=e.target;if(t.tagName!=='INPUT'||t.readOnly)return;setTimeout(()=>{try{t.scrollIntoView({block:'center',behavior:'smooth'})}catch(x){}},300)});
+ f.onsubmit=e=>{
+  e.preventDefault();const err=$('#frerr'),m=myUnit(),u=m&&m.u;
+  if(!u){err.textContent='ไม่พบ รพ.สต. ของบัญชีนี้';return}
+  if(!canEditUnit(u)){err.textContent='คุณไม่มีสิทธิ์กรอกข้อมูลของ รพ.สต. นี้';return}
+  const spec=FRS[String(u.s||'').trim().toUpperCase()],hints=spec.flatMap(g=>g[1].map(h=>[g[0],h]));
+  const rows=[];let bad='';
+  [...f.querySelectorAll('.frr')].forEach((r,i)=>{
+   const g=k=>(q(r,k)||{value:''}).value.trim(),nm=g('nm'),no=g('no'),pos=g('pos'),lv=g('lv');
+   if(bad)return;const tag='แถวที่ '+(i+1)+' ('+hints[i][0]+') ';
+   if(!nm)bad=tag+'ยังไม่กรอกชื่อ-สกุล (ถ้าไม่มีผู้ครองตำแหน่งให้ติ๊ก “ว่าง”)';
+   else if(!no)bad=tag+'ยังไม่กรอกเลขที่ตำแหน่ง';
+   else if(!pos)bad=tag+'ยังไม่เลือกตำแหน่ง';
+   else if(!lv||!FRL[frLine(pos)].includes(lv))bad=tag+'ยังไม่เลือกระดับ';
+   else rows.push({nm,no,pos,lv})});
+  if(bad){err.textContent='กรุณากรอกให้ครบ: '+bad;return}
+  const was=!!frOf(u),rec={sz:u.s,rows,by:(USERS.find(x=>x.u===st.user)||{}).name||st.user,at:new Date().toISOString()};
+  const btn=f.querySelector('button[type=submit]');btn.disabled=true;btn.textContent='กำลังบันทึก...';err.textContent='';
+  frSet(u,rec).then(()=>{frDirty=false;st.msg=(was?'แก้ไขกรอบอัตรากำลังข้าราชการของ ':'บันทึกกรอบอัตรากำลังข้าราชการของ ')+u.n+' เรียบร้อยแล้ว';render();scrollTo(0,0)})
+   .catch(x=>{err.textContent=fbErr(x);btn.disabled=false;btn.textContent=was?'บันทึกการแก้ไข':'บันทึกข้อมูล'});
+ };
+}
+
 /* ===== ผู้ดูแลระบบเข้าหน้า รพ.สต. : เลือกดู/กรอกแทนได้ทั้ง 149 แห่ง ===== */
 const ucd=()=>st.role==='admin'?(st.unitSel||''):st.user;
 function admOpts(){return D.slice().sort((x,y)=>x.a.localeCompare(y.a,'th')||x.n.localeCompare(y.n,'th')).map(u=>`<option value="${esc(u.cd)}"${u.cd===st.unitSel?' selected':''}>อ.${esc(u.a)} · ${esc(u.n)} (${esc(u.cd)})</option>`).join('')}
@@ -1859,6 +1950,7 @@ function unitView0(v){
  const m=myUnit();if(!m)return st.role==='admin'?admPick():unitNone();
  if(v==='dash')return unitHome(m);
  if(v==='dir')return unitDir(m.u);
+ if(v==='frame')return unitFrame(m.u);
  if(v==='wg')return unitHead('💰','สำรวจค่าจ้างลูกจ้างฯ.หลังปรับฐาน',esc(m.u.n)+' · กรอกจำนวนลูกจ้างและค่าจ้างพนักงานจ้างทั้งหมด (ก่อน/หลังปรับฐาน) ส่วนต่างคำนวณให้เอง')+`<div class="glass card"><div id="wfc">${wgForm()}</div></div>`;
  if(v==='ps'){
   const sl=psSlots(m.u);
@@ -2011,7 +2103,7 @@ setUser((()=>{try{return USERS.find(x=>x.u===sessionStorage.getItem(SK))||null}c
 <script>
 (()=>{
 const P={gov:'<path d="M3 21h18M5 21V10M9 21V10M15 21V10M19 21V10M2.5 10 12 4l9.5 6h-19Z"/>',dash:'<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',hr:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/>',dir:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.3c2.2.7 3.5 2.6 3.5 5.7"/>',wg:'<circle cx="12" cy="12" r="9"/><path d="M14.8 9.2c-.5-1-1.5-1.4-2.8-1.4-1.6 0-2.7.8-2.7 2 0 1.3 1.1 1.8 2.7 2.2 1.7.4 2.8.9 2.8 2.2 0 1.2-1.2 2-2.8 2-1.3 0-2.4-.5-2.9-1.5M12 6v1.8M12 16.2V18"/>',ps:'<circle cx="10" cy="7.5" r="3.5"/><path d="M3.5 20c0-3.6 2.9-6 6.5-6 1.2 0 2.3.3 3.2.8M18 14v6M15 17h6"/>',hrd:'<path d="M22 9 12 4 2 9l10 5 10-5Z"/><path d="M6 11.5V16c0 1.5 2.7 3 6 3s6-1.5 6-3v-4.5M22 9v6"/>',survey:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM9 14l2 2 4-4"/>',wel:'<path d="M12 20s-8-4.6-8-10.5A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 8 2.5C20 15.4 12 20 12 20Z"/>',users:'<path d="M12 3 4.5 6v5.5c0 4.6 3.2 8 7.5 9.5 4.3-1.5 7.5-4.9 7.5-9.5V6L12 3Z"/><path d="m9 12 2 2 4-4"/>',search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',login:'<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 8l4 4-4 4M14 12H3"/>',logout:'<path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3M16 8l4 4-4 4M20 12H9"/>',key:'<circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M16 7l3 3M14 9l2 2"/>',download:'<path d="M12 3v12M7 11l5 5 5-5M4 20h16"/>',file:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5M9 14h6M9 17h4"/>',copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',send:'<path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z"/>',check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',pencil:'<path d="M4 20h4L19 9l-4-4L4 16v4ZM13.5 6.5l4 4"/>',trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',x:'<path d="M6 6l12 12M18 6 6 18"/>',plus:'<path d="M12 5v14M5 12h14"/>',arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>',chevL:'<path d="m15 5-7 7 7 7"/>',chevR:'<path d="m9 5 7 7-7 7"/>',unlock:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/>',lock:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',undo:'<path d="M3 8h11a6 6 0 0 1 0 12H8M7 4 3 8l4 4"/>',menu:'<path d="M4 6h16M4 12h16M4 18h16"/>',theme:'<path d="M21 13.5A8.5 8.5 0 1 1 10.5 3a7 7 0 0 0 10.5 10.5Z"/>',bot:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3ZM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8L19 16Z"/>',gauge:'<path d="M4 18a8 8 0 1 1 16 0M12 18l4-6"/>',alert:'<path d="M12 4 2.5 20h19L12 4ZM12 10v4M12 17.5v.5"/>',trend:'<path d="M3 17l6-6 4 4 8-8M15 7h6v6"/>'};
-const svg=n=>'<svg viewBox="0 0 24 24" aria-hidden="true">'+(P[n]||P.dash)+'</svg>';
+const svg=n=>'<svg viewBox="0 0 24 24" aria-hidden="true">'+(P[n]||(n==='frame'?P.gov:P.dash))+'</svg>';
 const EM=/^[\u{1F300}-\u{1FAFF}\u{2190}-\u{21FF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u2039\uFE0F\u200D\s]+/u;
 const K=[['ล้างการค้นหา','x'],['ค้นหา','search'],['ออกจากระบบ','logout'],['เข้าสู่ระบบ','login'],['รหัสผ่าน','key'],['PDF','file'],['ดาวน์โหลด','download'],['คัดลอก','copy'],['ส่งแบบสำรวจ','send'],['ปิดรับ','lock'],['เปิดรับ','unlock'],['ซ่อน','eye'],['ดูรายชื่อ','eye'],['คืนค่า','undo'],['ล้างข้อมูล','trash'],['บันทึก','check'],['ยกเลิก','x'],['แก้ไข','pencil'],['ลบ','trash'],['ปิด','x'],['เพิ่ม','plus'],['ก่อนหน้า','chevL'],['ถัดไป','chevR'],['ไปหน้า','arrow'],['ดู','arrow']];
 const ids={mbtn:'menu',theme:'theme',botbtn:'bot'};
