@@ -21,7 +21,7 @@ button,.opt{display:block;width:100%;margin-top:18px;padding:12px;border:0;borde
 <div id="e" role="alert"></div><button type="submit">เข้าสู่ระบบ</button></form>
 <div class="hint">เจ้าหน้าที่ รพ.สต.: ชื่อผู้ใช้และรหัสผ่านเริ่มต้น = รหัสสถานบริการ 5 หลัก</div></div>
 <div id="pick" hidden><h1 id="ph"></h1><p>ผู้ดูแลระบบเข้าได้ทั้ง 2 หน้า เลือกหน้าที่ต้องการ</p>
-<a class="opt" id="o1" href="index.html">📊 หน้าผู้บริหาร / บริหารจัดการ<small>ภาพรวมทั้งกอง และจัดการผู้ใช้งาน</small></a>
+<a class="opt" id="o1" href="mgmt.html">📊 หน้าผู้บริหาร / บริหารจัดการ<small>ภาพรวมทั้งกอง และจัดการผู้ใช้งาน</small></a>
 <a class="opt" id="o2" href="unit.html">🏥 หน้า รพ.สต. (ทั้ง 149 แห่ง)<small>เลือก รพ.สต. เพื่อดู/กรอก/แก้ไขข้อมูลแทน</small></a></div>
 </div>
 <script>
@@ -62,7 +62,7 @@ $('lf').onsubmit=e=>{e.preventDefault();
  if(!u||hpw($('p').value,u.salt)!==u.h){$('e').textContent='ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';return}
  if(u.role==='admin'){try{sessionStorage.setItem(K.mgmt,u.u);sessionStorage.setItem(K.unit,u.u)}catch(e){}
   $('f').hidden=true;$('pick').hidden=false;$('ph').textContent='สวัสดี '+u.name;return}
- if(u.role==='exec'||u.role==='pm')return go('index.html',[K.mgmt],u.u);
+ if(u.role==='exec'||u.role==='pm')return go('mgmt.html',[K.mgmt],u.u);
  if(u.role==='staff')return go('unit.html',[K.unit],u.u);
  $('e').textContent='บัญชีนี้ไม่มีสิทธิ์เข้าใช้งาน'};
 </script></body></html>

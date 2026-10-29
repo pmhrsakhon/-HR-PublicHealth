@@ -548,7 +548,7 @@ dialog::backdrop{background:rgba(7,26,60,.55);backdrop-filter:blur(3px)}
 <div id="bot"><div id="botbox" class="glass" hidden><div id="log"><div class="m">สอบถามเรื่องระเบียบด้านบุคคลได้ เช่น เลื่อนขั้น การลา ชั่วโมงอบรม การประเมินผลงาน</div></div><input id="bi" placeholder="พิมพ์คำถามแล้วกด Enter" aria-label="ถามผู้ช่วยด้านบุคคล"></div><button id="botbtn" aria-label="เปิดผู้ช่วยอัจฉริยะ">💬</button></div>
 
 <script>
-/* ===== โหมดหน้าจอ: 'mgmt' = ฝั่งบริหารจัดการ (index.html) · 'unit' = ฝั่ง รพ.สต. (unit.html) · ใช้ฐานข้อมูล Firebase ชุดเดียวกัน ===== */
+/* ===== โหมดหน้าจอ: 'mgmt' = ฝั่งบริหารจัดการ (mgmt.html) · 'unit' = ฝั่ง รพ.สต. (unit.html) · ใช้ฐานข้อมูล Firebase ชุดเดียวกัน ===== */
 const APP_MODE='unit';
 /* ===== ฐานข้อมูล Firebase Realtime Database (โปรเจกต์ pmhr-sakhon) ===== */
 const FB_CFG={
@@ -1730,7 +1730,7 @@ const SV_ALIAS={'รพ.สต.ธาตุเชิงชุม':'รพ.สต
 function myUnit(){if(APP_MODE!=='unit'||(st.role!=='staff'&&st.role!=='admin'))return null;const u=D.find(x=>x.cd===ucd());return u?{u,a:u.a,sn:SV_ALIAS[u.n]||u.n}:null}
 const dv=()=>{if(APP_MODE!=='unit')return DATA;const m=myUnit();return m?DATA.filter(d=>d.amphoe===m.a&&(d.unit===m.sn||d.unit===m.u.n)):[]};
 function unitLogin(){return `<div class="glass hero"><h1>🏥 พอร์ทัลสำหรับ รพ.สต.</h1><p class="sub">กรอกและยืนยันข้อมูลของหน่วยบริการท่าน · ระบบบริหารงานบุคคล กองสาธารณสุข อบจ.สกลนคร</p></div>
-<div class="glass card"><h2>เข้าสู่ระบบ</h2><p class="note">ใช้ชื่อผู้ใช้เป็น <b>รหัสสถานบริการ 5 หลัก</b> ของ รพ.สต. (รหัสผ่านเริ่มต้นเป็นรหัสเดียวกัน แล้วควรเปลี่ยนรหัสผ่านหลังเข้าใช้ครั้งแรก)</p><div class="actions"><button class="btn" type="button" onclick="document.getElementById('lgb').click()">เข้าสู่ระบบ</button></div><p class="note" style="margin-top:12px">ผู้บริหาร / หัวหน้างานบุคลากร / ผู้ดูแลระบบ ใช้หน้า <a href="index.html">บริหารจัดการ</a></p></div>`}
+<div class="glass card"><h2>เข้าสู่ระบบ</h2><p class="note">ใช้ชื่อผู้ใช้เป็น <b>รหัสสถานบริการ 5 หลัก</b> ของ รพ.สต. (รหัสผ่านเริ่มต้นเป็นรหัสเดียวกัน แล้วควรเปลี่ยนรหัสผ่านหลังเข้าใช้ครั้งแรก)</p><div class="actions"><button class="btn" type="button" onclick="document.getElementById('lgb').click()">เข้าสู่ระบบ</button></div><p class="note" style="margin-top:12px">ผู้บริหาร / หัวหน้างานบุคลากร / ผู้ดูแลระบบ ใช้หน้า <a href="mgmt.html">บริหารจัดการ</a></p></div>`}
 function unitNone(){return `<div class="glass hero"><h1>🏥 พอร์ทัลสำหรับ รพ.สต.</h1></div><div class="glass card"><div class="insight bad">ไม่พบ รพ.สต. ที่ตรงกับรหัสผู้ใช้ ${esc(st.user||'')} ในรายการ 149 แห่ง กรุณาติดต่อผู้ดูแลระบบ</div></div>`}
 const unitHead=(ic,title,sub)=>`<div class="glass hero"><h1>${ic} ${title}</h1><p class="sub">${sub}</p></div>`;
 function unitHome(m){
@@ -1844,15 +1844,15 @@ function setUser(u){
  if(u&&!modeOK(u))u=null;
  st.user=u?u.u:null;st.role=u?(u.role==='pm'?'exec':u.role):'guest';try{st.unitSel=u&&u.role==='admin'?(sessionStorage.getItem('hr_admin_unit')||''):''}catch(e){st.unitSel=''}
  try{if(u){sessionStorage.setItem(SK,u.u);if(u.role==='admin'){sessionStorage.setItem('hr_sess_v1',u.u);sessionStorage.setItem('hr_sess_unit_v1',u.u)}}else{['hr_sess_v1','hr_sess_unit_v1','hr_admin_unit'].forEach(k=>sessionStorage.removeItem(k))}}catch(e){}
- $('#who').innerHTML=u?esc(u.name)+' · '+esc(ROLES[u.role])+(u.role==='admin'?' · <a href="index.html">⇄ สลับไปหน้าผู้บริหาร</a>':''):esc(ROLES.guest);
+ $('#who').innerHTML=u?esc(u.name)+' · '+esc(ROLES[u.role])+(u.role==='admin'?' · <a href="mgmt.html">⇄ สลับไปหน้าผู้บริหาร</a>':''):esc(ROLES.guest);
  $('#lgb').textContent=u?'ออกจากระบบ':'เข้าสู่ระบบ';$('#pwb').hidden=!u;go('dash');
 }
 $('#lgb').onclick=()=>{
  if(st.user){setUser(null);return}
- dlg(`<h2>เข้าสู่ระบบ</h2>${FM}<label>ชื่อผู้ใช้<input name="u" autocomplete="username"></label><label>รหัสผ่าน<input name="p" type="password" autocomplete="current-password"></label>${BT('เข้าสู่ระบบ')}${APP_MODE==='unit'?'<p class="note">ชื่อผู้ใช้และรหัสผ่านเริ่มต้น = รหัสสถานบริการ 5 หลัก · ผู้บริหาร/ผู้ดูแลระบบใช้หน้า <a href="index.html">บริหารจัดการ</a></p>':'<p class="note">ไม่ลงชื่อเข้าใช้ = บุคคลทั่วไป ดู Dashboard ได้อย่างเดียว · เจ้าหน้าที่ รพ.สต. ใช้หน้า <a href="unit.html">สำหรับ รพ.สต.</a></p>'}`,d=>{
+ dlg(`<h2>เข้าสู่ระบบ</h2>${FM}<label>ชื่อผู้ใช้<input name="u" autocomplete="username"></label><label>รหัสผ่าน<input name="p" type="password" autocomplete="current-password"></label>${BT('เข้าสู่ระบบ')}${APP_MODE==='unit'?'<p class="note">ชื่อผู้ใช้และรหัสผ่านเริ่มต้น = รหัสสถานบริการ 5 หลัก · ผู้บริหาร/ผู้ดูแลระบบใช้หน้า <a href="mgmt.html">บริหารจัดการ</a></p>':'<p class="note">ไม่ลงชื่อเข้าใช้ = บุคคลทั่วไป ดู Dashboard ได้อย่างเดียว · เจ้าหน้าที่ รพ.สต. ใช้หน้า <a href="unit.html">สำหรับ รพ.สต.</a></p>'}`,d=>{
   const u=USERS.find(x=>x.u===(d.u||'').trim().toLowerCase());
   if(!u||hpw(d.p||'',u.salt)!==u.h)return 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
-  if(!modeOK(u)){const T=APP_MODE==='unit'?'mgmt':'unit';if(MODE_ROLES[T].includes(u.role)){try{sessionStorage.setItem(T==='unit'?'hr_sess_unit_v1':'hr_sess_v1',u.u)}catch(e){}location.href=T==='unit'?'unit.html':'index.html';return}return 'บัญชีนี้ไม่มีสิทธิ์เข้าใช้งาน'}
+  if(!modeOK(u)){const T=APP_MODE==='unit'?'mgmt':'unit';if(MODE_ROLES[T].includes(u.role)){try{sessionStorage.setItem(T==='unit'?'hr_sess_unit_v1':'hr_sess_v1',u.u)}catch(e){}location.href=T==='unit'?'unit.html':'mgmt.html';return}return 'บัญชีนี้ไม่มีสิทธิ์เข้าใช้งาน'}
   setUser(u)});
 };
 $('#pwb').onclick=()=>dlg(`<h2>เปลี่ยนรหัสผ่าน</h2>${FM}<label>รหัสผ่านเดิม<input name="o" type="password" autocomplete="current-password"></label><label>รหัสผ่านใหม่ (อย่างน้อย 6 ตัวอักษร)<input name="n" type="password" autocomplete="new-password"></label><label>ยืนยันรหัสผ่านใหม่<input name="c" type="password" autocomplete="new-password"></label>${BT('บันทึก')}`,d=>{
