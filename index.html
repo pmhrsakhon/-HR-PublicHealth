@@ -590,14 +590,14 @@ const MENUS=[
 const CAN={admin:['dash','gov','docs','dir','ps','wg','prog','hr','hrd','wel','survey','users'],exec:['dash','gov','docs','dir','ps','wg','prog','hr','hrd','wel','survey'],staff:['dash','gov','docs','dir','ps','wg','prog','hr','hrd','wel','survey'],guest:['dash','gov']};
 const SCOPE={admin:'ทั้งกอง · 149 รพ.สต. + ส่วนกลาง',exec:'ทั้งกอง · 149 รพ.สต. + ส่วนกลาง',staff:'ทั้งกอง · 149 รพ.สต. + ส่วนกลาง',guest:'ทั้งกอง · 149 รพ.สต. (ดูภาพรวมอย่างเดียว)'};
 /* ----- ปรับเมนู/สิทธิ์ตามโหมดหน้าจอ ----- */
-const MODE_ROLES={mgmt:['admin','exec'],unit:['staff']};   /* บทบาทที่ลงชื่อเข้าใช้ได้ในหน้านี้ */
+const MODE_ROLES={mgmt:['admin','exec','pm'],unit:['staff','admin']};   /* บทบาทที่ลงชื่อเข้าใช้ได้ในหน้านี้ */
 if(APP_MODE==='mgmt'){CAN.staff=['dash'];}
 if(APP_MODE==='unit'){
  const keep=['dash','dir','ps','wg','survey','docs'];
  const nm={dash:['หน้าหลัก รพ.สต. ของฉัน','หน้าหลัก'],dir:['ข้อมูลอัตรากำลัง (ยืนยัน/แก้ไข)','อัตรากำลัง'],ps:['สำรวจลูกจ้าง พว.วิชาชีพ แพทย์แผนไทย จพ.ทันตกรรม','สำรวจลูกจ้าง'],wg:['สำรวจค่าจ้างลูกจ้างฯ.หลังปรับฐาน','ค่าจ้างฯ ปรับฐาน'],survey:['สำรวจความต้องการฝึกอบรม ปีงบประมาณ 2570','สำรวจ 2570'],docs:['เอกสาร/แบบฟอร์มต่างๆ ของงานบุคลากร','เอกสาร/แบบฟอร์ม']};
  const ms=keep.map(id=>{const c={...MENUS.find(m=>m.id===id)};delete c.p;c.t=nm[id][0];c.s=nm[id][1];return c});
  MENUS.splice(0,MENUS.length,...ms);
- CAN.staff=keep.slice();CAN.guest=['dash'];CAN.admin=['dash'];CAN.exec=['dash'];
+ CAN.staff=keep.slice();CAN.guest=['dash'];CAN.admin=keep.slice();CAN.exec=['dash'];
  SCOPE.staff='เฉพาะ รพ.สต. ของท่าน';SCOPE.guest='กรุณาเข้าสู่ระบบ';
 }
 const COURSES=[
@@ -993,7 +993,7 @@ async function eSet(u,rec){if(!db){EDITS[u.cd]=rec;eSave();return}await db.ref(E
 async function eDel(u){if(!db){delete EDITS[u.cd];eSave();return}await db.ref(EPATH+'/'+u.cd).remove()}
 /* ยืนยันข้อมูลเดิม: เก็บในโหนดเดียวกับการแก้ไข ด้วยคีย์ <รหัส 5 หลัก>_ok (ไม่ต้องเพิ่ม path ใหม่ใน Firebase Rules) */
 const CK=u=>u.cd+'_ok',cOf=u=>EDITS[CK(u)]||null;
-const isOwn=u=>st.role==='staff'&&!!st.user&&st.user===u.cd;
+const isOwn=u=>!!u&&((st.role==='staff'&&!!st.user&&st.user===u.cd)||(APP_MODE==='unit'&&st.role==='admin'&&!!st.unitSel&&st.unitSel===u.cd));
 const stOf=u=>u.ed?'edited':cOf(u)?'confirmed':'pending';
 async function cSet(u,rec){if(!db){EDITS[CK(u)]=rec;eSave();return}await db.ref(EPATH+'/'+CK(u)).set(rec)}
 const DOT='<span aria-hidden="true" style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#16a34a;box-shadow:0 0 0 3px rgba(22,163,74,.25);vertical-align:-2px"></span>';
@@ -1215,7 +1215,7 @@ function wgSum(list){return list.reduce((x,u)=>{const r=wgOf(u);if(r){x.n++;x.p+
 function wgFilter(){const k=wgq.trim().toLowerCase();return WGU.filter(u=>(!wgFa||u.a===wgFa)&&(!wgFs||u.s===wgFs)&&(!k||(u.n+u.a+u.cd).toLowerCase().includes(k))&&(!wgFst||(wgFst==='done')===!!wgOf(u)))}
 function wgForm(){
  const adm=st.role==='admin';
- if(st.role==='staff'){const m=WGU.find(x=>x.cd===st.user);wgSel=m?m.cd:''}
+ if(st.role==='staff'||(APP_MODE==='unit'&&st.role==='admin'&&st.unitSel)){const m=WGU.find(x=>x.cd===ucd());wgSel=m?m.cd:''}
  const u=WGU.find(x=>x.cd===wgSel)||null;if(u)wgAm=u.a;
  const r=u?wgOf(u):null,dis=u?'':' disabled';
  const ro=(l,v,fw)=>`<label${fw?' class="fw"':''}>${l}<input type="text" readonly tabindex="-1" value="${esc(v||'')}" placeholder="—" style="background:var(--acs)"></label>`;
@@ -1352,7 +1352,7 @@ function psFilter(){const k=psq.trim().toLowerCase();return psAll().filter(x=>{c
  return(!psFa||x.u.a===psFa)&&(!psFp||x.s.pos===psFp)&&(!psFt||x.s.typ===psFt)&&(!psFst||(psFst==='done')===psDone(x.r))&&(!k||(x.u.n+x.u.a+x.u.cd+(r.nm||'')+(r.ed||'')+(r.in||'')).toLowerCase().includes(k))})}
 function psForm(){
  psDirty=false;const adm=st.role==='admin',US=psUnits(),AMS=[...new Set(US.map(u=>u.a))];
- if(st.role==='staff'){const m=D.find(x=>x.cd===st.user);psSel=m?m.cd:''}
+ if(st.role==='staff'||(APP_MODE==='unit'&&st.role==='admin'&&st.unitSel)){const m=D.find(x=>x.cd===ucd());psSel=m?m.cd:''}
  const u=D.find(x=>x.cd===psSel)||null;if(u)psAm=u.a;
  const sl=u?psSlots(u):[],rec=u?psOf(u):null;
  const ro=(l,v,fw)=>`<label${fw?' class="fw"':''}>${l}<input type="text" readonly tabindex="-1" value="${esc(v||'')}" placeholder="—" style="background:var(--acs)"></label>`;
@@ -1727,7 +1727,7 @@ function dashUnit(u,a){
 /* ===== โหมดหน้าจอ (บริหาร / รพ.สต.) ===== */
 const modeOK=u=>!!u&&MODE_ROLES[APP_MODE].includes(u.role);
 const SV_ALIAS={'รพ.สต.ธาตุเชิงชุม':'รพ.สต.บ้านธาตุเชิงชุม'};   /* ชื่อในไฟล์อัตรากำลัง → ชื่อในรายการแบบสำรวจอบรม */
-function myUnit(){if(APP_MODE!=='unit'||st.role!=='staff')return null;const u=D.find(x=>x.cd===st.user);return u?{u,a:u.a,sn:SV_ALIAS[u.n]||u.n}:null}
+function myUnit(){if(APP_MODE!=='unit'||(st.role!=='staff'&&st.role!=='admin'))return null;const u=D.find(x=>x.cd===ucd());return u?{u,a:u.a,sn:SV_ALIAS[u.n]||u.n}:null}
 const dv=()=>{if(APP_MODE!=='unit')return DATA;const m=myUnit();return m?DATA.filter(d=>d.amphoe===m.a&&(d.unit===m.sn||d.unit===m.u.n)):[]};
 function unitLogin(){return `<div class="glass hero"><h1>🏥 พอร์ทัลสำหรับ รพ.สต.</h1><p class="sub">กรอกและยืนยันข้อมูลของหน่วยบริการท่าน · ระบบบริหารงานบุคคล กองสาธารณสุข อบจ.สกลนคร</p></div>
 <div class="glass card"><h2>เข้าสู่ระบบ</h2><p class="note">ใช้ชื่อผู้ใช้เป็น <b>รหัสสถานบริการ 5 หลัก</b> ของ รพ.สต. (รหัสผ่านเริ่มต้นเป็นรหัสเดียวกัน แล้วควรเปลี่ยนรหัสผ่านหลังเข้าใช้ครั้งแรก)</p><div class="actions"><button class="btn" type="button" onclick="document.getElementById('lgb').click()">เข้าสู่ระบบ</button></div><p class="note" style="margin-top:12px">ผู้บริหาร / หัวหน้างานบุคลากร / ผู้ดูแลระบบ ใช้หน้า <a href="index.html">บริหารจัดการ</a></p></div>`}
@@ -1753,9 +1753,17 @@ function unitDir(u){
  return unitHead('👥','ข้อมูลอัตรากำลัง',`ตรวจสอบข้อมูลบุคลากรของ ${esc(u.n)} ณ วันที่ ${esc(AS_OF)} · ถ้าถูกต้องกด “ยืนยันข้อมูลเดิม” ถ้าไม่ถูกต้องกด “แก้ไขบุคลากร”`)
  +`<div class="glass card"><div class="insight">สถานะ: ${stBadge(u)}</div><div class="actions" style="margin:10px 0 14px">${canEditUnit(u)?`<button class="btn" type="button" data-act="uedit" data-i="${u.i}">✏️ แก้ไขบุคลากร</button>`:''}${isOwn(u)&&s==='pending'?`<button class="btn sec" type="button" data-act="uconf" data-i="${u.i}">✔ ยืนยันข้อมูลเดิม</button>`:''}</div>${unitDetail(u.i)}</div>`;
 }
-function unitView(v){
- if(st.role!=='staff')return unitLogin();
- const m=myUnit();if(!m)return unitNone();
+
+/* ===== ผู้ดูแลระบบเข้าหน้า รพ.สต. : เลือกดู/กรอกแทนได้ทั้ง 149 แห่ง ===== */
+const ucd=()=>st.role==='admin'?(st.unitSel||''):st.user;
+function admOpts(){return D.slice().sort((x,y)=>x.a.localeCompare(y.a,'th')||x.n.localeCompare(y.n,'th')).map(u=>`<option value="${esc(u.cd)}"${u.cd===st.unitSel?' selected':''}>อ.${esc(u.a)} · ${esc(u.n)} (${esc(u.cd)})</option>`).join('')}
+function admBar(){return `<div class="glass card"><label>🏥 ผู้ดูแลระบบ กำลังดู/กรอกข้อมูลแทน รพ.สต.: <select id="admU"><option value="">— เลือก รพ.สต. —</option>${admOpts()}</select></label></div>`}
+function admPick(){return `<div class="glass hero"><h1>🏥 พอร์ทัลสำหรับ รพ.สต.</h1><p class="sub">ผู้ดูแลระบบ: เลือก รพ.สต. (ทั้ง ${D.length} แห่ง) ที่ต้องการเข้าไปดู/กรอก/แก้ไขข้อมูล</p></div>${admBar()}`}
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='admU'){st.unitSel=e.target.value;try{sessionStorage.setItem('hr_admin_unit',st.unitSel)}catch(_){}st.msg='';go(st.view)}});
+function unitView(v){const r=unitView0(v);return(r&&st.role==='admin'&&myUnit())?admBar()+r:r}
+function unitView0(v){
+ if(st.role!=='staff'&&st.role!=='admin')return unitLogin();
+ const m=myUnit();if(!m)return st.role==='admin'?admPick():unitNone();
  if(v==='dash')return unitHome(m);
  if(v==='dir')return unitDir(m.u);
  if(v==='wg')return unitHead('💰','สำรวจค่าจ้างลูกจ้างฯ.หลังปรับฐาน',esc(m.u.n)+' · กรอกจำนวนลูกจ้างและค่าจ้างพนักงานจ้างทั้งหมด (ก่อน/หลังปรับฐาน) ส่วนต่างคำนวณให้เอง')+`<div class="glass card"><div id="wfc">${wgForm()}</div></div>`;
@@ -1792,7 +1800,7 @@ $('#nav').onclick=e=>{const b=e.target.closest('[data-go]');if(!b)return;const i
  if(b.dataset.par){if(st.view===id||MENUS.some(x=>x.p===id&&x.id===st.view)){st.exp[id]=!(st.exp[id]||MENUS.some(x=>x.p===id&&x.id===st.view));renderNav();return}st.exp[id]=true}
  go(id)};
 /* ===== ระบบลงชื่อเข้าใช้ (ฝั่งเบราว์เซอร์: รหัสผ่านเก็บเป็นค่าแฮช ไม่เก็บตัวอักษรจริง) ===== */
-const ROLES={admin:'ผู้ดูแลระบบ',exec:'ผู้บริหาร',staff:'เจ้าหน้าที่ รพ.สต.',guest:'บุคคลทั่วไป'};
+const ROLES={admin:'ผู้ดูแลระบบ',exec:'ผู้บริหาร',pm:'PM บุคลากร',staff:'เจ้าหน้าที่ รพ.สต.',guest:'บุคคลทั่วไป'};
 function sha256(m){
  const rr=(x,n)=>x>>>n|x<<32-n,K=[],H=[];
  for(let p=2,c=0;c<64;p++){let ok=1;for(let d=2;d*d<=p;d++)if(p%d===0){ok=0;break}
@@ -1834,9 +1842,9 @@ const FM='<form class="form" style="grid-template-columns:1fr">',
  BT=t=>`<div class="actions"><button class="btn" type="submit">${t}</button><button class="btn sec" type="button" data-x>ยกเลิก</button><span class="err" id="lge" role="alert"></span></div></form>`;
 function setUser(u){
  if(u&&!modeOK(u))u=null;
- st.user=u?u.u:null;st.role=u?u.role:'guest';
- try{u?sessionStorage.setItem(SK,u.u):sessionStorage.removeItem(SK)}catch(e){}
- $('#who').textContent=u?u.name+' · '+ROLES[u.role]:ROLES.guest;
+ st.user=u?u.u:null;st.role=u?(u.role==='pm'?'exec':u.role):'guest';try{st.unitSel=u&&u.role==='admin'?(sessionStorage.getItem('hr_admin_unit')||''):''}catch(e){st.unitSel=''}
+ try{if(u){sessionStorage.setItem(SK,u.u);if(u.role==='admin'){sessionStorage.setItem('hr_sess_v1',u.u);sessionStorage.setItem('hr_sess_unit_v1',u.u)}}else{['hr_sess_v1','hr_sess_unit_v1','hr_admin_unit'].forEach(k=>sessionStorage.removeItem(k))}}catch(e){}
+ $('#who').innerHTML=u?esc(u.name)+' · '+esc(ROLES[u.role])+(u.role==='admin'?' · <a href="unit.html">⇄ สลับไปหน้า รพ.สต. (149 แห่ง)</a>':''):esc(ROLES.guest);
  $('#lgb').textContent=u?'ออกจากระบบ':'เข้าสู่ระบบ';$('#pwb').hidden=!u;go('dash');
 }
 $('#lgb').onclick=()=>{
@@ -1844,7 +1852,7 @@ $('#lgb').onclick=()=>{
  dlg(`<h2>เข้าสู่ระบบ</h2>${FM}<label>ชื่อผู้ใช้<input name="u" autocomplete="username"></label><label>รหัสผ่าน<input name="p" type="password" autocomplete="current-password"></label>${BT('เข้าสู่ระบบ')}${APP_MODE==='unit'?'<p class="note">ชื่อผู้ใช้และรหัสผ่านเริ่มต้น = รหัสสถานบริการ 5 หลัก · ผู้บริหาร/ผู้ดูแลระบบใช้หน้า <a href="index.html">บริหารจัดการ</a></p>':'<p class="note">ไม่ลงชื่อเข้าใช้ = บุคคลทั่วไป ดู Dashboard ได้อย่างเดียว · เจ้าหน้าที่ รพ.สต. ใช้หน้า <a href="unit.html">สำหรับ รพ.สต.</a></p>'}`,d=>{
   const u=USERS.find(x=>x.u===(d.u||'').trim().toLowerCase());
   if(!u||hpw(d.p||'',u.salt)!==u.h)return 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
-  if(!modeOK(u))return APP_MODE==='unit'?'บัญชีนี้เป็นของผู้บริหาร/ผู้ดูแลระบบ กรุณาเข้าใช้งานที่หน้าบริหารจัดการ (index.html)':'บัญชีนี้เป็นของเจ้าหน้าที่ รพ.สต. กรุณาเข้าใช้งานที่หน้าสำหรับ รพ.สต. (unit.html)';
+  if(!modeOK(u)){const T=APP_MODE==='unit'?'mgmt':'unit';if(MODE_ROLES[T].includes(u.role)){try{sessionStorage.setItem(T==='unit'?'hr_sess_unit_v1':'hr_sess_v1',u.u)}catch(e){}location.href=T==='unit'?'unit.html':'index.html';return}return 'บัญชีนี้ไม่มีสิทธิ์เข้าใช้งาน'}
   setUser(u)});
 };
 $('#pwb').onclick=()=>dlg(`<h2>เปลี่ยนรหัสผ่าน</h2>${FM}<label>รหัสผ่านเดิม<input name="o" type="password" autocomplete="current-password"></label><label>รหัสผ่านใหม่ (อย่างน้อย 6 ตัวอักษร)<input name="n" type="password" autocomplete="new-password"></label><label>ยืนยันรหัสผ่านใหม่<input name="c" type="password" autocomplete="new-password"></label>${BT('บันทึก')}`,d=>{
@@ -1854,7 +1862,7 @@ $('#pwb').onclick=()=>dlg(`<h2>เปลี่ยนรหัสผ่าน</h2
  if(d.n!==d.c)return 'ยืนยันรหัสผ่านไม่ตรงกัน';
  u.salt=newSalt();u.h=hpw(d.n,u.salt);saveU();alert('เปลี่ยนรหัสผ่านเรียบร้อยแล้ว')});
 function usersPage(){
- const ro=['admin','exec','staff'],sel=(v,x='')=>`<select ${x}>${ro.map(r=>`<option value="${r}"${r===v?' selected':''}>${ROLES[r]}</option>`).join('')}</select>`;
+ const ro=['admin','exec','pm','staff'],sel=(v,x='')=>`<select ${x}>${ro.map(r=>`<option value="${r}"${r===v?' selected':''}>${ROLES[r]}</option>`).join('')}</select>`;
  return `<div class="glass hero"><h1>🔐 จัดการผู้ใช้งาน</h1><p class="sub">สร้างผู้ใช้ กำหนดสิทธิ์ รีเซ็ตรหัสผ่าน และลบผู้ใช้ · เก็บในเบราว์เซอร์เครื่องนี้</p></div>
  ${st.msg?`<div class="insight" role="status">${esc(st.msg)}</div>`:''}
  <div class="glass card"><h2>เพิ่มผู้ใช้</h2><div class="form"><label>ชื่อผู้ใช้ (อังกฤษ/ตัวเลข)<input id="nu" autocomplete="off"></label><label>ชื่อ-สกุล<input id="nn"></label><label>สิทธิ์<select id="nr">${ro.map(r=>`<option value="${r}">${ROLES[r]}</option>`).join('')}</select></label><label>รหัสผ่าน (อย่างน้อย 6 ตัวอักษร)<input id="np" autocomplete="off"></label><div class="actions full"><button class="btn" data-act="u_add">เพิ่มผู้ใช้</button></div></div></div>
