@@ -628,6 +628,38 @@ table{font-size:.82rem}
 .side-foot.vision b{color:#fff;font-size:.85rem}.side-foot.vision span{font-size:.78rem}
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="bdp-css">
+.bdp{position:relative;display:flex;align-items:center;gap:0}
+.form .bdp .bdp-t{flex:1;min-width:0;padding-right:46px}
+.bdp .bdp-b{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:38px;height:38px;border:0;border-radius:11px;background:var(--acs);color:var(--ac);font-size:1.15rem;display:grid;place-items:center;padding:0}
+.bdp .bdp-b:hover:not(:disabled){background:var(--ac);color:var(--btx)}
+.bdp .bdp-b:disabled{opacity:.45;cursor:not-allowed}
+.form .bdp .bdp-t.bad{border-color:var(--bad);box-shadow:0 0 0 3px rgba(179,38,30,.18)}
+#bdpop{position:fixed;z-index:9999;width:318px;max-width:calc(100vw - 20px);background:var(--panel);color:var(--tx);border:1.5px solid var(--line);border-radius:20px;box-shadow:0 18px 48px rgba(5,25,45,.34);padding:14px;font-size:.95rem;user-select:none;animation:bdin .14s ease-out}
+@keyframes bdin{from{opacity:0;transform:translateY(-6px) scale(.98)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){#bdpop{animation:none}}
+#bdpop[hidden]{display:none}
+#bdpop .bh{display:flex;align-items:center;gap:6px;margin-bottom:10px}
+#bdpop .bh .bt{flex:1;text-align:center;font-weight:700;font-size:1.02rem;border:0;background:transparent;border-radius:12px;padding:7px 8px;color:var(--tx)}
+#bdpop .bh button.bt:hover{background:var(--acs)}
+#bdpop .bn{width:38px;height:38px;border:0;border-radius:12px;background:var(--acs);color:var(--ac);font-size:1.25rem;font-weight:700;line-height:1;display:grid;place-items:center;padding:0}
+#bdpop .bn:hover{background:var(--ac);color:var(--btx)}
+#bdpop .bw,#bdpop .bg{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+#bdpop .bw span{text-align:center;font-size:.78rem;font-weight:700;color:var(--mut);padding:4px 0}
+#bdpop .bw span:first-child,#bdpop .bd.sun{color:var(--bad)}
+#bdpop .bd{height:38px;border:0;border-radius:12px;background:transparent;color:var(--tx);font-weight:600;padding:0}
+#bdpop .bd:hover{background:var(--acs)}
+#bdpop .bd.sun{color:var(--bad)}
+#bdpop .bd.today{box-shadow:inset 0 0 0 2px var(--ac)}
+#bdpop .bd.sel{background:var(--ac);color:var(--btx);box-shadow:none}
+#bdpop .bx{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+#bdpop .bx .bd{height:46px}
+#bdpop .bf{display:flex;justify-content:space-between;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+#bdpop .bf button{border:0;background:transparent;color:var(--ac);font-weight:700;border-radius:10px;padding:7px 12px}
+#bdpop .bf button:hover{background:var(--acs)}
+#bdpop .bf .bc{color:var(--mut)}
+@media(max-width:560px){#bdpop{left:50%!important;top:auto!important;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(340px,calc(100vw - 20px));animation:none}}
+</style>
 </head>
 <body>
 <div class="app">
@@ -1902,7 +1934,7 @@ function unitFrame(u){
    <label>ตำแหน่ง<select data-f="pos"${dis}><option value="">เลือกตำแหน่ง</option>${FRPOS.map(p=>`<option${p[0]===x.pos?' selected':''}>${esc(p[0])}</option>`).join('')}</select></label>
    <label>ระดับ<select data-f="lv"${(ln||vac)&&ed?'':' disabled'}>${frLvOpts(x.pos,x.lv,vac)}</select></label></div></div>`}).join('')).join('');
  const sumTxt=spec.map(g=>g[0].replace('ผู้อำนวยการโรงพยาบาลส่งเสริมสุขภาพตำบล','ผู้อำนวยการ')+' '+g[1].length).join(' · ');
- const who=r?`<div class="insight">✅ กรอกข้อมูลแล้ว · บันทึกล่าสุดโดย ${esc(r.by||'')}${r.at?' · '+esc(fmtAt(r.at)):''} (แก้ไขและบันทึกซ้ำได้)</div>`:'<div class="insight">ยังไม่ได้กรอกข้อมูล · กรอกให้ครบทุกแถว แล้วกด “บันทึกข้อมูล”</div>';
+ const who=r?`<div class="insight">✅ กรอกข้อมูลแล้ว · บันทึกล่าสุดโดย ${esc(r.by||'')}${r.at?' · '+esc(fmtAt(r.at)):''} (แก้ไขและบันทึกซ้ำได้)${exBtns('fr')}</div>`:'<div class="insight">ยังไม่ได้กรอกข้อมูล · กรอกให้ครบทุกแถว แล้วกด “บันทึกข้อมูล”</div>';
  return head+`<div class="glass card">${st.msg?`<div class="insight" role="status">${esc(st.msg)}</div>`:''}${who}
  <div class="insight"><b>กรอบอัตรากำลังข้าราชการ ${FRZ[sz]} รวม ${total} อัตรา</b> · ${esc(sumTxt)}<br><small>ตำแหน่ง “ว่าง” ให้ติ๊กช่อง ว่าง · ถ้าติ๊ก “ว่าง” ระดับให้เลือกได้ 2 แบบ คือ ปฏิบัติการ/ชำนาญการ หรือ ปฏิบัติงาน/ชำนาญงาน · ถ้าไม่ติ๊ก เมื่อเลือกตำแหน่งแล้ว ระดับจะแสดงเฉพาะสายของตำแหน่งนั้น (สายวิชาชีพ: ปฏิบัติการ–เชี่ยวชาญ · สายทั่วไป: ปฏิบัติงาน–อาวุโส)</small></div>
  <form id="frf" class="form" novalidate>
@@ -1910,7 +1942,76 @@ function unitFrame(u){
  ${body}
  <div class="actions full"><button class="btn" type="submit"${dis}>${r?'บันทึกการแก้ไข':'บันทึกข้อมูล'}</button><span class="err" id="frerr" role="alert"></span></div></form></div>`;
 }
+/* ===== ส่งออก Excel / พิมพ์ (หน้ากรอบอัตรากำลังข้าราชการ + หน้าอัตรากำลังพนักงานจ้าง) ===== */
+const exBtns=(k,dis)=>`<div class="actions" style="margin:8px 0 0"><button type="button" class="btn" data-ex="${k}-xlsx"${dis||''}>📥 ส่งออกเป็น Excel</button><button type="button" class="btn sec" data-ex="${k}-print"${dis||''}>🖨️ พิมพ์</button></div>`;
+function exPrint(title,sub,table,land){
+ const dt=new Date().toLocaleDateString('th-TH',{year:'numeric',month:'long',day:'numeric'});
+ const html=`<!doctype html><html lang="th"><head><meta charset="utf-8"><title>${esc(title)}</title><style>
+ @page{size:A4 ${land?'landscape':'portrait'};margin:12mm}body{font-family:'Sarabun','TH Sarabun New','Noto Sans Thai',Tahoma,sans-serif;color:#000;font-size:12px}
+ h1{font-size:17px;margin:0 0 4px}p{margin:2px 0 6px}table{border-collapse:collapse;width:100%;margin-top:8px}
+ th,td{border:1px solid #444;padding:3px 6px;text-align:left;vertical-align:top}th{background:#e6eef2}thead{display:table-header-group}tr{page-break-inside:avoid}
+ .n{text-align:center;width:32px}.r{text-align:right}.g td{background:#f1f5f7;font-weight:700}.tot td{font-weight:700;background:#f1f5f7}
+ </style></head><body><h1>${esc(title)}</h1><p>${sub}</p><p style="color:#444">พิมพ์เมื่อ ${esc(dt)}</p>${table}</body></html>`;
+ const fr=document.createElement('iframe');fr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.appendChild(fr);
+ const d=fr.contentWindow.document;d.open();d.write(html);d.close();
+ setTimeout(()=>{try{fr.contentWindow.focus();fr.contentWindow.print()}catch(e){alert('เปิดหน้าต่างพิมพ์ไม่ได้')}setTimeout(()=>fr.remove(),60000)},300);
+}
+function exXlsx(aoa,widths,sheet,file,merges){
+ const ws=XLSX.utils.aoa_to_sheet(aoa);ws['!cols']=widths.map(w=>({wch:w}));if(merges)ws['!merges']=merges;
+ const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,sheet);XLSX.writeFile(wb,file);
+}
+const exSafe=s=>String(s||'').replace(/[\\/:*?"<>|]/g,'').trim();
+/* กรอบข้าราชการ: แถวข้อมูลที่บันทึกแล้ว เรียงตามกรอบ */
+function frData(u){
+ const r=frOf(u),spec=FRS[String(u.s||'').trim().toUpperCase()];if(!r||!spec)return null;
+ let n=0;const rows=[];spec.forEach(g=>g[1].forEach(h=>{const x=(r.rows||[])[n]||{};rows.push({i:++n,g:g[0],h,nm:x.nm||'',no:x.no||'',pos:x.pos||'',lv:x.lv||''})}));
+ return{r,rows,sz:FRZ[String(u.s||'').trim().toUpperCase()]};
+}
+function frXlsx2(u){
+ const d=frData(u);if(!d)return alert('ยังไม่มีข้อมูลที่บันทึก');
+ const aoa=[['กรอบอัตรากำลังข้าราชการ'],['รพ.สต.',u.n,'รหัส 5 หลัก',u.cd],['อำเภอ',u.a,'ขนาด',d.sz],['สังกัด','องค์การบริหารส่วนจังหวัดสกลนคร'],[],
+  ['ที่','กลุ่มงาน','ตามกรอบ','ชื่อ - สกุล','เลขที่ตำแหน่ง','ตำแหน่ง','ระดับ']];
+ d.rows.forEach(x=>aoa.push([x.i,x.g,x.h,x.nm,x.no,x.pos,x.lv]));
+ aoa.push([],['รวมกรอบอัตรากำลัง',d.rows.length,'อัตรา','ว่าง',d.rows.filter(x=>x.nm==='ว่าง').length,'อัตรา']);
+ exXlsx(aoa,[6,34,48,28,24,34,22],'กรอบข้าราชการ','กรอบอัตรากำลังข้าราชการ_'+exSafe(u.n)+'_'+u.cd+'.xlsx');
+}
+function frPrint2(u){
+ const d=frData(u);if(!d)return alert('ยังไม่มีข้อมูลที่บันทึก');
+ let last='',h='';d.rows.forEach(x=>{if(x.g!==last){last=x.g;h+=`<tr class="g"><td colspan="7">${esc(x.g)}</td></tr>`}
+  h+=`<tr><td class="n">${x.i}</td><td>${esc(x.h)}</td><td>${esc(x.nm)}</td><td>${esc(x.no)}</td><td>${esc(x.pos)}</td><td>${esc(x.lv)}</td><td></td></tr>`});
+ const tb=`<table><thead><tr><th class="n">ที่</th><th>ตามกรอบ</th><th>ชื่อ - สกุล</th><th>เลขที่ตำแหน่ง</th><th>ตำแหน่ง</th><th>ระดับ</th><th style="width:60px">หมายเหตุ</th></tr></thead><tbody>${h}</tbody></table><p>รวมกรอบอัตรากำลัง ${d.rows.length} อัตรา · ว่าง ${d.rows.filter(x=>x.nm==='ว่าง').length} อัตรา</p>`;
+ exPrint('กรอบอัตรากำลังข้าราชการ',esc(u.n)+' · อำเภอ'+esc(u.a)+' · รหัส '+esc(u.cd)+' · ขนาด '+esc(d.sz)+' · องค์การบริหารส่วนจังหวัดสกลนคร',tb,true);
+}
+function emXlsx2(u){
+ const r=emOf(u);if(!r)return alert('ยังไม่มีข้อมูลที่บันทึก');
+ const rows=r.rows||[],aoa=[['อัตรากำลังพนักงานจ้าง/จ้างเหมาบริการ ปีงบประมาณ พ.ศ. 2570'],['รพ.สต.',u.n,'รหัส 5 หลัก',u.cd],['อำเภอ',u.a,'สังกัด','องค์การบริหารส่วนจังหวัดสกลนคร'],[]];
+ if(r.none||!rows.length)aoa.push(['รพ.สต. นี้ไม่มีพนักงานจ้าง/จ้างเหมาบริการ']);
+ else{
+  aoa.push(['ที่','ชื่อ - สกุล','ตำแหน่ง','ประเภทพนักงานจ้าง','วุฒิการศึกษา','วันที่เริ่มปฏิบัติงาน','ลักษณะการจ้าง','เงินเดือนปัจจุบัน (บาท)','จำนวนเดือน','รวมเงินงบประมาณ (บาท)','ประกันสังคม 5% (บาท)','หมายเหตุ']);
+  rows.forEach((x,i)=>aoa.push([i+1,x.nm,x.pos,x.typ,x.edu,bdShow(x.st),x.hire,+x.sal||0,+x.mo||0,+x.tot||0,+x.ss||0,x.note||'']));
+  const S=k=>emR2(rows.reduce((a,x)=>a+(+x[k]||0),0));
+  aoa.push(['รวม','','','','','','',S('sal'),'',S('tot'),S('ss'),'']);
+ }
+ exXlsx(aoa,[6,28,30,32,22,18,18,20,12,22,20,28],'พนักงานจ้าง','อัตรากำลังพนักงานจ้าง_'+exSafe(u.n)+'_'+u.cd+'.xlsx');
+}
+function emPrint2(u){
+ const r=emOf(u);if(!r)return alert('ยังไม่มีข้อมูลที่บันทึก');
+ const rows=r.rows||[];let tb;
+ if(r.none||!rows.length)tb='<p><b>รพ.สต. นี้ไม่มีพนักงานจ้าง/จ้างเหมาบริการ</b></p>';
+ else{
+  const S=k=>emR2(rows.reduce((a,x)=>a+(+x[k]||0),0));
+  tb=`<table><thead><tr><th class="n">ที่</th><th>ชื่อ - สกุล</th><th>ตำแหน่ง</th><th>ประเภท</th><th>วุฒิการศึกษา</th><th>เริ่มปฏิบัติงาน</th><th>ลักษณะการจ้าง</th><th class="r">เงินเดือน</th><th class="r">เดือน</th><th class="r">รวมงบประมาณ</th><th class="r">ประกันสังคม 5%</th><th>หมายเหตุ</th></tr></thead><tbody>${rows.map((x,i)=>`<tr><td class="n">${i+1}</td><td>${esc(x.nm)}</td><td>${esc(x.pos)}</td><td>${esc(x.typ)}</td><td>${esc(x.edu)}</td><td>${esc(bdShow(x.st))}</td><td>${esc(x.hire)}</td><td class="r">${f2(x.sal)}</td><td class="r">${esc(x.mo)}</td><td class="r">${f2(x.tot)}</td><td class="r">${f2(x.ss)}</td><td>${esc(x.note||'')}</td></tr>`).join('')}<tr class="tot"><td colspan="7">รวม ${rows.length} คน</td><td class="r">${f2(S('sal'))}</td><td></td><td class="r">${f2(S('tot'))}</td><td class="r">${f2(S('ss'))}</td><td></td></tr></tbody></table>`;
+ }
+ exPrint('อัตรากำลังพนักงานจ้าง/จ้างเหมาบริการ ปีงบประมาณ พ.ศ. 2570',esc(u.n)+' · อำเภอ'+esc(u.a)+' · รหัส '+esc(u.cd)+' · องค์การบริหารส่วนจังหวัดสกลนคร',tb,true);
+}
+function bindEx(){
+ document.querySelectorAll('#view [data-ex]').forEach(b=>b.onclick=()=>{
+  const m=myUnit(),u=m&&m.u;if(!u)return;
+  ({'fr-xlsx':frXlsx2,'fr-print':frPrint2,'em-xlsx':emXlsx2,'em-print':emPrint2})[b.dataset.ex](u);
+ });
+}
 function bindFrame(){
+ bindEx();
  const f=$('#frf');if(!f)return;
  const row=el=>el.closest('.frr'),q=(r,k)=>r.querySelector(`[data-f="${k}"]`);
  f.addEventListener('input',()=>{frDirty=true});
@@ -1956,18 +2057,106 @@ const emR2=n=>Math.round((+n||0)*100)/100;
 function emSel(k,lab,list,cur,dis,oth){
  cur=cur||'';const o=oth&&!!cur&&!list.includes(cur);
  return `<label>${lab}<select data-f="${k}"${dis}><option value="">เลือก</option>${list.map(p=>`<option${p===cur?' selected':''}>${esc(p)}</option>`).join('')}${oth?`<option${o?' selected':''}>${EMO}</option>`:''}</select>${oth?`<input type="text" data-f="${k}O" placeholder="ระบุ" autocomplete="off" value="${o?esc(cur):''}"${o?'':' hidden'}${dis}>`:''}</label>`}
+/* ===== ปฏิทินแบบเลือกวันที่ (แสดงผลเป็น พ.ศ.) — เก็บค่าในฟิลด์เป็น ISO (YYYY-MM-DD ค.ศ.) เหมือนเดิม ===== */
+const BD_M=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const BD_MS=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const BD_D=['อา','จ','อ','พ','พฤ','ศ','ส'];
+const bdPad=n=>String(n).padStart(2,'0');
+const bdParse=s=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s||'');if(!m)return null;const y=+m[1],mo=+m[2]-1,d=+m[3],t=new Date(y,mo,d);return t.getFullYear()===y&&t.getMonth()===mo&&t.getDate()===d?{y,m:mo,d}:null};
+const bdIso=(y,m,d)=>String(y).padStart(4,'0')+'-'+bdPad(m+1)+'-'+bdPad(d);
+const bdShow=iso=>{const p=bdParse(iso);return p?bdPad(p.d)+'/'+bdPad(p.m+1)+'/'+(p.y+543):''};
+function bdField(k,iso,dis){dis=dis||'';return `<span class="bdp"><input type="text" class="bdp-t" inputmode="numeric" autocomplete="off" maxlength="10" placeholder="วว/ดด/พ.ศ." aria-label="วันที่ (พ.ศ.)" value="${esc(bdShow(iso))}"${dis}><button type="button" class="bdp-b" aria-label="เปิดปฏิทิน" title="เปิดปฏิทิน"${dis}>📅</button><input type="hidden" data-f="${k}" value="${esc(iso||'')}"></span>`}
+(function(){
+ let pop=null,cur=null,S={mode:'day',y:2026,m:0};
+ const hid=w=>w.querySelector('input[type=hidden]'),txt=w=>w.querySelector('.bdp-t');
+ const fire=el=>{['input','change'].forEach(t=>el.dispatchEvent(new Event(t,{bubbles:true})))};
+ function setVal(w,iso){const h=hid(w);h.value=iso;txt(w).value=bdShow(iso);txt(w).classList.remove('bad');fire(h)}
+ function close(back){if(pop)pop.hidden=true;if(back&&cur)txt(cur).focus();cur=null}
+ function place(){
+  if(!cur||!pop)return;
+  if(matchMedia('(max-width:560px)').matches){pop.style.left='';pop.style.top='';return}
+  const r=cur.getBoundingClientRect(),pw=pop.offsetWidth,ph=pop.offsetHeight,vw=innerWidth,vh=innerHeight;
+  let l=Math.min(Math.max(10,r.left),vw-pw-10),t=r.bottom+6;
+  if(t+ph>vh-10&&r.top-ph-6>10)t=r.top-ph-6;
+  pop.style.left=l+'px';pop.style.top=Math.max(10,t)+'px'}
+ function draw(){
+  const sel=bdParse(hid(cur).value),n=new Date(),T={y:n.getFullYear(),m:n.getMonth(),d:n.getDate()};
+  let h='';
+  if(S.mode==='day'){
+   const first=new Date(S.y,S.m,1).getDay(),dim=new Date(S.y,S.m+1,0).getDate();
+   h+=`<div class="bh"><button type="button" class="bn" data-a="prev" aria-label="เดือนก่อนหน้า">‹</button><button type="button" class="bt" data-a="mode-m" aria-label="เลือกเดือนและปี">${BD_M[S.m]} ${S.y+543} ▾</button><button type="button" class="bn" data-a="next" aria-label="เดือนถัดไป">›</button></div><div class="bw">${BD_D.map(x=>`<span>${x}</span>`).join('')}</div><div class="bg">`;
+   for(let i=0;i<first;i++)h+='<span></span>';
+   for(let d=1;d<=dim;d++){const dow=(first+d-1)%7,c=['bd'];if(dow===0)c.push('sun');if(T.y===S.y&&T.m===S.m&&T.d===d)c.push('today');const isSel=sel&&sel.y===S.y&&sel.m===S.m&&sel.d===d;if(isSel)c.push('sel');
+    h+=`<button type="button" class="${c.join(' ')}" data-a="day" data-d="${d}"${isSel?' aria-pressed="true"':''} aria-label="${d} ${BD_M[S.m]} ${S.y+543}">${d}</button>`}
+   h+='</div>';
+  }else if(S.mode==='month'){
+   h+=`<div class="bh"><button type="button" class="bn" data-a="prev" aria-label="ปีก่อนหน้า">‹</button><button type="button" class="bt" data-a="mode-y" aria-label="เลือกปี">พ.ศ. ${S.y+543} ▾</button><button type="button" class="bn" data-a="next" aria-label="ปีถัดไป">›</button></div><div class="bx">${BD_MS.map((x,i)=>`<button type="button" class="bd${T.y===S.y&&T.m===i?' today':''}${sel&&sel.y===S.y&&sel.m===i?' sel':''}" data-a="month" data-m="${i}">${x}</button>`).join('')}</div>`;
+  }else{
+   const b=Math.floor((S.y+543)/12)*12;
+   h+=`<div class="bh"><button type="button" class="bn" data-a="prev" aria-label="ช่วงปีก่อนหน้า">‹</button><span class="bt" style="cursor:default">พ.ศ. ${b}–${b+11}</span><button type="button" class="bn" data-a="next" aria-label="ช่วงปีถัดไป">›</button></div><div class="bx">${Array.from({length:12},(_,i)=>{const be=b+i,g=be-543;return `<button type="button" class="bd${T.y===g?' today':''}${sel&&sel.y===g?' sel':''}" data-a="year" data-y="${g}">${be}</button>`}).join('')}</div>`;
+  }
+  h+='<div class="bf"><button type="button" class="bc" data-a="clear">ล้างค่า</button><button type="button" data-a="today">วันนี้</button></div>';
+  pop.innerHTML=h;place();
+ }
+ function open(w){
+  if(!pop){pop=document.createElement('div');pop.id='bdpop';pop.setAttribute('role','dialog');pop.setAttribute('aria-label','ปฏิทินเลือกวันที่ (พ.ศ.)');document.body.appendChild(pop)}
+  cur=w;const p=bdParse(hid(w).value),n=new Date();
+  S={mode:'day',y:p?p.y:n.getFullYear(),m:p?p.m:n.getMonth()};
+  pop.hidden=false;draw();
+ }
+ function commitText(w){
+  const t=txt(w),v=t.value.trim();
+  if(!v){if(hid(w).value)setVal(w,'');t.classList.remove('bad');return}
+  const m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(v);
+  if(m){let y=+m[3];if(y>=2400)y-=543;const d=+m[1],mo=+m[2]-1,dt=new Date(y,mo,d);
+   if(y>=1900&&dt.getFullYear()===y&&dt.getMonth()===mo&&dt.getDate()===d){if(bdIso(y,mo,d)!==hid(w).value)setVal(w,bdIso(y,mo,d));else t.value=bdShow(hid(w).value);return}}
+  t.classList.add('bad');t.value=bdShow(hid(w).value);setTimeout(()=>t.classList.remove('bad'),1400);
+ }
+ document.addEventListener('click',e=>{
+  const tg=e.target;if(!tg.closest)return;
+  const b=tg.closest('.bdp-b');
+  if(b&&!b.disabled){const w=b.closest('.bdp');if(pop&&!pop.hidden&&cur===w)close();else open(w);return}
+  const t=tg.closest('.bdp-t');
+  if(t&&!t.disabled){const w=t.closest('.bdp');if(!(pop&&!pop.hidden&&cur===w))open(w);return}
+  const a=tg.closest('#bdpop [data-a]');
+  if(a&&cur){
+   const k=a.dataset.a;
+   if(k==='prev'||k==='next'){const s=k==='next'?1:-1;if(S.mode==='day'){S.m+=s;if(S.m<0){S.m=11;S.y--}if(S.m>11){S.m=0;S.y++}}else if(S.mode==='month')S.y+=s;else S.y+=12*s;if(S.y<1900)S.y=1900;draw()}
+   else if(k==='mode-m'){S.mode='month';draw()}
+   else if(k==='mode-y'){S.mode='year';draw()}
+   else if(k==='month'){S.m=+a.dataset.m;S.mode='day';draw()}
+   else if(k==='year'){S.y=+a.dataset.y;S.mode='month';draw()}
+   else if(k==='day'){setVal(cur,bdIso(S.y,S.m,+a.dataset.d));close(true)}
+   else if(k==='today'){const n=new Date();setVal(cur,bdIso(n.getFullYear(),n.getMonth(),n.getDate()));close(true)}
+   else if(k==='clear'){setVal(cur,'');close(true)}
+   return}
+  if(pop&&!pop.hidden&&!tg.closest('#bdpop'))close();
+ });
+ document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&pop&&!pop.hidden){e.preventDefault();close(true)}
+  else if(e.key==='Enter'&&e.target.classList&&e.target.classList.contains('bdp-t')){commitText(e.target.closest('.bdp'))}
+ });
+ document.addEventListener('input',e=>{
+  const t=e.target;if(!t.classList||!t.classList.contains('bdp-t'))return;
+  const d=t.value.replace(/\D/g,'').slice(0,8);
+  t.value=d.length>4?d.slice(0,2)+'/'+d.slice(2,4)+'/'+d.slice(4):d.length>2?d.slice(0,2)+'/'+d.slice(2):d;
+ });
+ document.addEventListener('focusout',e=>{const t=e.target;if(t.classList&&t.classList.contains('bdp-t'))commitText(t.closest('.bdp'))});
+ addEventListener('resize',()=>{if(pop&&!pop.hidden)place()});
+ addEventListener('scroll',()=>{if(pop&&!pop.hidden)place()},true);
+})();
 function emRow(i,x,dis){
  x=x||{};const mo=x.mo!=null?x.mo:12,tot=x.sal!=null?emR2(x.sal*mo):'',ss=tot===''?'':emR2(tot*0.05);
  return `<div class="frr emr"><div class="frh"><span class="frno">${i+1}</span><button type="button" class="btn sec sm" data-em="del"${dis}>ลบแถว</button></div>
  <div class="fr4"><label>ชื่อ - สกุล<input type="text" data-f="nm" autocomplete="off" placeholder="เช่น นางสาวสมหญิง ใจดี" value="${esc(x.nm||'')}"${dis}></label>${emSel('pos','ตำแหน่ง',EMPOS,x.pos,dis,1)}${emSel('typ','ประเภทพนักงานจ้าง',EMTYP,x.typ,dis,1)}${emSel('edu','วุฒิการศึกษา',EMEDU,x.edu,dis,1)}</div>
- <div class="fr4"><label>วันที่เริ่มปฏิบัติงาน<input type="date" data-f="st" value="${esc(x.st||'')}"${dis}></label>${emSel('hire','ลักษณะการจ้าง',EMHIRE,x.hire,dis,0)}<label>เงินเดือนปัจจุบัน (บาท)<input type="text" data-f="sal" inputmode="decimal" autocomplete="off" placeholder="เช่น 15000" value="${x.sal!=null?esc(x.sal):''}"${dis}></label><label>จำนวนเดือน<input type="text" data-f="mo" inputmode="numeric" autocomplete="off" value="${esc(mo)}"${dis}></label></div>
+ <div class="fr4"><label>วันที่เริ่มปฏิบัติงาน${bdField('st',x.st,dis)}</label>${emSel('hire','ลักษณะการจ้าง',EMHIRE,x.hire,dis,0)}<label>เงินเดือนปัจจุบัน (บาท)<input type="text" data-f="sal" inputmode="decimal" autocomplete="off" placeholder="เช่น 15000" value="${x.sal!=null?esc(x.sal):''}"${dis}></label><label>จำนวนเดือน<input type="text" data-f="mo" inputmode="numeric" autocomplete="off" value="${esc(mo)}"${dis}></label></div>
  <div class="fr4"><label>รวมเงินงบประมาณ (บาท) · คำนวณอัตโนมัติ<input type="text" data-f="tot" readonly tabindex="-1" value="${tot===''?'':f2(tot)}" placeholder="—" style="background:var(--acs)"></label><label>ประกันสังคม (5%) (บาท) · คำนวณอัตโนมัติ<input type="text" data-f="ss" readonly tabindex="-1" value="${ss===''?'':f2(ss)}" placeholder="—" style="background:var(--acs)"></label><label>หมายเหตุ<input type="text" data-f="note" autocomplete="off" value="${esc(x.note||'')}"${dis}></label></div></div>`}
 function unitEmp(u){
  emDirty=false;
  const ed=canEditUnit(u),dis=ed?'':' disabled',r=emOf(u),rows=(r&&r.rows)||[],none=!!(r&&r.none);
  const ro=(l,v,fw)=>`<label${fw?' class="fw"':''}>${l}<input type="text" readonly tabindex="-1" value="${esc(v||'')}" placeholder="—" style="background:var(--acs)"></label>`;
  const head=unitHead('🧑‍🔧','อัตรากำลังพนักงานจ้าง/จ้างเหมาบริการ',esc(u.n)+' · บัญชีรายชื่อพนักงานจ้าง/จ้างเหมาบริการ ปีงบประมาณ พ.ศ. 2570 · ชื่อ รพ.สต. ขึ้นให้อัตโนมัติ');
- const who=r?`<div class="insight">✅ กรอกข้อมูลแล้ว · บันทึกล่าสุดโดย ${esc(r.by||'')}${r.at?' · '+esc(fmtAt(r.at)):''} (แก้ไขและบันทึกซ้ำได้)</div>`:'<div class="insight">ยังไม่ได้กรอกข้อมูล · กด “เพิ่มพนักงานจ้าง” ตามจำนวนคน แล้วกด “บันทึกข้อมูล” (ถ้าไม่มีพนักงานจ้างเลย ให้ติ๊กช่องด้านล่าง)</div>';
+ const who=r?`<div class="insight">✅ กรอกข้อมูลแล้ว · บันทึกล่าสุดโดย ${esc(r.by||'')}${r.at?' · '+esc(fmtAt(r.at)):''} (แก้ไขและบันทึกซ้ำได้)${exBtns('em')}</div>`:'<div class="insight">ยังไม่ได้กรอกข้อมูล · กด “เพิ่มพนักงานจ้าง” ตามจำนวนคน แล้วกด “บันทึกข้อมูล” (ถ้าไม่มีพนักงานจ้างเลย ให้ติ๊กช่องด้านล่าง)</div>';
  const init=rows.length?rows:(none?[]:[{}]);
  return head+`<div class="glass card">${st.msg?`<div class="insight" role="status">${esc(st.msg)}</div>`:''}${who}
  <form id="emf" class="form" novalidate>
@@ -1979,6 +2168,7 @@ function unitEmp(u){
  <div class="actions full"><button class="btn" type="submit"${dis}>${r?'บันทึกการแก้ไข':'บันทึกข้อมูล'}</button><span class="err" id="emerr" role="alert"></span></div></form></div>`;
 }
 function bindEmp(){
+ bindEx();
  const f=$('#emf');if(!f)return;
  const q=(r,k)=>r.querySelector(`[data-f="${k}"]`),box=$('#emrows'),OT=['pos','typ','edu'];
  const val=(r,k)=>{const s=q(r,k);if(!s)return'';if(OT.includes(k)&&s.value===EMO)return(q(r,k+'O').value||'').trim();return s.value.trim()};
