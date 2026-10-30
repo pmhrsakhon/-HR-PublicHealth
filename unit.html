@@ -1868,6 +1868,7 @@ function unitDir(u){
 const FRPOS=[['นักวิชาการสาธารณสุข','v'],['นักสาธารณสุข','v'],['พยาบาลวิชาชีพ','v'],['เจ้าพนักงานสาธารณสุข','g'],['เจ้าพนักงานทันตสาธารณสุข','g'],['นักวิชาการสาธารณสุข (ทันตสาธารณสุข)','v'],['แพทย์แผนไทย','v'],['เจ้าพนักงานเภสัชกรรม','g'],['เภสัชกร','v'],['นักกายภาพบำบัด','v'],['เจ้าพนักงานสาธารณสุข (เวชกิจฉุกเฉิน)','g'],['เจ้าพนักงานฉุกเฉินการแพทย์','g'],['เจ้าพนักงานการเงินและบัญชี','g'],['เจ้าพนักงานธุรการ','g']];
 const FRL={v:['ปฏิบัติการ','ชำนาญการ','ชำนาญการพิเศษ','เชี่ยวชาญ'],g:['ปฏิบัติงาน','ชำนาญงาน','อาวุโส']};
 const FRLN={v:'สายวิชาชีพ',g:'สายทั่วไป'};
+const FRLV=['ปฏิบัติการ/ชำนาญการ','ปฏิบัติงาน/ชำนาญงาน'];   /* ตำแหน่ง "ว่าง" เลือกระดับได้เฉพาะ 2 ตัวเลือกนี้ */
 const frLine=p=>(FRPOS.find(x=>x[0]===p)||[])[1]||'';
 const FRS=(()=>{
  const NS='นักวิชาการสาธารณสุข / เจ้าพนักงานสาธารณสุข',RN='พยาบาลวิชาชีพ',AC='นักวิชาการสาธารณสุข',FN='เจ้าพนักงานการเงินและบัญชี',AD='เจ้าพนักงานธุรการ',
@@ -1883,7 +1884,7 @@ const FRZ={S:'ขนาดเล็ก (S)',M:'ขนาดกลาง (M)',L:'
 const FK=u=>u.cd+'_fr',frOf=u=>EDITS[FK(u)]||null;   /* เก็บในโหนด staffing2570 ด้วยคีย์ <รหัส 5 หลัก>_fr (ไม่ต้องเพิ่ม path ใหม่ใน Firebase Rules) */
 let frDirty=false;
 async function frSet(u,rec){if(!db){EDITS[FK(u)]=rec;eSave();return}await db.ref(EPATH+'/'+FK(u)).set(rec);EDITS[FK(u)]=rec}
-const frLvOpts=(pos,cur)=>{const ln=frLine(pos);return ln?`<option value="">เลือกระดับ (${FRLN[ln]})</option>`+FRL[ln].map(l=>`<option${l===cur?' selected':''}>${esc(l)}</option>`).join(''):'<option value="">เลือกตำแหน่งก่อน</option>'};
+const frLvOpts=(pos,cur,vac)=>{if(vac)return '<option value="">เลือกระดับ (ตำแหน่งว่าง)</option>'+FRLV.map(l=>`<option${l===cur?' selected':''}>${esc(l)}</option>`).join('');const ln=frLine(pos);return ln?`<option value="">เลือกระดับ (${FRLN[ln]})</option>`+FRL[ln].map(l=>`<option${l===cur?' selected':''}>${esc(l)}</option>`).join(''):'<option value="">เลือกตำแหน่งก่อน</option>'};
 function unitFrame(u){
  frDirty=false;
  const sz=String(u.s||'').trim().toUpperCase(),spec=FRS[sz],ed=canEditUnit(u);
@@ -1899,11 +1900,11 @@ function unitFrame(u){
    <div><label>ชื่อ - สกุล<input type="text" data-f="nm" autocomplete="off" placeholder="เช่น นายสมชาย ใจดี" value="${esc(x.nm||'')}"${vac?' readonly style="background:var(--acs)"':''}${dis}></label><label class="frv"><input type="checkbox" data-f="vac"${vac?' checked':''}${dis}> ว่าง (ยังไม่มีผู้ครองตำแหน่ง)</label></div>
    <label>เลขที่ตำแหน่ง<input type="text" data-f="no" autocomplete="off" placeholder="เช่น 56-1-06-3601-622 (ถ)" value="${esc(x.no||'')}"${dis}></label>
    <label>ตำแหน่ง<select data-f="pos"${dis}><option value="">เลือกตำแหน่ง</option>${FRPOS.map(p=>`<option${p[0]===x.pos?' selected':''}>${esc(p[0])}</option>`).join('')}</select></label>
-   <label>ระดับ<select data-f="lv"${ln&&ed?'':' disabled'}>${frLvOpts(x.pos,x.lv)}</select></label></div></div>`}).join('')).join('');
+   <label>ระดับ<select data-f="lv"${(ln||vac)&&ed?'':' disabled'}>${frLvOpts(x.pos,x.lv,vac)}</select></label></div></div>`}).join('')).join('');
  const sumTxt=spec.map(g=>g[0].replace('ผู้อำนวยการโรงพยาบาลส่งเสริมสุขภาพตำบล','ผู้อำนวยการ')+' '+g[1].length).join(' · ');
  const who=r?`<div class="insight">✅ กรอกข้อมูลแล้ว · บันทึกล่าสุดโดย ${esc(r.by||'')}${r.at?' · '+esc(fmtAt(r.at)):''} (แก้ไขและบันทึกซ้ำได้)</div>`:'<div class="insight">ยังไม่ได้กรอกข้อมูล · กรอกให้ครบทุกแถว แล้วกด “บันทึกข้อมูล”</div>';
  return head+`<div class="glass card">${st.msg?`<div class="insight" role="status">${esc(st.msg)}</div>`:''}${who}
- <div class="insight"><b>กรอบอัตรากำลังข้าราชการ ${FRZ[sz]} รวม ${total} อัตรา</b> · ${esc(sumTxt)}<br><small>ตำแหน่ง “ว่าง” ให้ติ๊กช่อง ว่าง · เมื่อเลือกตำแหน่งแล้ว ระดับจะแสดงเฉพาะสายของตำแหน่งนั้น (สายวิชาชีพ: ปฏิบัติการ–เชี่ยวชาญ · สายทั่วไป: ปฏิบัติงาน–อาวุโส)</small></div>
+ <div class="insight"><b>กรอบอัตรากำลังข้าราชการ ${FRZ[sz]} รวม ${total} อัตรา</b> · ${esc(sumTxt)}<br><small>ตำแหน่ง “ว่าง” ให้ติ๊กช่อง ว่าง · ถ้าติ๊ก “ว่าง” ระดับให้เลือกได้ 2 แบบ คือ ปฏิบัติการ/ชำนาญการ หรือ ปฏิบัติงาน/ชำนาญงาน · ถ้าไม่ติ๊ก เมื่อเลือกตำแหน่งแล้ว ระดับจะแสดงเฉพาะสายของตำแหน่งนั้น (สายวิชาชีพ: ปฏิบัติการ–เชี่ยวชาญ · สายทั่วไป: ปฏิบัติงาน–อาวุโส)</small></div>
  <form id="frf" class="form" novalidate>
  ${ro('รหัสสถานบริการ (5 หลัก)',u.cd)}${ro('ขนาด รพ.สต.',FRZ[sz])}${ro('ชื่อ รพ.สต.',u.n,1)}${ro('อำเภอ',u.a)}${ro('จังหวัด / สังกัด','สกลนคร · องค์การบริหารส่วนจังหวัดสกลนคร')}
  ${body}
@@ -1915,8 +1916,8 @@ function bindFrame(){
  f.addEventListener('input',()=>{frDirty=true});
  f.addEventListener('change',e=>{
   const t=e.target,r=row(t);if(!r)return;frDirty=true;
-  if(t.dataset.f==='pos'){const lv=q(r,'lv'),cur=lv.value;lv.innerHTML=frLvOpts(t.value,cur);lv.disabled=!frLine(t.value)}
-  if(t.dataset.f==='vac'){const nm=q(r,'nm');if(t.checked){nm.value='ว่าง';nm.readOnly=true;nm.style.background='var(--acs)'}else{nm.value='';nm.readOnly=false;nm.style.background='';nm.focus()}}
+  if(t.dataset.f==='pos'){const lv=q(r,'lv'),cur=lv.value,v=q(r,'vac').checked;lv.innerHTML=frLvOpts(t.value,cur,v);lv.disabled=!(v||frLine(t.value))}
+  if(t.dataset.f==='vac'){const nm=q(r,'nm'),lv=q(r,'lv'),ps=q(r,'pos');lv.innerHTML=frLvOpts(ps.value,lv.value,t.checked);lv.disabled=!(t.checked||frLine(ps.value));if(t.checked){nm.value='ว่าง';nm.readOnly=true;nm.style.background='var(--acs)'}else{nm.value='';nm.readOnly=false;nm.style.background='';nm.focus()}}
  });
  f.addEventListener('keydown',e=>{if(e.key!=='Enter'||e.target.tagName!=='INPUT'||e.target.type==='checkbox')return;e.preventDefault();const a=[...f.querySelectorAll('input[type=text]:not([readonly]),select:not([disabled])')],i=a.indexOf(e.target);if(i>=0&&i<a.length-1)a[i+1].focus()});
  f.addEventListener('focusin',e=>{const t=e.target;if(t.tagName!=='INPUT'||t.readOnly)return;setTimeout(()=>{try{t.scrollIntoView({block:'center',behavior:'smooth'})}catch(x){}},300)});
@@ -1927,12 +1928,12 @@ function bindFrame(){
   const spec=FRS[String(u.s||'').trim().toUpperCase()],hints=spec.flatMap(g=>g[1].map(h=>[g[0],h]));
   const rows=[];let bad='';
   [...f.querySelectorAll('.frr')].forEach((r,i)=>{
-   const g=k=>(q(r,k)||{value:''}).value.trim(),nm=g('nm'),no=g('no'),pos=g('pos'),lv=g('lv');
+   const g=k=>(q(r,k)||{value:''}).value.trim(),nm=g('nm'),no=g('no'),pos=g('pos'),lv=g('lv'),isV=!!(q(r,'vac')||{}).checked;
    if(bad)return;const tag='แถวที่ '+(i+1)+' ('+hints[i][0]+') ';
    if(!nm)bad=tag+'ยังไม่กรอกชื่อ-สกุล (ถ้าไม่มีผู้ครองตำแหน่งให้ติ๊ก “ว่าง”)';
    else if(!no)bad=tag+'ยังไม่กรอกเลขที่ตำแหน่ง';
    else if(!pos)bad=tag+'ยังไม่เลือกตำแหน่ง';
-   else if(!lv||!FRL[frLine(pos)].includes(lv))bad=tag+'ยังไม่เลือกระดับ';
+   else if(!lv||!(isV?FRLV:FRL[frLine(pos)]).includes(lv))bad=tag+'ยังไม่เลือกระดับ';
    else rows.push({nm,no,pos,lv})});
   if(bad){err.textContent='กรุณากรอกให้ครบ: '+bad;return}
   const was=!!frOf(u),rec={sz:u.s,rows,by:(USERS.find(x=>x.u===st.user)||{}).name||st.user,at:new Date().toISOString()};
