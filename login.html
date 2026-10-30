@@ -24,6 +24,8 @@ button,.opt{display:block;width:100%;margin-top:18px;padding:12px;border:0;borde
 <a class="opt" id="o1" href="mgmt.html">📊 หน้าผู้บริหาร / บริหารจัดการ<small>ภาพรวมทั้งกอง และจัดการผู้ใช้งาน</small></a>
 <a class="opt" id="o2" href="unit.html">🏥 หน้า รพ.สต. (ทั้ง 149 แห่ง)<small>เลือก รพ.สต. เพื่อดู/กรอก/แก้ไขข้อมูลแทน</small></a></div>
 </div>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 function sha256(m){
  const rr=(x,n)=>x>>>n|x<<32-n,K=[],H=[];
@@ -54,10 +56,39 @@ const UK='hr_users_v1';
 let USERS=(()=>{try{const a=JSON.parse(localStorage.getItem(UK)||'[]');if(a.length)return a}catch(e){}return[SEED]})();
 const saveU=()=>{try{localStorage.setItem(UK,JSON.stringify(USERS))}catch(e){}};
 try{if(!localStorage.getItem('hr_seed149_v1')){SEED_STAFF.forEach(([u,n,salt,h])=>{if(!USERS.some(x=>x.u===u))USERS.push({u,name:'เจ้าหน้าที่ '+n,role:'staff',salt,h})});saveU();localStorage.setItem('hr_seed149_v1','1')}}catch(e){}
+/* ===== Firebase (โปรเจกต์ pmhr-sakhon เดียวกับ unit.html / mgmt.html) ===== */
+const FB_CFG={apiKey:"AIzaSyDGKUuMFMFHyu1YKrvbkEuEpk9E05eOZzE",authDomain:"pmhr-sakhon.firebaseapp.com",databaseURL:"https://pmhr-sakhon-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"pmhr-sakhon",storageBucket:"pmhr-sakhon.firebasestorage.app",messagingSenderId:"637796769349",appId:"1:637796769349:web:3bd59165ad711d38fa4d2c"};
+let db=null;try{firebase.initializeApp(FB_CFG);db=firebase.database()}catch(e){console.warn('เชื่อมต่อ Firebase ไม่สำเร็จ',e)}
+/* ===== ซิงก์บัญชีผู้ใช้กับ Firebase (ใช้ร่วมกันทุกเครื่อง) =====
+   เดิมบัญชีอยู่ใน localStorage ของแต่ละเบราว์เซอร์ → เครื่องอื่นเห็นแค่รหัสเริ่มต้น จึงเข้าสู่ระบบด้วยรหัสที่เปลี่ยนไว้ไม่ได้
+   ตอนนี้เก็บที่ staffing2570/_users/<ชื่อผู้ใช้> (อยู่ใน path เดิม ไม่ต้องแก้ Rules) · localStorage เหลือไว้เป็นแคช/สำรองตอนออฟไลน์ */
+const UPATH='staffing2570/_users',uKey=u=>String(u).replace(/\./g,','),uClean=x=>({u:x.u,name:x.name,role:x.role,salt:x.salt,h:x.h});
+const SEEDH=(()=>{const m={};m[SEED.u]=SEED.h;SEED_STAFF.forEach(x=>{m[x[0]]=x[3]});return m})();
+const uOn=()=>typeof db!=='undefined'&&!!db;
+const uPut=x=>uOn()?db.ref(UPATH+'/'+uKey(x.u)).set(uClean(x)):Promise.resolve();
+const uDel=x=>uOn()?db.ref(UPATH+'/'+uKey(x.u)).remove():Promise.resolve();
+const uWarn=p=>p.catch(e=>alert('บันทึกบัญชีลงฐานข้อมูลกลางไม่สำเร็จ ผู้ใช้เครื่องอื่นอาจยังเข้าสู่ระบบด้วยข้อมูลใหม่ไม่ได้: '+((typeof fbErr==='function'?fbErr(e):'')||(e&&e.message)||e)));
+async function userSync(){
+ if(!uOn())return false;
+ const r=(await db.ref(UPATH).once('value')).val()||{},rm=new Map();
+ Object.values(r).forEach(x=>{if(x&&x.u&&x.salt&&x.h)rm.set(x.u,x)});
+ let first=false;try{first=!localStorage.getItem('hr_users_fb_v1')}catch(e){}
+ const up={};
+ /* ครั้งแรกของเครื่องนี้: ส่งบัญชีที่มีในเครื่องขึ้นไป (บัญชีที่ถูกแก้รหัสไว้ในเครื่องนี้ชนะรหัสเริ่มต้นบนเซิร์ฟเวอร์) · หลังจากนั้นถือข้อมูลบนเซิร์ฟเวอร์เป็นหลัก */
+ if(first||!rm.size)USERS.forEach(l=>{const x=rm.get(l.u);if(!x||(x.h!==l.h&&l.h!==SEEDH[l.u])){rm.set(l.u,l);up[uKey(l.u)]=uClean(l)}});
+ if(![...rm.values()].some(x=>x.role==='admin')){rm.set(SEED.u,SEED);up[uKey(SEED.u)]=uClean(SEED)}
+ if(Object.keys(up).length)await db.ref(UPATH).update(up);
+ USERS=[...rm.values()];saveU();
+ try{localStorage.setItem('hr_users_fb_v1','1')}catch(e){}
+ return true}
+userSync().catch(e=>console.warn('ซิงก์บัญชีผู้ใช้ไม่สำเร็จ',e));
 /* หมายเหตุ: ตรวจสิทธิ์ฝั่งเบราว์เซอร์ (ต้นแบบ) — ระบบจริงต้องบังคับสิทธิ์ที่เซิร์ฟเวอร์/ฐานข้อมูลด้วย */
 const K={mgmt:'hr_sess_v1',unit:'hr_sess_unit_v1'},$=i=>document.getElementById(i);
 const go=(page,keys,u)=>{try{keys.forEach(k=>sessionStorage.setItem(k,u))}catch(e){}location.href=page};
-$('lf').onsubmit=e=>{e.preventDefault();
+$('lf').onsubmit=async e=>{e.preventDefault();$('e').textContent='';
+ const sb=e.target.querySelector('button');sb.disabled=true;
+ try{await userSync()}catch(x){}   /* ดึงบัญชีล่าสุดจากฐานข้อมูลกลาง (ใช้ได้ทุกเครื่อง) */
+ sb.disabled=false;
  const un=$('u').value.trim().toLowerCase(),u=USERS.find(x=>x.u===un);
  if(!u||hpw($('p').value,u.salt)!==u.h){$('e').textContent='ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';return}
  if(u.role==='admin'){try{sessionStorage.setItem(K.mgmt,u.u);sessionStorage.setItem(K.unit,u.u)}catch(e){}

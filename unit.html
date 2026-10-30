@@ -2105,12 +2105,35 @@ let USERS=(()=>{try{const a=JSON.parse(localStorage.getItem(UK)||'[]');if(a.leng
 const saveU=()=>{try{localStorage.setItem(UK,JSON.stringify(USERS))}catch(e){}};
 /* สร้างบัญชีเจ้าหน้าที่ รพ.สต. 149 แห่งครั้งเดียว (username/password = รหัสสถานบริการ 5 หลัก) */
 try{if(!localStorage.getItem('hr_seed149_v1')){SEED_STAFF.forEach(([u,n,salt,h])=>{if(!USERS.some(x=>x.u===u))USERS.push({u,name:'เจ้าหน้าที่ '+n,role:'staff',salt,h})});saveU();localStorage.setItem('hr_seed149_v1','1')}}catch(e){}
+/* ===== ซิงก์บัญชีผู้ใช้กับ Firebase (ใช้ร่วมกันทุกเครื่อง) =====
+   เดิมบัญชีอยู่ใน localStorage ของแต่ละเบราว์เซอร์ → เครื่องอื่นเห็นแค่รหัสเริ่มต้น จึงเข้าสู่ระบบด้วยรหัสที่เปลี่ยนไว้ไม่ได้
+   ตอนนี้เก็บที่ staffing2570/_users/<ชื่อผู้ใช้> (อยู่ใน path เดิม ไม่ต้องแก้ Rules) · localStorage เหลือไว้เป็นแคช/สำรองตอนออฟไลน์ */
+const UPATH='staffing2570/_users',uKey=u=>String(u).replace(/\./g,','),uClean=x=>({u:x.u,name:x.name,role:x.role,salt:x.salt,h:x.h});
+const SEEDH=(()=>{const m={};m[SEED.u]=SEED.h;SEED_STAFF.forEach(x=>{m[x[0]]=x[3]});return m})();
+const uOn=()=>typeof db!=='undefined'&&!!db;
+const uPut=x=>uOn()?db.ref(UPATH+'/'+uKey(x.u)).set(uClean(x)):Promise.resolve();
+const uDel=x=>uOn()?db.ref(UPATH+'/'+uKey(x.u)).remove():Promise.resolve();
+const uWarn=p=>p.catch(e=>alert('บันทึกบัญชีลงฐานข้อมูลกลางไม่สำเร็จ ผู้ใช้เครื่องอื่นอาจยังเข้าสู่ระบบด้วยข้อมูลใหม่ไม่ได้: '+((typeof fbErr==='function'?fbErr(e):'')||(e&&e.message)||e)));
+async function userSync(){
+ if(!uOn())return false;
+ const r=(await db.ref(UPATH).once('value')).val()||{},rm=new Map();
+ Object.values(r).forEach(x=>{if(x&&x.u&&x.salt&&x.h)rm.set(x.u,x)});
+ let first=false;try{first=!localStorage.getItem('hr_users_fb_v1')}catch(e){}
+ const up={};
+ /* ครั้งแรกของเครื่องนี้: ส่งบัญชีที่มีในเครื่องขึ้นไป (บัญชีที่ถูกแก้รหัสไว้ในเครื่องนี้ชนะรหัสเริ่มต้นบนเซิร์ฟเวอร์) · หลังจากนั้นถือข้อมูลบนเซิร์ฟเวอร์เป็นหลัก */
+ if(first||!rm.size)USERS.forEach(l=>{const x=rm.get(l.u);if(!x||(x.h!==l.h&&l.h!==SEEDH[l.u])){rm.set(l.u,l);up[uKey(l.u)]=uClean(l)}});
+ if(![...rm.values()].some(x=>x.role==='admin')){rm.set(SEED.u,SEED);up[uKey(SEED.u)]=uClean(SEED)}
+ if(Object.keys(up).length)await db.ref(UPATH).update(up);
+ USERS=[...rm.values()];saveU();
+ try{localStorage.setItem('hr_users_fb_v1','1')}catch(e){}
+ return true}
+userSync().catch(e=>console.warn('ซิงก์บัญชีผู้ใช้ไม่สำเร็จ (ใช้ข้อมูลในเครื่องแทน)',e));
 const lg=$('#lg');
 lg.onclick=e=>{if(e.target===lg||e.target.closest('[data-x]'))lg.close()};
 function dlg(html,fn){
  $('#lgc').innerHTML=html;lg.showModal();
  const f=$('#lgc form');f.elements[0].focus();
- f.onsubmit=e=>{e.preventDefault();const err=fn(Object.fromEntries(new FormData(f)));if(err)$('#lge').textContent=err;else lg.close()};
+ f.onsubmit=e=>{e.preventDefault();Promise.resolve(fn(Object.fromEntries(new FormData(f)))).then(err=>{if(err)$('#lge').textContent=err;else lg.close()})};
 }
 const FM='<form class="form" style="grid-template-columns:1fr">',
  BT=t=>`<div class="actions"><button class="btn" type="submit">${t}</button><button class="btn sec" type="button" data-x>ยกเลิก</button><span class="err" id="lge" role="alert"></span></div></form>`;
@@ -2123,7 +2146,8 @@ function setUser(u){
 }
 $('#lgb').onclick=()=>{
  if(st.user){setUser(null);return}
- dlg(`<h2>เข้าสู่ระบบ</h2>${FM}<label>ชื่อผู้ใช้<input name="u" autocomplete="username"></label><label>รหัสผ่าน<input name="p" type="password" autocomplete="current-password"></label>${BT('เข้าสู่ระบบ')}${APP_MODE==='unit'?'<p class="note">ชื่อผู้ใช้และรหัสผ่านเริ่มต้น = รหัสสถานบริการ 5 หลัก · ผู้บริหาร/ผู้ดูแลระบบใช้หน้า <a href="mgmt.html">บริหารจัดการ</a></p>':'<p class="note">ไม่ลงชื่อเข้าใช้ = บุคคลทั่วไป ดู Dashboard ได้อย่างเดียว · เจ้าหน้าที่ รพ.สต. ใช้หน้า <a href="unit.html">สำหรับ รพ.สต.</a></p>'}`,d=>{
+ dlg(`<h2>เข้าสู่ระบบ</h2>${FM}<label>ชื่อผู้ใช้<input name="u" autocomplete="username"></label><label>รหัสผ่าน<input name="p" type="password" autocomplete="current-password"></label>${BT('เข้าสู่ระบบ')}${APP_MODE==='unit'?'<p class="note">ชื่อผู้ใช้และรหัสผ่านเริ่มต้น = รหัสสถานบริการ 5 หลัก · ผู้บริหาร/ผู้ดูแลระบบใช้หน้า <a href="mgmt.html">บริหารจัดการ</a></p>':'<p class="note">ไม่ลงชื่อเข้าใช้ = บุคคลทั่วไป ดู Dashboard ได้อย่างเดียว · เจ้าหน้าที่ รพ.สต. ใช้หน้า <a href="unit.html">สำหรับ รพ.สต.</a></p>'}`,async d=>{
+  try{await userSync()}catch(e){}   /* ดึงบัญชีล่าสุดจากฐานข้อมูลกลางก่อนตรวจรหัสผ่าน */
   const u=USERS.find(x=>x.u===(d.u||'').trim().toLowerCase());
   if(!u||hpw(d.p||'',u.salt)!==u.h)return 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
   if(!modeOK(u)){const T=APP_MODE==='unit'?'mgmt':'unit';if(MODE_ROLES[T].includes(u.role)){try{sessionStorage.setItem(T==='unit'?'hr_sess_unit_v1':'hr_sess_v1',u.u)}catch(e){}location.href=T==='unit'?'unit.html':'mgmt.html';return}return 'บัญชีนี้ไม่มีสิทธิ์เข้าใช้งาน'}
@@ -2134,7 +2158,7 @@ $('#pwb').onclick=()=>dlg(`<h2>เปลี่ยนรหัสผ่าน</h2
  if(!u||hpw(d.o||'',u.salt)!==u.h)return 'รหัสผ่านเดิมไม่ถูกต้อง';
  if((d.n||'').length<6)return 'รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร';
  if(d.n!==d.c)return 'ยืนยันรหัสผ่านไม่ตรงกัน';
- u.salt=newSalt();u.h=hpw(d.n,u.salt);saveU();alert('เปลี่ยนรหัสผ่านเรียบร้อยแล้ว')});
+ u.salt=newSalt();u.h=hpw(d.n,u.salt);saveU();uWarn(uPut(u));alert('เปลี่ยนรหัสผ่านเรียบร้อยแล้ว')});
 function usersPage(){
  const ro=['admin','exec','pm','staff'],sel=(v,x='')=>`<select ${x}>${ro.map(r=>`<option value="${r}"${r===v?' selected':''}>${ROLES[r]}</option>`).join('')}</select>`;
  return `<div class="glass hero"><h1>🔐 จัดการผู้ใช้งาน</h1><p class="sub">สร้างผู้ใช้ กำหนดสิทธิ์ รีเซ็ตรหัสผ่าน และลบผู้ใช้ · เก็บในเบราว์เซอร์เครื่องนี้</p></div>
@@ -2147,22 +2171,22 @@ function userAct(a,b){
  if(a==='u_add'){
   const u=$('#nu').value.trim().toLowerCase(),n=$('#nn').value.trim(),p=$('#np').value;
   st.msg=!/^[a-z0-9_.-]{3,}$/.test(u)?'ชื่อผู้ใช้ต้องเป็นอักษรอังกฤษหรือตัวเลข อย่างน้อย 3 ตัว':USERS.some(x=>x.u===u)?'มีชื่อผู้ใช้นี้แล้ว':!n?'กรุณากรอกชื่อ-สกุล':p.length<6?'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร':'';
-  if(!st.msg){const salt=newSalt();USERS.push({u,name:n,role:$('#nr').value,salt,h:hpw(p,salt)});saveU();st.msg='เพิ่มผู้ใช้ '+u+' เรียบร้อยแล้ว'}
+  if(!st.msg){const salt=newSalt();const nu={u,name:n,role:$('#nr').value,salt,h:hpw(p,salt)};USERS.push(nu);saveU();uWarn(uPut(nu));st.msg='เพิ่มผู้ใช้ '+u+' เรียบร้อยแล้ว'}
   render();
  }else if(a==='u_pw'){
   const x=USERS.find(y=>y.u===b.dataset.i),p=x&&prompt('รหัสผ่านใหม่ของ '+x.u+' (อย่างน้อย 6 ตัวอักษร)');
-  if(p){if(p.length<6){alert('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร');return}x.salt=newSalt();x.h=hpw(p,x.salt);saveU();st.msg='รีเซ็ตรหัสผ่านของ '+x.u+' เรียบร้อยแล้ว';render()}
+  if(p){if(p.length<6){alert('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร');return}x.salt=newSalt();x.h=hpw(p,x.salt);saveU();uWarn(uPut(x));st.msg='รีเซ็ตรหัสผ่านของ '+x.u+' เรียบร้อยแล้ว';render()}
  }else if(a==='u_del'){
   const x=USERS.find(y=>y.u===b.dataset.i);if(!x)return;
   if(x.role==='admin'&&nAdmin()<2){alert('ลบไม่ได้: ต้องมีผู้ดูแลระบบอย่างน้อย 1 คน');return}
-  if(confirm('ลบผู้ใช้ '+x.u+'?')){USERS=USERS.filter(y=>y!==x);saveU();render()}
+  if(confirm('ลบผู้ใช้ '+x.u+'?')){USERS=USERS.filter(y=>y!==x);saveU();uWarn(uDel(x));render()}
  }
 }
 $('#view').onchange=e=>{
  const s=e.target.closest('[data-ur]');if(!s||st.role!=='admin')return;
  const x=USERS.find(y=>y.u===s.dataset.ur);if(!x)return;
  if(x.role==='admin'&&s.value!=='admin'&&nAdmin()<2){alert('ต้องมีผู้ดูแลระบบอย่างน้อย 1 คน');render();return}
- x.role=s.value;saveU();st.msg='ปรับสิทธิ์ของ '+x.u+' เป็น '+ROLES[x.role]+' แล้ว';render();
+ x.role=s.value;saveU();uWarn(uPut(x));st.msg='ปรับสิทธิ์ของ '+x.u+' เป็น '+ROLES[x.role]+' แล้ว';render();
 };
 
 $('#theme').onclick=()=>{const r=document.documentElement,dark=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme:dark)').matches;r.dataset.theme=dark?'light':'dark'};
