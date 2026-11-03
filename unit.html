@@ -1988,8 +1988,8 @@ function emXlsx2(u){
  if(r.none||!rows.length)aoa.push(['รพ.สต. นี้ไม่มีพนักงานจ้าง/จ้างเหมาบริการ']);
  else{
   aoa.push(['ที่','ชื่อ - สกุล','ตำแหน่ง','ประเภทพนักงานจ้าง','วุฒิการศึกษา','วันที่เริ่มปฏิบัติงาน','กลุ่มพนักงาน พกส.','ลักษณะการจ้าง','เงินเดือนปัจจุบัน (บาท)','จำนวนเดือน','รวมเงินงบประมาณ (บาท)','ประกันสังคม 5% (บาท)','หมายเหตุ']);
-  rows.forEach((x,i)=>aoa.push([i+1,x.nm,x.pos,x.typ,x.edu,bdShow(x.st),x.grp||'',x.hire,+x.sal||0,+x.mo||0,+x.tot||0,+x.ss||0,x.note||'']));
-  const S=k=>emR2(rows.reduce((a,x)=>a+(+x[k]||0),0));
+  rows.forEach((x,i)=>aoa.push([i+1,x.nm,x.pos,x.typ,x.edu,bdShow(x.st),x.grp||'',x.hire,+x.sal||0,+x.mo||0,+x.tot||0,emIsCon(x.typ)?'-':(+x.ss||0),x.note||'']));
+  const S=k=>emR2(rows.reduce((a,x)=>a+((k==='ss'&&emIsCon(x.typ))?0:(+x[k]||0)),0));
   aoa.push(['รวม','','','','','','','',S('sal'),'',S('tot'),S('ss'),'']);
  }
  exXlsx(aoa,[6,28,30,32,22,18,18,40,20,12,22,20,28],'พนักงานจ้าง','อัตรากำลังพนักงานจ้าง_'+exSafe(u.n)+'_'+u.cd+'.xlsx');
@@ -1999,8 +1999,8 @@ function emPrint2(u){
  const rows=r.rows||[];let tb;
  if(r.none||!rows.length)tb='<p><b>รพ.สต. นี้ไม่มีพนักงานจ้าง/จ้างเหมาบริการ</b></p>';
  else{
-  const S=k=>emR2(rows.reduce((a,x)=>a+(+x[k]||0),0));
-  tb=`<table><thead><tr><th class="n">ที่</th><th>ชื่อ - สกุล</th><th>ตำแหน่ง</th><th>ประเภท</th><th>วุฒิการศึกษา</th><th>เริ่มปฏิบัติงาน</th><th>กลุ่ม พกส.</th><th>ลักษณะการจ้าง</th><th class="r">เงินเดือน</th><th class="r">เดือน</th><th class="r">รวมงบประมาณ</th><th class="r">ประกันสังคม 5%</th><th>หมายเหตุ</th></tr></thead><tbody>${rows.map((x,i)=>`<tr><td class="n">${i+1}</td><td>${esc(x.nm)}</td><td>${esc(x.pos)}</td><td>${esc(x.typ)}</td><td>${esc(x.edu)}</td><td>${esc(bdShow(x.st))}</td><td>${esc(x.grp||'')}</td><td>${esc(x.hire)}</td><td class="r">${f2(x.sal)}</td><td class="r">${esc(x.mo)}</td><td class="r">${f2(x.tot)}</td><td class="r">${f2(x.ss)}</td><td>${esc(x.note||'')}</td></tr>`).join('')}<tr class="tot"><td colspan="8">รวม ${rows.length} คน</td><td class="r">${f2(S('sal'))}</td><td></td><td class="r">${f2(S('tot'))}</td><td class="r">${f2(S('ss'))}</td><td></td></tr></tbody></table>`;
+  const S=k=>emR2(rows.reduce((a,x)=>a+((k==='ss'&&emIsCon(x.typ))?0:(+x[k]||0)),0));
+  tb=`<table><thead><tr><th class="n">ที่</th><th>ชื่อ - สกุล</th><th>ตำแหน่ง</th><th>ประเภท</th><th>วุฒิการศึกษา</th><th>เริ่มปฏิบัติงาน</th><th>กลุ่ม พกส.</th><th>ลักษณะการจ้าง</th><th class="r">เงินเดือน</th><th class="r">เดือน</th><th class="r">รวมงบประมาณ</th><th class="r">ประกันสังคม 5%</th><th>หมายเหตุ</th></tr></thead><tbody>${rows.map((x,i)=>`<tr><td class="n">${i+1}</td><td>${esc(x.nm)}</td><td>${esc(x.pos)}</td><td>${esc(x.typ)}</td><td>${esc(x.edu)}</td><td>${esc(bdShow(x.st))}</td><td>${esc(x.grp||'')}</td><td>${esc(x.hire)}</td><td class="r">${f2(x.sal)}</td><td class="r">${esc(x.mo)}</td><td class="r">${f2(x.tot)}</td><td class="r">${emIsCon(x.typ)?'-':f2(x.ss)}</td><td>${esc(x.note||'')}</td></tr>`).join('')}<tr class="tot"><td colspan="8">รวม ${rows.length} คน</td><td class="r">${f2(S('sal'))}</td><td></td><td class="r">${f2(S('tot'))}</td><td class="r">${f2(S('ss'))}</td><td></td></tr></tbody></table>`;
  }
  exPrint('อัตรากำลังพนักงานจ้าง/จ้างเหมาบริการ ปีงบประมาณ พ.ศ. 2570',esc(u.n)+' · อำเภอ'+esc(u.a)+' · รหัส '+esc(u.cd)+' · องค์การบริหารส่วนจังหวัดสกลนคร',tb,true);
 }
@@ -2046,7 +2046,7 @@ function bindFrame(){
 
 /* ===== อัตรากำลังพนักงานจ้าง/จ้างเหมาบริการ (เมนูย่อยของข้อมูลอัตรากำลัง): แบบฟอร์มบัญชีรายชื่อพนักงานจ้าง เพิ่ม/ลบแถวได้ ===== */
 const EMO='อื่น ๆ (ระบุ)';
-const EMPOS=['นักวิชาการสาธารณสุข','นักสาธารณสุข','พยาบาลวิชาชีพ','เจ้าพนักงานสาธารณสุข','เจ้าพนักงานทันตสาธารณสุข','นักวิชาการสาธารณสุข (ทันตสาธารณสุข)','แพทย์แผนไทย','เจ้าพนักงานการเงินและบัญชี','เจ้าพนักงานธุรการ','พนักงานทำความสะอาด','พนักงานบริการ','พนักงานช่วยการพยาบาล','พนักงานช่วยเหลือคนไข้','พนักงานขับรถ'];
+const EMPOS=['นักวิชาการสาธารณสุข','นักสาธารณสุข','พยาบาลวิชาชีพ','เจ้าพนักงานสาธารณสุข','เจ้าพนักงานทันตสาธารณสุข','นักวิชาการสาธารณสุข (ทันตสาธารณสุข)','แพทย์แผนไทย','ผู้ช่วยแพทย์แผนไทย','เจ้าพนักงานการเงินและบัญชี','เจ้าพนักงานธุรการ','พนักงานทำความสะอาด','พนักงานบริการ','พนักงานช่วยการพยาบาล','พนักงานช่วยเหลือคนไข้','พนักงานขับรถ'];
 const EMTYP=['พนักงานกระทรวงสาธารณสุข (พกส.)','ลูกจ้างชั่วคราวรายเดือน','ลูกจ้างรายวัน/รายคาบ','จ้างเหมาบริการ'];
 const EMEDU=['ไม่มีวุฒิการศึกษา','มัธยมศึกษาตอนต้น','มัธยมศึกษาตอนปลาย','ปวช.','ปวส.','อนุปริญญา','ปริญญาตรี','ปริญญาโท','ปริญญาเอก'];
 /* กลุ่มพนักงาน พกส. + คุณวุฒิตามคุณสมบัติเฉพาะตำแหน่ง (บัญชีอัตราค่าจ้างพนักงานกระทรวงสาธารณสุข มีผล 1 ต.ค. 2569) */
@@ -2059,7 +2059,7 @@ const EMPKS={
 };
 /* ลูกจ้างชั่วคราวรายเดือน / ลูกจ้างรายวัน-รายคาบ / จ้างเหมาบริการ / อื่น ๆ (บัญชีอัตราค่าจ้างลูกจ้างชั่วคราวเงินนอกงบประมาณ พ.ศ. 2569) */
 const EMTMP=['ไม่กำหนดวุฒิ','ปวช.','ปวท.','ปวส.','วุฒิปริญญาตรี หลักสูตร 4 ปี','วุฒิปริญญาตรี หลักสูตร 5 ปี','วุฒิปริญญาตรี หลักสูตร 6 ปี'];
-const emIsPks=t=>t===EMTYP[0];
+const emIsPks=t=>t===EMTYP[0],emIsCon=t=>t===EMTYP[3];   /* จ้างเหมาบริการ: ไม่คิดประกันสังคม แสดง - */
 function emHireOpts(pks,grp,cur){
  const list=pks?(EMPKS[grp]||[]):EMTMP;cur=list.includes(cur)?cur:'';
  return `<option value="">${pks&&!grp?'เลือกกลุ่มพนักงาน พกส. ก่อน':'เลือก'}</option>`+list.map(p=>`<option${p===cur?' selected':''}>${esc(p)}</option>`).join('')}
@@ -2159,12 +2159,12 @@ function bdField(k,iso,dis){dis=dis||'';return `<span class="bdp"><input type="t
  addEventListener('scroll',()=>{if(pop&&!pop.hidden)place()},true);
 })();
 function emRow(i,x,dis){
- x=x||{};const pks=emIsPks(x.typ),mo=x.mo!=null?x.mo:12,tot=x.sal!=null?emR2(x.sal*mo):'',ss=tot===''?'':emR2(tot*0.05);
+ x=x||{};const pks=emIsPks(x.typ),mo=x.mo!=null?x.mo:12,tot=x.sal!=null?emR2(x.sal*mo):'',ssv=emIsCon(x.typ)?'-':(tot===''?'':f2(emR2(tot*0.05)));
  return `<div class="frr emr"><div class="frh"><span class="frno">${i+1}</span><button type="button" class="btn sec sm" data-em="del"${dis}>ลบแถว</button></div>
  <div class="fr4"><label>ชื่อ - สกุล<input type="text" data-f="nm" autocomplete="off" placeholder="เช่น นางสาวสมหญิง ใจดี" value="${esc(x.nm||'')}"${dis}></label>${emSel('pos','ตำแหน่ง',EMPOS,x.pos,dis,1)}${emSel('typ','ประเภทพนักงานจ้าง',EMTYP,x.typ,dis,1)}${emSel('edu','วุฒิการศึกษา',EMEDU,x.edu,dis,1)}</div>
  <div class="fr4"><label>วันที่เริ่มปฏิบัติงาน${bdField('st',x.st,dis)}</label><label data-grpw${pks?'':' hidden'}>กลุ่มพนักงาน พกส.<select data-f="grp"${dis}><option value="">เลือก</option>${EMGRP.map(p=>`<option${p===x.grp?' selected':''}>${esc(p)}</option>`).join('')}</select></label><label>ลักษณะการจ้าง<select data-f="hire"${dis}>${emHireOpts(pks,x.grp,x.hire)}</select></label><label>เงินเดือนปัจจุบัน (บาท)<input type="text" data-f="sal" inputmode="decimal" autocomplete="off" placeholder="เช่น 15000" value="${x.sal!=null?esc(x.sal):''}"${dis}></label></div>
  <div class="fr4"><label>จำนวนเดือน<input type="text" data-f="mo" inputmode="numeric" autocomplete="off" value="${esc(mo)}"${dis}></label>
- <label>รวมเงินงบประมาณ (บาท) · คำนวณอัตโนมัติ<input type="text" data-f="tot" readonly tabindex="-1" value="${tot===''?'':f2(tot)}" placeholder="—" style="background:var(--acs)"></label><label>ประกันสังคม (5%) (บาท) · คำนวณอัตโนมัติ<input type="text" data-f="ss" readonly tabindex="-1" value="${ss===''?'':f2(ss)}" placeholder="—" style="background:var(--acs)"></label><label>หมายเหตุ<input type="text" data-f="note" autocomplete="off" value="${esc(x.note||'')}"${dis}></label></div></div>`}
+ <label>รวมเงินงบประมาณ (บาท) · คำนวณอัตโนมัติ<input type="text" data-f="tot" readonly tabindex="-1" value="${tot===''?'':f2(tot)}" placeholder="—" style="background:var(--acs)"></label><label>ประกันสังคม (5%) (บาท) · คำนวณอัตโนมัติ<input type="text" data-f="ss" readonly tabindex="-1" value="${ssv}" placeholder="—" style="background:var(--acs)"></label><label>หมายเหตุ<input type="text" data-f="note" autocomplete="off" value="${esc(x.note||'')}"${dis}></label></div></div>`}
 function unitEmp(u){
  emDirty=false;
  const ed=canEditUnit(u),dis=ed?'':' disabled',r=emOf(u),rows=(r&&r.rows)||[],none=!!(r&&r.none);
@@ -2186,7 +2186,7 @@ function bindEmp(){
  const f=$('#emf');if(!f)return;
  const q=(r,k)=>r.querySelector(`[data-f="${k}"]`),box=$('#emrows'),OT=['pos','typ','edu'];
  const val=(r,k)=>{const s=q(r,k);if(!s)return'';if(OT.includes(k)&&s.value===EMO)return(q(r,k+'O').value||'').trim();return s.value.trim()};
- const calc=r=>{const s=wgNum(q(r,'sal').value),m=wgNum(q(r,'mo').value),ok=!isNaN(s)&&!isNaN(m),t=ok?emR2(s*m):'';q(r,'tot').value=ok?f2(t):'';q(r,'ss').value=ok?f2(emR2(t*0.05)):'';return ok?[s,m,t,emR2(t*0.05)]:null};
+ const calc=r=>{const s=wgNum(q(r,'sal').value),m=wgNum(q(r,'mo').value),ok=!isNaN(s)&&!isNaN(m),t=ok?emR2(s*m):'';q(r,'tot').value=ok?f2(t):'';const con=emIsCon(q(r,'typ').value);q(r,'ss').value=con?'-':(ok?f2(emR2(t*0.05)):'');return ok?[s,m,t,con?0:emR2(t*0.05)]:null};
  const sum=()=>{let n=0,a=0,t=0,s=0;[...box.children].forEach(r=>{n++;const c=calc(r);if(c){a+=c[0];t+=c[2];s+=c[3]}});$('#emsum').innerHTML=`<b>สรุป</b> · พนักงานจ้าง ${n} คน · เงินเดือนรวม ${f2(a)} บาท/เดือน · รวมเงินงบประมาณ ${f2(emR2(t))} บาท · ประกันสังคม (5%) ${f2(emR2(s))} บาท`};
  const renum=()=>{[...box.children].forEach((r,i)=>r.querySelector('.frno').textContent=i+1)};
  sum();
@@ -2198,7 +2198,7 @@ function bindEmp(){
   if(OT.includes(t.dataset.f)){const o=q(r,t.dataset.f+'O');o.hidden=t.value!==EMO;if(!o.hidden)o.focus()}
   if(t.dataset.f==='typ'||t.dataset.f==='grp'){
    const pks=emIsPks(q(r,'typ').value),gw=r.querySelector('[data-grpw]'),h=q(r,'hire');
-   gw.hidden=!pks;if(!pks)q(r,'grp').value='';
+   gw.hidden=!pks;if(!pks)q(r,'grp').value='';sum();
    h.innerHTML=emHireOpts(pks,q(r,'grp').value,h.value)}
  });
  f.addEventListener('click',e=>{
@@ -2225,7 +2225,7 @@ function bindEmp(){
     else if(!hire)bad=tag+'ยังไม่เลือกลักษณะการจ้าง';
     else if(isNaN(sal)||sal<=0)bad=tag+'เงินเดือนปัจจุบันต้องเป็นตัวเลขมากกว่า 0';
     else if(isNaN(mo)||!Number.isInteger(mo)||mo<1||mo>12)bad=tag+'จำนวนเดือนต้องเป็นจำนวนเต็ม 1–12';
-    else{const tot=emR2(sal*mo);rows.push({nm,pos,typ,edu,st:st0,grp:pks?grp:'',hire,sal,mo,tot,ss:emR2(tot*0.05),note})}});
+    else{const tot=emR2(sal*mo);rows.push({nm,pos,typ,edu,st:st0,grp:pks?grp:'',hire,sal,mo,tot,ss:emIsCon(typ)?null:emR2(tot*0.05),note})}});
    if(bad){err.textContent='กรุณากรอกให้ครบ: '+bad;return}
   }
   const was=!!emOf(u),rec={none,rows,by:(USERS.find(x=>x.u===st.user)||{}).name||st.user,at:new Date().toISOString()};
