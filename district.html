@@ -363,6 +363,7 @@ html{scroll-padding-bottom:170px}
 .psc .fw{grid-column:1/-1}
 .psc input[readonly]{background:var(--panel)!important}
 #wat{font-size:.85rem}#wat td.n{white-space:nowrap;text-align:right}#wat th{font-size:.78rem}
+#wat th{background:#26458f;color:#fff;text-align:center;font-weight:800;font-size:.8rem;line-height:1.35;vertical-align:middle}#wat td{vertical-align:middle}#wat td.c{text-align:center}#wat td:nth-child(2){min-width:56px;overflow-wrap:normal;word-break:keep-all}#wat td:nth-child(3),#wat td:nth-child(4){min-width:120px}#wat .mut{color:var(--mut);font-size:.75rem}#wat input.wai{width:112px;height:36px;text-align:right;padding:0 8px;border:1.5px solid var(--tx);border-radius:4px;background:var(--panel);color:var(--tx);font-size:.9rem;font-weight:500}#wat input.wai:disabled{opacity:.7}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -1225,7 +1226,7 @@ function dirPdf(){
 }
 if(db){db.ref(EPATH).on('value',snap=>{
  EDITS=snap.val()||{};applyAll();
- const ae=document.activeElement,typing=ae&&ae.closest&&ae.closest('.fl,#wf,#psf,#frf,#emf');
+ const ae=document.activeElement,typing=ae&&ae.closest&&ae.closest('.fl,#wf,#psf,#frf,#emf,#wat');
  if(!typing&&!(st.view==='ps'&&psDirty)&&!(st.view==='frame'&&frDirty)&&!(st.view==='emp'&&emDirty)&&(st.view==='dir'||st.view==='frame'||st.view==='emp'||st.view==='dash'||st.view==='gov'||st.view==='wg'||st.view==='ps'||st.view==='prog'||st.view==='empsum'||st.view==='wgadj')&&!$('#ud').open)render();
 },e=>console.warn(fbErr(e)))}
 const eWho=u=>u.ed?`แก้ไขล่าสุดโดย ${esc(u.ed.by)}${u.ed.at?' · '+new Date(u.ed.at).toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'}):''}`:'';
@@ -1774,6 +1775,7 @@ function bindEmpSum(){
 const WA_T={'พนักงานกระทรวงสาธารณสุข (พกส.)':'พกส.','ลูกจ้างชั่วคราวรายเดือน':'ลจช.'};   /* เฉพาะ 2 ประเภทนี้ (ไม่รวมจ้างเหมาบริการ/ลูกจ้างรายวัน) */
 const WA_R={a:['ไม่กำหนดวุฒิ',10520,12100],b:['วุฒิ ม.3 หรือ ม.6 หรือเทียบเท่า',10520,18480],c:['ปวส.',13920,16010],d:['วุฒิปริญญาตรี หลักสูตร 4 ปี',18150,23000]};   /* [วุฒิตามเงื่อนไขการจ้าง, ขั้นต่ำ, ขั้นสูง] ตามไฟล์ Excel ตัวอย่าง */
 const WA_H=['ลำดับ','อำเภอ','ชื่อ สอ.น./รพ.สต.','ชื่อ - สกุล','ตำแหน่ง','วุฒิตามเงื่อนไขการจ้าง','ค่าจ้างปัจจุบัน (บาท) ณ 1 ต.ค. 69','อัตราค่าจ้างขั้นต่ำ (บาท)','อัตราค่าจ้างขั้นสูง (บาท)','จำนวนเงินที่ปรับเพิ่ม (บาท)','จำนวนเงินที่ปรับ ร้อยละ 1 (บาท)','ค่าจ้างที่ได้รับหลังปรับ (บาท)','ค่าจ้างที่ได้รับตามจริง (บาท)','ปรับเพิ่มขึ้น ต่อเดือน (บาท)','หมายเหตุ'];
+const WA_HD=['ลำดับ','อำเภอ','ชื่อ สอ.น./รพ.สต.','ชื่อ - สกุล','ประเภทพนักงานจ้าง','ตำแหน่ง','ลักษณะการจ้าง','ค่าจ้างปัจจุบัน (บาท) ณ 1 ต.ค. 69','อัตราค่าจ้างขั้นต่ำ (บาท)','อัตราค่าจ้างขั้นสูง (บาท)','จำนวนเงินที่ปรับเพิ่ม (บาท)','จำนวนเงินที่ปรับ ร้อยละ 1 (บาท)','ค่าจ้างที่ได้รับหลังปรับ (บาท)','ค่าจ้างที่ได้รับตามจริง (บาท)','ปรับเพิ่มขึ้น ต่อเดือน (บาท)','หมายเหตุ'];
 const WA_T1='บัญชีรายละเอียดการปรับค่าจ้างที่ยังไม่ถึงขั้นต่ำให้ได้รับค่าจ้างขั้นต่ำ และปรับค่าจ้างเพิ่ม ร้อยละ 1';
 const WA_T2=()=>'ลูกจ้างชั่วคราวเงินนอกงบประมาณ (เงินบำรุง) โรงพยาบาลส่งเสริมสุขภาพตำบล อำเภอ'+DAM+' องค์การบริหารส่วนจังหวัดสกลนคร';
 const waR2=n=>Math.round((+n||0)*100)/100;
@@ -1790,7 +1792,7 @@ function waGroup(x){
 }
 /* เกณฑ์: ค่าจ้างปัจจุบันต่ำกว่าขั้นต่ำ → ปรับเป็นขั้นต่ำ · ถึงขั้นต่ำแล้ว → ปรับเพิ่มร้อยละ 1 ปัดขึ้นเป็นหลักสิบ ไม่เกินขั้นสูง · ถึงขั้นสูงแล้ว → ไม่ปรับ */
 function waCalc(x){
- const G=+x.sal||0,g=waGroup(x);
+ const G=+(x.wgc!=null&&x.wgc!==''?x.wgc:x.sal)||0,g=waGroup(x);
  if(!g)return{g:'',lab:'',G,J:0,K:0,L:G,M:G,N:0,fK:false};
  const[lab,mn,mx]=WA_R[g];let J=0,K=0,L=G,M=G,fK=false;
  if(G<mn){J=waR2(mn-G);L=waR2(G+J);M=L}
@@ -1800,10 +1802,10 @@ function waCalc(x){
 function waData(){
  const grp=[],skip=[];let flag=0,ex=0;
  D.forEach(u=>{
-  const r=emOf(u),all=(r&&!r.none&&r.rows)||[],its=all.filter(x=>WA_T[x.typ]);
+  const r=emOf(u),all=(r&&!r.none&&r.rows)||[],its=all.map((x,ix)=>({x,ix})).filter(o=>WA_T[o.x.typ]);
   ex+=all.length-its.length;
   if(!its.length){skip.push({u,why:!r?'ยังไม่กรอกข้อมูลพนักงานจ้าง':r.none?'แจ้งว่าไม่มีพนักงานจ้าง':'ไม่มีพนักงาน พกส./ลจช.'});return}
-  const rows=its.map(x=>{const c=waCalc(x);if(!c.g)flag++;return{x,c,t:WA_T[x.typ],note:[WA_T[x.typ],(x.note||'').trim()].filter(Boolean).join(' · ')}});
+  const rows=its.map(o=>{const x=o.x,c=waCalc(x);if(!c.g)flag++;return{x,ix:o.ix,c,t:WA_T[x.typ],ed:x.wgc!=null&&x.wgc!=='',note:[WA_T[x.typ],(x.note||'').trim()].filter(Boolean).join(' · ')}});
   const s=k=>waR2(rows.reduce((a,y)=>a+y.c[k],0));
   grp.push({u,rows,G:s('G'),J:s('J'),K:s('K'),L:s('L'),M:s('M'),N:s('N')});
  });
@@ -1813,18 +1815,19 @@ function waData(){
 function wgAdjPage(){
  const d=waData(),T=d.T,kpi=(b,t)=>`<div class="glass kpi"><b>${b}</b><span>${t}</span></div>`,nc=v=>`<td class="n">${v}</td>`;
  const bad=x=>`<span style="color:var(--bad)">⚠️ ไม่พบอัตราในเกณฑ์ (วุฒิ: ${esc(x.edu||'-')})</span>`;
+ const dis=st.role==='admin'?'':' disabled';
  const body=d.grp.map(g=>g.rows.map((y,i)=>{const c=y.c,x=y.x;
-  return `<tr><td class="n">${i+1}</td><td>${esc(g.u.a)}</td><td>${esc(g.u.n)}</td><td>${esc(x.nm||'')}</td><td>${esc(x.pos||'')}</td><td>${c.g?esc(c.lab):bad(x)}</td>${nc(waFm(c.G))}${nc(c.g?waFm(c.mn):'—')}${nc(c.g?waFm(c.mx):'—')}${nc(waFm(c.J))}${nc(waFm(c.K))}${nc(waFm(c.L))}${nc('<b>'+waFm(c.M)+'</b>')}${nc(waFm(c.N))}<td>${esc(y.note)}</td></tr>`}).join('')
-  +`<tr class="tot"><td colspan="6">รวม ${esc(g.u.n)} (${g.rows.length} คน)</td>${nc(waFm(g.G))}<td></td><td></td>${nc(waFm(g.J))}${nc(waFm(g.K))}${nc(waFm(g.L))}${nc(waFm(g.M))}${nc(waFm(g.N))}<td></td></tr>`).join('');
- const tot=`<tr class="tot"><td colspan="6">รวมทั้งอำเภอ${esc(DAM)} (${d.n} คน · ${d.grp.length} รพ.สต.)</td>${nc(waFm(T.G))}<td></td><td></td>${nc(waFm(T.J))}${nc(waFm(T.K))}${nc(waFm(T.L))}${nc(waFm(T.M))}${nc(waFm(T.M-T.G))}<td></td></tr>`;
+  return `<tr><td class="n c">${i+1}</td><td>${esc(g.u.a)}</td><td>${esc(g.u.n)}</td><td>${esc(x.nm||'')}</td><td>${esc(x.typ||'')}</td><td>${esc(x.pos||'')}</td><td>${c.g?esc(c.lab)+(c.g==='b'?'<br><small class="mut">กลุ่ม บริการ</small>':''):bad(x)}</td><td class="n"><input class="wai" type="text" inputmode="decimal" autocomplete="off" data-cd="${esc(g.u.cd)}" data-ix="${y.ix}" value="${esc(c.G)}" title="${y.ed?'แก้ไขแล้ว (ค่าเดิมจากข้อมูลพนักงานจ้าง '+esc(x.sal)+') · ลบให้ว่างเพื่อใช้ค่าเดิม':'แก้ไขได้ · ลบให้ว่างเพื่อใช้ค่าเดิม'}"${dis}></td>${nc(c.g?waFm(c.mn):'—')}${nc(c.g?waFm(c.mx):'—')}${nc(waFm(c.J))}${nc(waFm(c.K))}${nc(waFm(c.L))}${nc('<b>'+waFm(c.M)+'</b>')}${nc(waFm(c.N))}<td>${esc((x.note||'').trim())}</td></tr>`}).join('')
+  +`<tr class="tot"><td colspan="7">รวม ${esc(g.u.n)} (${g.rows.length} คน)</td>${nc(waFm(g.G))}<td></td><td></td>${nc(waFm(g.J))}${nc(waFm(g.K))}${nc(waFm(g.L))}${nc(waFm(g.M))}${nc(waFm(g.N))}<td></td></tr>`).join('');
+ const tot=`<tr class="tot"><td colspan="7">รวมทั้งอำเภอ${esc(DAM)} (${d.n} คน · ${d.grp.length} รพ.สต.)</td>${nc(waFm(T.G))}<td></td><td></td>${nc(waFm(T.J))}${nc(waFm(T.K))}${nc(waFm(T.L))}${nc(waFm(T.M))}${nc(waFm(T.M-T.G))}<td></td></tr>`;
  const rt=Object.values(WA_R).map(r=>[r[0],waFm(r[1]),waFm(r[2])]);
  return `<div class="glass hero"><h1>💵 บัญชีรายละเอียดการปรับค่าจ้าง พนักงานจ้าง พกส. และ ลจช.</h1><p class="sub">รวมข้อมูลพนักงานจ้างที่เจ้าหน้าที่ รพ.สต. กรอกในเมนู “อัตรากำลังพนักงานจ้าง/จ้างเหมาบริการ” มาเรียงต่อกันเป็นภาพรวมอำเภอ · ตัวเลขอัปเดตแบบเรียลไทม์ · ขอบเขต: ${SCOPE[st.role]}</p><div class="hchips"><span>${D.length} รพ.สต.</span><span>มีข้อมูล ${d.grp.length} แห่ง</span><span>พนักงานจ้าง พกส./ลจช. ${d.n} คน</span></div></div>
  ${db?'':'<div class="glass card"><div class="insight bad">เชื่อมต่อฐานข้อมูลกลาง (Firebase) ไม่ได้ จึงเห็นเฉพาะข้อมูลที่บันทึกในเครื่องนี้</div></div>'}
  <div class="kpis">${kpi(f(d.n),'พนักงานจ้าง พกส./ลจช. (คน) · จาก '+d.grp.length+' รพ.สต.')}${kpi(waFm(T.G),'ค่าจ้างปัจจุบันรวม/เดือน (บาท)')}${kpi(waFm(T.M),'ค่าจ้างหลังปรับรวม/เดือน (บาท)')}${kpi(waFm(T.M-T.G),'ปรับเพิ่มขึ้นรวม/เดือน (บาท) · ปีละ '+waFm((T.M-T.G)*12))}</div>
  ${d.flag?`<div class="glass card"><div class="insight bad">⚠️ มีพนักงาน ${d.flag} คน ที่วุฒิ/ลักษณะการจ้างยังไม่มีอัตราขั้นต่ำ–ขั้นสูงในเกณฑ์ (เช่น ปวช. อนุปริญญา ปริญญาโท/เอก) ระบบแสดงเป็นไม่ปรับ (ค่าจ้างหลังปรับ = ค่าจ้างปัจจุบัน) · กรุณาตรวจสอบหรือแก้ไขข้อมูลที่เมนู “อัตรากำลังพนักงานจ้าง/จ้างเหมาบริการ (เลือก รพ.สต.)”</div></div>`:''}
- <div class="glass card"><h2>${esc(WA_T1)}</h2><p class="note" style="margin:0 0 10px">${esc(WA_T2())}</p><div class="actions" style="margin:0 0 10px"><button class="btn" type="button" id="wax">⬇️ ดาวน์โหลด Excel</button><button class="btn sec" type="button" id="wap">🖨️ พิมพ์/PDF</button></div>
- ${d.grp.length?`<div class="tw" style="max-height:none"><table id="wat"><thead><tr>${WA_H.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${body}${tot}</tbody></table></div>`:'<div class="empty">ยังไม่มี รพ.สต. ใดในอำเภอกรอกข้อมูลพนักงานจ้าง พกส./ลจช.</div>'}
- <p class="note">เรียงตาม รพ.สต. ในอำเภอ · ไม่รวมจ้างเหมาบริการ/ลูกจ้างรายวัน/ประเภทอื่น ๆ${d.ex?' ('+d.ex+' คน)':''} · ค่าจ้างปัจจุบัน = เงินเดือนปัจจุบันที่ รพ.สต. กรอก</p></div>
+ <div class="glass card"><h2>${esc(WA_T1)}</h2><p class="note" style="margin:0 0 10px;font-size:1rem">ลูกจ้างชั่วคราวเงินนอกงบประมาณ (เงินบำรุง) · อำเภอ${esc(DAM)} องค์การบริหารส่วนจังหวัดสกลนคร</p><div class="actions" style="margin:0 0 10px"><button class="btn" type="button" id="wax">⬇️ ดาวน์โหลด Excel</button><button class="btn sec" type="button" id="wap">🖨️ พิมพ์/PDF</button></div>
+ ${d.grp.length?`<div class="tw" style="max-height:none"><table id="wat"><thead><tr>${WA_HD.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${body}${tot}</tbody></table></div>`:'<div class="empty">ยังไม่มี รพ.สต. ใดในอำเภอกรอกข้อมูลพนักงานจ้าง พกส./ลจช.</div>'}
+ <p class="note">เรียงตาม รพ.สต. ในอำเภอ · ไม่รวมจ้างเหมาบริการ/ลูกจ้างรายวัน/ประเภทอื่น ๆ${d.ex?' ('+d.ex+' คน)':''} · ช่อง “ค่าจ้างปัจจุบัน” แก้ไขได้ (ค่าเริ่มต้นคือเงินเดือนปัจจุบันที่ รพ.สต. กรอก) พิมพ์แล้วกด Enter หรือคลิกออกจากช่อง ระบบคำนวณใหม่และบันทึกให้ทันที</p></div>
  <div class="glass card"><h2>เกณฑ์การคำนวณ</h2><p class="note" style="margin:0 0 10px">ค่าจ้างปัจจุบันต่ำกว่าขั้นต่ำ → ปรับเป็นขั้นต่ำ · ถึงขั้นต่ำแล้ว → ปรับเพิ่มร้อยละ 1 แล้วปัดขึ้นเป็นหลักสิบ (ไม่เกินขั้นสูง) · ลักษณะการจ้าง “จ้างแบบไม่มีวุฒิ” ใช้กลุ่มไม่กำหนดวุฒิ · หมายเหตุ: พกส. = พนักงานกระทรวงสาธารณสุข, ลจช. = ลูกจ้างชั่วคราวรายเดือน</p>${tbl(['วุฒิตามเงื่อนไขการจ้าง','อัตราขั้นต่ำ (บาท)','อัตราขั้นสูง (บาท)'],rt)}</div>
  ${d.skip.length?`<div class="glass card"><h2>รพ.สต. ที่ไม่มีข้อมูลพนักงานจ้าง พกส./ลจช. (${d.skip.length} แห่ง)</h2><div class="tw" style="max-height:none"><table><thead><tr><th>ที่</th><th>รหัส 5 หลัก</th><th>รพ.สต.</th><th>สถานะ</th></tr></thead><tbody>${d.skip.map((x,i)=>`<tr><td>${i+1}</td><td>${cdTag(x.u.cd)}</td><td>${esc(x.u.n)}</td><td>${esc(x.why)}</td></tr>`).join('')}</tbody></table></div></div>`:''}`;
 }
@@ -1872,7 +1875,21 @@ function waPdf(){
  const w=fr.contentWindow.document;w.open();w.write(html);w.close();
  setTimeout(()=>{try{fr.contentWindow.focus();fr.contentWindow.print()}catch(e){alert('เปิดหน้าต่างพิมพ์ไม่ได้')}setTimeout(()=>fr.remove(),60000)},300);
 }
-function bindWgAdj(){const x=$('#wax'),p=$('#wap');if(x)x.onclick=waXlsx;if(p)p.onclick=waPdf}
+function bindWgAdj(){
+ const x=$('#wax'),p=$('#wap');if(x)x.onclick=waXlsx;if(p)p.onclick=waPdf;
+ const t=$('#wat');if(!t)return;
+ t.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.classList.contains('wai')){e.preventDefault();e.target.blur()}});
+ t.addEventListener('change',e=>{
+  const i=e.target;if(!i.classList.contains('wai'))return;
+  if(st.role!=='admin'||!DAM){render();return}
+  const u=D.find(z=>z.cd===i.dataset.cd),r=u&&emOf(u),ix=+i.dataset.ix;
+  if(!r||!r.rows||!r.rows[ix]){render();return}
+  const raw=i.value.trim(),rows=r.rows.map(z=>({...z}));
+  if(raw==='')delete rows[ix].wgc;
+  else{const n=wgNum(raw);if(isNaN(n)||n<=0){alert('ค่าจ้างต้องเป็นตัวเลขมากกว่า 0');render();return}rows[ix].wgc=n}
+  emSet(u,{...r,rows}).then(()=>render()).catch(er=>{alert(fbErr(er));render()});
+ });
+}
 function hrPage(){
  const a=ana(),low=a.am.slice(0,3),sub=MENUS.filter(m=>m.p==='hr'&&CAN[st.role].includes(m.id));
  const nd=a.nod.length,k=a.nodk.length,jb=[...a.job].sort((x,y)=>y[1]-x[1]);
@@ -2185,7 +2202,7 @@ function emSel(k,lab,list,cur,dis,oth){
  return `<label>${lab}<select data-f="${k}"${dis}><option value="">เลือก</option>${list.map(p=>`<option${p===cur?' selected':''}>${esc(p)}</option>`).join('')}${oth?`<option${o?' selected':''}>${EMO}</option>`:''}</select>${oth?`<input type="text" data-f="${k}O" placeholder="ระบุ" autocomplete="off" value="${o?esc(cur):''}"${o?'':' hidden'}${dis}>`:''}</label>`}
 function emRow(i,x,dis){
  x=x||{};const mo=x.mo!=null?x.mo:12,tot=x.sal!=null?emR2(x.sal*mo):'',ss=tot===''?'':emR2(tot*0.05);
- return `<div class="frr emr"><div class="frh"><span class="frno">${i+1}</span><button type="button" class="btn sec sm" data-em="del"${dis}>ลบแถว</button></div>
+ return `<div class="frr emr"${x.wgc!=null&&x.wgc!==''?` data-wgc="${esc(x.wgc)}"`:''}><div class="frh"><span class="frno">${i+1}</span><button type="button" class="btn sec sm" data-em="del"${dis}>ลบแถว</button></div>
  <div class="fr4"><label>ชื่อ - สกุล<input type="text" data-f="nm" autocomplete="off" placeholder="เช่น นางสาวสมหญิง ใจดี" value="${esc(x.nm||'')}"${dis}></label>${emSel('pos','ตำแหน่ง',EMPOS,x.pos,dis,1)}${emSel('typ','ประเภทพนักงานจ้าง',EMTYP,x.typ,dis,1)}${emSel('edu','วุฒิการศึกษา',EMEDU,x.edu,dis,1)}</div>
  <div class="fr4"><label>วันที่เริ่มปฏิบัติงาน<input type="date" data-f="st" value="${esc(x.st||'')}"${dis}></label>${emSel('hire','ลักษณะการจ้าง',EMHIRE,x.hire,dis,0)}<label>เงินเดือนปัจจุบัน (บาท)<input type="text" data-f="sal" inputmode="decimal" autocomplete="off" placeholder="เช่น 15000" value="${x.sal!=null?esc(x.sal):''}"${dis}></label><label>จำนวนเดือน<input type="text" data-f="mo" inputmode="numeric" autocomplete="off" value="${esc(mo)}"${dis}></label></div>
  <div class="fr4"><label>รวมเงินงบประมาณ (บาท) · คำนวณอัตโนมัติ<input type="text" data-f="tot" readonly tabindex="-1" value="${tot===''?'':f2(tot)}" placeholder="—" style="background:var(--acs)"></label><label>ประกันสังคม (5%) (บาท) · คำนวณอัตโนมัติ<input type="text" data-f="ss" readonly tabindex="-1" value="${ss===''?'':f2(ss)}" placeholder="—" style="background:var(--acs)"></label><label>หมายเหตุ<input type="text" data-f="note" autocomplete="off" value="${esc(x.note||'')}"${dis}></label></div></div>`}
@@ -2243,7 +2260,7 @@ function bindEmp(){
     else if(!hire)bad=tag+'ยังไม่เลือกลักษณะการจ้าง';
     else if(isNaN(sal)||sal<=0)bad=tag+'เงินเดือนปัจจุบันต้องเป็นตัวเลขมากกว่า 0';
     else if(isNaN(mo)||!Number.isInteger(mo)||mo<1||mo>12)bad=tag+'จำนวนเดือนต้องเป็นจำนวนเต็ม 1–12';
-    else{const tot=emR2(sal*mo);rows.push({nm,pos,typ,edu,st:st0,hire,sal,mo,tot,ss:emR2(tot*0.05),note})}});
+    else{const tot=emR2(sal*mo);rows.push({nm,pos,typ,edu,st:st0,hire,sal,mo,tot,ss:emR2(tot*0.05),note,...(r.dataset.wgc?{wgc:+r.dataset.wgc}:{})})}});
    if(bad){err.textContent='กรุณากรอกให้ครบ: '+bad;return}
   }
   const was=!!emOf(u),rec={none,rows,by:(USERS.find(x=>x.u===st.user)||{}).name||st.user,at:new Date().toISOString()};
