@@ -685,7 +685,6 @@ const MENUS=[
 {id:'hr',t:'งานบริหารทรัพยากรบุคคล',s:'งานบุคคล',i:'🗂️'},
 {id:'dir',p:'hr',t:'ข้อมูลอัตรากำลัง',s:'อัตรากำลัง',i:'👥'},
 {id:'ps',p:'hr',t:'สำรวจลูกจ้าง พว.วิชาชีพ แพทย์แผนไทย จพ.ทันตกรรม',s:'สำรวจลูกจ้าง',i:'🩺'},
-{id:'wg',p:'hr',t:'สำรวจค่าจ้างลูกจ้างฯ.หลังปรับฐาน',s:'ค่าจ้างฯ ปรับฐาน',i:'💰'},
 {id:'empsum',p:'hr',t:'สรุปอัตรากำลังพนักงานจ้าง/จ้างเหมาบริการ (ทุก รพ.สต.)',s:'สรุปพนักงานจ้าง',i:'🧑‍🔧'},
 {id:'prog',p:'hr',t:'รายงานความก้าวหน้าการกรอกข้อมูล',s:'ความก้าวหน้า',i:'📋'},
 {id:'hrd',t:'พัฒนาบุคลากรและศูนย์การเรียนรู้',s:'อบรม',i:'🎓'},
@@ -693,7 +692,7 @@ const MENUS=[
 {id:'wel',t:'สวัสดิการและบริการ',s:'สวัสดิการ',i:'🛠️'},
 {id:'users',t:'จัดการผู้ใช้งาน',s:'ผู้ใช้',i:'🔐'}];
 /* RBAC: สิทธิ์การมองเห็นเมนูตามบทบาท (ฝั่งจริงต้องบังคับที่ API/DB ด้วย) */
-const CAN={admin:['dash','gov','docs','dir','ps','wg','prog','hr','hrd','wel','survey','users'],exec:['dash','gov','docs','dir','ps','wg','prog','hr','hrd','wel','survey'],staff:['dash','gov','docs','dir','ps','wg','prog','hr','hrd','wel','survey'],guest:['dash','gov']};
+const CAN={admin:['dash','gov','docs','dir','ps','prog','hr','hrd','wel','survey','users'],exec:['dash','gov','docs','dir','ps','prog','hr','hrd','wel','survey'],staff:['dash','gov','docs','dir','ps','prog','hr','hrd','wel','survey'],guest:['dash','gov']};
 const SCOPE={admin:'ทั้งกอง · 149 รพ.สต. + ส่วนกลาง',exec:'ทั้งกอง · 149 รพ.สต. + ส่วนกลาง',staff:'ทั้งกอง · 149 รพ.สต. + ส่วนกลาง',guest:'ทั้งกอง · 149 รพ.สต. (ดูภาพรวมอย่างเดียว)'};
 /* ----- ปรับเมนู/สิทธิ์ตามโหมดหน้าจอ ----- */
 const MODE_ROLES={mgmt:['admin','exec','pm'],unit:['staff','admin']};   /* บทบาทที่ลงชื่อเข้าใช้ได้ในหน้านี้ */
@@ -701,8 +700,8 @@ if(APP_MODE==='mgmt'){CAN.staff=['dash'];
  /* หน้าผู้บริหาร: ไม่แสดงเมนู เอกสาร/แบบฟอร์มต่างๆ ของงานบุคลากร (หน้า รพ.สต. ยังใช้อยู่) */
  {const k=MENUS.findIndex(m=>m.id==='docs');if(k>=0)MENUS.splice(k,1);for(const r in CAN)CAN[r]=CAN[r].filter(x=>x!=='docs');CAN.admin.push('empsum');CAN.exec.push('empsum')}}
 if(APP_MODE==='unit'){
- const keep=['dash','dir','ps','wg','survey','docs'];
- const nm={dash:['หน้าหลัก รพ.สต. ของฉัน','หน้าหลัก'],dir:['ข้อมูลอัตรากำลัง (ยืนยัน/แก้ไข)','อัตรากำลัง'],ps:['สำรวจลูกจ้าง พว.วิชาชีพ แพทย์แผนไทย จพ.ทันตกรรม','สำรวจลูกจ้าง'],wg:['สำรวจค่าจ้างลูกจ้างฯ.หลังปรับฐาน','ค่าจ้างฯ ปรับฐาน'],survey:['สำรวจความต้องการฝึกอบรม ปีงบประมาณ 2570','สำรวจ 2570'],docs:['เอกสาร/แบบฟอร์มต่างๆ ของงานบุคลากร','เอกสาร/แบบฟอร์ม']};
+ const keep=['dash','dir','ps','survey','docs'];
+ const nm={dash:['หน้าหลัก รพ.สต. ของฉัน','หน้าหลัก'],dir:['ข้อมูลอัตรากำลัง (ยืนยัน/แก้ไข)','อัตรากำลัง'],ps:['สำรวจลูกจ้าง พว.วิชาชีพ แพทย์แผนไทย จพ.ทันตกรรม','สำรวจลูกจ้าง'],survey:['สำรวจความต้องการฝึกอบรม ปีงบประมาณ 2570','สำรวจ 2570'],docs:['เอกสาร/แบบฟอร์มต่างๆ ของงานบุคลากร','เอกสาร/แบบฟอร์ม']};
  const ms=keep.map(id=>{const c={...MENUS.find(m=>m.id===id)};delete c.p;c.t=nm[id][0];c.s=nm[id][1];return c});
  MENUS.splice(0,MENUS.length,...ms);
  CAN.staff=keep.slice();CAN.guest=['dash'];CAN.admin=keep.slice();CAN.exec=['dash'];
@@ -1895,9 +1894,8 @@ function unitHome(m){
  const tasks=[
   ['dir','ข้อมูลอัตรากำลัง','ตรวจสอบจำนวนบุคลากรแต่ละตำแหน่ง แล้วกด “ยืนยันข้อมูลเดิม” หรือ “แก้ไข”',a,chip(a)],
   ['ps','สำรวจลูกจ้าง พว.วิชาชีพ แพทย์แผนไทย จพ.ทันตกรรม','กรอกชื่อ-สกุล วุฒิ สถาบัน และระยะเวลาที่ทำงานของลูกจ้างแต่ละคน',b,chip(b)],
-  ['wg','สำรวจค่าจ้างลูกจ้างฯ หลังปรับฐาน','กรอกจำนวนลูกจ้างและค่าจ้างก่อน/หลังปรับฐาน',c,chip(c)],
   ['survey','แบบสำรวจความต้องการฝึกอบรม ปี 2570','บุคลากรแต่ละคนของ รพ.สต. เลือกหลักสูตรที่ต้องการเข้ารับการอบรม',sv,chip(sv,svT)]];
- const req=tasks.slice(0,3).filter(x=>x[3].k!=='na'),done=req.filter(x=>x[3].k==='ok').length;
+ const req=tasks.slice(0,2).filter(x=>x[3].k!=='na'),done=req.filter(x=>x[3].k==='ok').length;
  return unitHead('🏥',esc(u.n),`รหัสสถานบริการ ${esc(u.cd)} · อำเภอ${esc(u.a)} · ขนาด ${esc(u.s)} · อัตรากำลังตามกรอบ ${u.fr} คน`)
  +`<div class="insight">งานที่ต้องดำเนินการของ รพ.สต. ท่าน: เสร็จแล้ว <b>${done}</b> จาก <b>${req.length}</b> รายการ${done===req.length?' 🎉 ครบแล้ว ขอบคุณครับ/ค่ะ':' · กดปุ่มในแต่ละการ์ดเพื่อไปกรอก'}</div>`
  +`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:16px">${tasks.map(x=>`<div class="glass card"><h2>${x[1]}</h2><p class="note">${x[2]}</p><p>${x[4]}</p><div class="actions"><button class="btn" type="button" data-act="go" data-i="${x[0]}">${x[3].k==='ok'?'ดู/แก้ไข':'ไปกรอกข้อมูล'}</button></div></div>`).join('')}</div>`;
