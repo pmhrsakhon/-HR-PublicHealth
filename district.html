@@ -259,6 +259,7 @@ dialog .glass,#udc,#lgc,.pal{border-radius:26px 26px 0 0;padding-bottom:calc(20p
 .form input[type=date]{padding:11px 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--panel);color:var(--tx);font-weight:500;height:48px}
 .frr [hidden],#emwrap[hidden]{display:none!important}
 .frr .fr4 label input[hidden]+x{}
+.frgr td{background:rgba(120,160,220,.2);font-weight:700}.frt td.c{text-align:center}details.card>summary{cursor:pointer;list-style:none}details.card>summary::-webkit-details-marker{display:none}details.card[open]>summary{margin-bottom:12px}
 </style>
 <style id="ui-v3">
 :root{--bg:#EEF1FF;--b1:rgba(6,182,212,.38);--b2:rgba(109,74,255,.34);--b3:rgba(236,72,153,.22);--glass:rgba(255,255,255,.95);--gb:#fff;--line:rgba(30,27,107,.26);--tx:#0B1230;--mut:#33405F;--ac:#5B3DF5;--acs:rgba(91,61,245,.12);--amber:#FFB020;--bad:#C80F3A;--panel:#fff;--btn:linear-gradient(135deg,#6D4AFF,#2563EB 58%,#06B6D4);--btx:#fff;--th:linear-gradient(135deg,#1E1B6B,#3B30B5);--side:linear-gradient(175deg,#0E1040,#1B1F6B 58%,#0A5C7C);--hero:linear-gradient(120deg,#2A1FA6,#5B3DF5 48%,#06A6C9);--sh:0 12px 34px rgba(30,27,107,.16)}
@@ -716,8 +717,8 @@ if(APP_MODE==='unit'){
 }
 if(APP_MODE==='dist'){
  /* เมนูหน้าระดับอำเภอ: PM บุคลากรระดับอำเภอ ดู/แก้ไข/ลบข้อมูล รพ.สต. ทุกแห่งในอำเภอ (ข้อมูลถูกกรองด้วย DAM) */
- const keep=['dash','gov','hr','dir','ps','wg','empsum','prog','hrd','survey'];
- const ex=[{id:'frame',p:'dir',t:'กรอบอัตรากำลังข้าราชการ (เลือก รพ.สต.)',s:'กรอบข้าราชการ',i:'🏛️'},{id:'emp',p:'dir',t:'อัตรากำลังพนักงานจ้าง/จ้างเหมาบริการ (เลือก รพ.สต.)',s:'พนักงานจ้าง',i:'🧑‍🔧'}];
+ const keep=['dash','gov','hr','dir','ps','empsum','prog','hrd','survey'];
+ const ex=[{id:'frame',p:'dir',t:'กรอบอัตรากำลังข้าราชการ',s:'กรอบข้าราชการ',i:'🏛️'},{id:'emp',p:'dir',t:'อัตรากำลังพนักงานจ้าง/จ้างเหมาบริการ (เลือก รพ.สต.)',s:'พนักงานจ้าง',i:'🧑‍🔧'}];
  const ms=MENUS.filter(m=>keep.includes(m.id)).map(m=>m.id==='dash'?{...m,t:'ภาพรวมอำเภอ (รวมทุก รพ.สต. ในอำเภอ)',s:'ภาพรวมอำเภอ'}:m);
  const k=ms.findIndex(m=>m.id==='dir');ms.splice(k+1,0,...ex);
  MENUS.splice(0,MENUS.length,...ms);
@@ -1047,6 +1048,7 @@ $('#view').onclick=e=>{
  const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
  if((a==='sopen'||a==='sclose')&&(!isAdm()||APP_MODE==='dist')||(a==='edit'||a==='cancel')&&!(canEdit()&&intake())||(a==='del'&&!canDel()||(a==='clear'||a==='demo')&&(st.role!=='admin'||APP_MODE==='dist'))||a.startsWith('u_')&&st.role!=='admin')return;
  if(a.startsWith('u_'))return userAct(a,b);
+  if(APP_MODE==='dist'&&/^fr(pa|p1|e|b|d)$/.test(a))return distFrAct(a,b);
  if(a==='uedit')openEdit(+b.dataset.i);
   else if(a==='uconf')uConf(+b.dataset.i);
   else if(a==='dpdf'){if(canSee())dirPdf()}
@@ -1902,7 +1904,9 @@ function distLogin(){return `<div class="glass hero"><h1>🏘️ หน้าร
 <div class="glass card"><h2>เข้าสู่ระบบ</h2><p class="note">ชื่อผู้ใช้และรหัสผ่านเริ่มต้น = เลขประจำอำเภอ 4 หลัก (เช่น 4701) แล้วควรเปลี่ยนรหัสผ่านหลังเข้าใช้ครั้งแรก</p><div class="actions"><button class="btn" type="button" onclick="document.getElementById('lgb').click()">เข้าสู่ระบบ</button></div></div>`}
 function distView(v){
  if(st.role!=='admin'||!DAM)return distLogin();
- if(v!=='frame'&&v!=='emp')return null;   /* หน้าอื่นใช้หน้าบริหารจัดการเดิม (ข้อมูลถูกกรองเหลือเฉพาะอำเภอ) */
+ if(v!=='frame')st.frEdit=null;
+ if(v==='frame')return distFrame();
+ if(v!=='emp')return null;   /* หน้าอื่นใช้หน้าบริหารจัดการเดิม (ข้อมูลถูกกรองเหลือเฉพาะอำเภอ) */
  const u=D.find(x=>x.cd===st.unitSel);
  const bar=`<div class="glass card"><label>🏥 เลือก รพ.สต. ในอำเภอ${esc(DAM)} (${D.length} แห่ง): <select id="admU"><option value="">— เลือก รพ.สต. —</option>${admOpts()}</select></label></div>`;
  if(!u)return unitHead(v==='frame'?'🏛️':'🧑‍🔧',v==='frame'?'กรอบอัตรากำลังข้าราชการ':'อัตรากำลังพนักงานจ้าง/จ้างเหมาบริการ','เลือก รพ.สต. ในอำเภอของท่านเพื่อดู แก้ไข หรือลบข้อมูล')+bar;
@@ -1979,6 +1983,52 @@ function unitFrame(u){
  ${ro('รหัสสถานบริการ (5 หลัก)',u.cd)}${ro('ขนาด รพ.สต.',FRZ[sz])}${ro('ชื่อ รพ.สต.',u.n,1)}${ro('อำเภอ',u.a)}${ro('จังหวัด / สังกัด','สกลนคร · องค์การบริหารส่วนจังหวัดสกลนคร')}
  ${body}
  <div class="actions full"><button class="btn" type="submit"${dis}>${r?'บันทึกการแก้ไข':'บันทึกข้อมูล'}</button><span class="err" id="frerr" role="alert"></span></div></form></div>`;
+}
+
+/* ===== หน้าระดับอำเภอ: กรอบอัตรากำลังข้าราชการ แยกรายแห่ง (รูปแบบเดียวกับแบบพิมพ์ PDF) · ดู/แก้ไข/ลบ/พิมพ์ ===== */
+function frTbl(u){
+ const sz=String(u.s||'').trim().toUpperCase(),spec=FRS[sz];if(!spec)return null;
+ const r=frOf(u),saved=(r&&r.rows)||[];let n=0,vac=0,total=0;
+ const body=spec.map(g=>`<tr class="frgr"><td colspan="7">${esc(g[0])}</td></tr>`+g[1].map(h=>{const x=saved[n]||{};n++;total++;if(x.nm==='ว่าง')vac++;
+  return `<tr><td class="c">${n}</td><td>${esc(h)}</td><td>${esc(x.nm||'')}</td><td>${esc(x.no||'')}</td><td>${esc(x.pos||'')}</td><td>${esc(x.lv||'')}</td><td></td></tr>`}).join('')).join('');
+ return{sz,r,total,vac,html:`<table class="frt"><thead><tr><th class="n">ที่</th><th>ตามกรอบ</th><th>ชื่อ - สกุล</th><th>เลขที่ตำแหน่ง</th><th>ตำแหน่ง</th><th>ระดับ</th><th>หมายเหตุ</th></tr></thead><tbody>${body}</tbody></table>`};
+}
+const frSorted=()=>D.slice().sort((a,b)=>a.n.localeCompare(b.n,'th'));
+const frInfo=(u,t)=>`${esc(u.n)} · อำเภอ${esc(u.a)} · รหัส ${esc(u.cd)} · ขนาด ${t?FRZ[t.sz]:'-'} · องค์การบริหารส่วนจังหวัดสกลนคร`;
+function distFrame(){
+ if(st.frEdit){const u=D.find(x=>x.cd===st.frEdit);if(u)return `<div class="glass card"><button class="btn sec" type="button" data-act="frb">‹ กลับไปกรอบอัตรากำลังทั้งอำเภอ</button></div>`+unitFrame(u)}
+ const L=frSorted().map(u=>({u,t:frTbl(u)})),ok=L.filter(x=>x.t&&x.t.r).length,tot=L.reduce((a,x)=>a+(x.t?x.t.total:0),0),vac=L.reduce((a,x)=>a+(x.t&&x.t.r?x.t.vac:0),0);
+ const cards=L.map(({u,t})=>{
+  const open=st.frOpen&&st.frOpen[u.cd]?' open':'',r=t&&t.r;
+  const stt=!t?'<span style="color:#dc2626">●</span> ไม่พบขนาด รพ.สต.':r?'<span style="color:#16a34a">●</span> กรอกแล้ว':'<span style="color:#dc2626">●</span> ยังไม่ได้กรอก';
+  return `<details class="glass card" data-fro="${esc(u.cd)}"${open}><summary>▸ <b>${esc(u.n)}</b> · รหัส ${esc(u.cd)}${t?' · '+FRZ[t.sz]:''} · ${stt}${t?' · กรอบ '+t.total+' อัตรา':''}${r?' · ว่าง '+t.vac:''}</summary>
+  ${t?`<p style="margin:0 0 4px"><b>กรอบอัตรากำลังข้าราชการ</b></p><p class="note" style="margin:0 0 8px">${frInfo(u,t)}${r?' · บันทึกล่าสุดโดย '+esc(r.by||'')+(r.at?' · '+esc(fmtAt(r.at)):''):''}</p><div class="tw">${t.html}</div>
+  <p style="margin:10px 0"><b>รวมกรอบอัตรากำลัง ${t.total} อัตรา${r?' · ว่าง '+t.vac+' อัตรา':' · ยังไม่ได้กรอกข้อมูล'}</b></p>
+  <div class="actions"><button class="btn" type="button" data-act="fre" data-c="${esc(u.cd)}">✏️ ${r?'แก้ไข':'กรอกข้อมูล'}</button><button class="btn sec" type="button" data-act="frp1" data-c="${esc(u.cd)}">🖨️ พิมพ์/PDF</button>${r?`<button class="btn sec" type="button" data-act="frd" data-c="${esc(u.cd)}">🗑️ ลบข้อมูล</button>`:''}</div>`:'<div class="insight bad">ไม่พบขนาด (S/M/L) ของ รพ.สต. นี้ในข้อมูล</div>'}</details>`}).join('');
+ return unitHead('🏛️','กรอบอัตรากำลังข้าราชการ','อำเภอ'+esc(DAM)+' · แสดงแยกรายโรงพยาบาลส่งเสริมสุขภาพตำบล ตามแบบพิมพ์ · กดที่ชื่อ รพ.สต. เพื่อดูรายละเอียด')
+ .replace('</div>',`<div class="hchips"><span>${D.length} รพ.สต.</span><span>กรอกแล้ว ${ok} แห่ง</span><span>ยังไม่กรอก ${D.length-ok} แห่ง</span><span>กรอบรวม ${tot} อัตรา</span><span>ว่าง ${vac} อัตรา</span></div></div>`)
+ +`<div class="glass card"><div class="actions"><button class="btn" type="button" data-act="frpa">🖨️ พิมพ์/PDF ทั้งอำเภอ (${D.length} แห่ง)</button></div></div>`+cards;
+}
+function distFrAct(a,b){
+ const u=D.find(x=>x.cd===b.dataset.c);
+ if(a==='frpa')return frPrint(frSorted());
+ if(a==='frp1'&&u)return frPrint([u]);
+ if(a==='fre'&&u){st.frEdit=u.cd;st.unitSel=u.cd;st.msg='';render();scrollTo(0,0)}
+ else if(a==='frb'){st.frEdit=null;st.msg='';render();scrollTo(0,0)}
+ else if(a==='frd'&&u){const t=frTbl(u);if(!t||!t.r)return;
+  if(!confirm('ลบข้อมูลกรอบอัตรากำลังข้าราชการของ '+u.n+' ?\nการลบย้อนกลับไม่ได้'))return;
+  Promise.resolve(db?db.ref(EPATH+'/'+FK(u)).remove():null).then(()=>{delete EDITS[FK(u)];eSave();render()}).catch(e=>alert(fbErr(e)))}
+}
+document.addEventListener('toggle',e=>{const d=e.target;if(d&&d.dataset&&d.dataset.fro){st.frOpen=st.frOpen||{};if(d.open)st.frOpen[d.dataset.fro]=1;else delete st.frOpen[d.dataset.fro]}},true);
+function frPrint(list){
+ const dt=new Date().toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'});
+ const pages=list.map(u=>{const t=frTbl(u);if(!t)return '';
+  return `<section><h1>กรอบอัตรากำลังข้าราชการ</h1><p>${frInfo(u,t)}</p><p class="m">พิมพ์เมื่อ ${esc(dt)}</p>${t.html}<p class="s"><b>รวมกรอบอัตรากำลัง ${t.total} อัตรา${t.r?' · ว่าง '+t.vac+' อัตรา':' · ยังไม่ได้กรอกข้อมูล'}</b></p></section>`}).join('');
+ if(!pages)return alert('ไม่มีข้อมูลให้พิมพ์');
+ const html=`<!DOCTYPE html><html lang="th"><head><meta charset="utf-8"><title>กรอบอัตรากำลังข้าราชการ อำเภอ${esc(DAM)}</title><style>@page{size:A4 landscape;margin:12mm}body{font-family:"Noto Sans Thai","Sarabun",sans-serif;color:#000;font-size:11px}section{page-break-after:always}section:last-child{page-break-after:auto}h1{font-size:18px;margin:0 0 4px}p{margin:2px 0}.m{color:#555}table{width:100%;border-collapse:collapse;margin-top:8px}th,td{border:1px solid #444;padding:3px 5px;vertical-align:top;text-align:left}th{background:#e8eef7}.c{text-align:center}.frgr td{background:#eee;font-weight:700}.s{margin-top:8px}</style></head><body>${pages}</body></html>`;
+ const fr=document.createElement('iframe');fr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.appendChild(fr);
+ const d=fr.contentWindow.document;d.open();d.write(html);d.close();
+ setTimeout(()=>{try{fr.contentWindow.focus();fr.contentWindow.print()}catch(e){alert('เปิดหน้าต่างพิมพ์ไม่ได้')}setTimeout(()=>fr.remove(),60000)},300);
 }
 function bindFrame(){
  const f=$('#frf');if(!f)return;
