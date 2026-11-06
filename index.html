@@ -32,7 +32,7 @@ h1 span{color:var(--g)}
 .st span{font-weight:700}.st small{display:block;color:var(--mu)}
 section{max-width:1000px;margin:0 auto;padding:56px 20px 8px}
 h2{font-size:1.6rem;margin:0 0 6px;text-align:center}.lead{color:var(--mu);text-align:center;margin:0 0 26px}
-.two{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+.two{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
 .pc{padding:26px;border:1px solid var(--bd);border-radius:20px;background:var(--card);display:flex;flex-direction:column;gap:10px}
 .pc h3{margin:0;font-size:1.25rem}.pc p{margin:0;color:var(--mu)}
 .pc ul{margin:0;padding-left:1.2em;color:var(--tx)}.pc .btn{margin-top:auto;text-align:center}
@@ -54,11 +54,11 @@ footer{text-align:center;color:var(--mu);font-size:.85rem;padding:48px 20px 36px
   <span class="pill">● ระบบบริหารงานบุคคล สำหรับ รพ.สต. ในสังกัด</span>
   <h1>บริหารกำลังคน 149 รพ.สต.<br><span>ในระบบเดียว</span></h1>
   <p class="sub">ผู้บริหารดูภาพรวมทั้งกอง เจ้าหน้าที่ รพ.สต. กรอกและยืนยันข้อมูลของหน่วยตนเอง ล็อกอินครั้งเดียว ระบบพาไปหน้าที่ตรงกับสิทธิ์ของท่าน</p>
-  <div class="cta"><a class="btn p" href="login.html">เริ่มใช้งานระบบ →</a><a class="btn" href="#pages">ดูหน้าใช้งานทั้งสองหน้า</a></div>
+  <div class="cta"><a class="btn p" href="login.html">เริ่มใช้งานระบบ →</a><a class="btn" href="#pages">ดูหน้าใช้งานทั้งสามหน้า</a></div>
   <div class="stats" aria-label="สรุประบบ">
    <div class="st"><b>149<i>+</i></b><span>รพ.สต.</span><small>หน่วยบริการในระบบ</small></div>
-   <div class="st"><b>2</b><span>หน้าใช้งาน</span><small>บริหารจัดการ และ รพ.สต.</small></div>
-   <div class="st"><b>4</b><span>สถานะผู้ใช้</span><small>ผู้ดูแล · PM · ผู้บริหาร · รพ.สต.</small></div>
+   <div class="st"><b>3</b><span>หน้าใช้งาน</span><small>บริหารจัดการ · อำเภอ · รพ.สต.</small></div>
+   <div class="st"><b>5</b><span>สถานะผู้ใช้</span><small>ผู้ดูแล · PM · PM อำเภอ · ผู้บริหาร · รพ.สต.</small></div>
   </div>
  </div>
 
@@ -74,16 +74,20 @@ footer{text-align:center;color:var(--mu);font-size:.85rem;padding:48px 20px 36px
     <h3>🏥 หน้า รพ.สต.</h3><p>กรอกและยืนยันข้อมูลของหน่วยบริการ</p>
     <ul><li>ยืนยัน/แก้ไขข้อมูลอัตรากำลัง</li><li>สำรวจลูกจ้างและค่าจ้างหลังปรับฐาน</li><li>แบบสำรวจความต้องการฝึกอบรม 2570</li></ul>
     <a class="btn p" href="unit.html">เข้าหน้า รพ.สต.</a></article>
+   <article class="pc"><span class="who">PM บุคลากร ระดับอำเภอ (18 อำเภอ)</span>
+    <h3>🏘️ หน้าระดับอำเภอ</h3><p>จัดการข้อมูลของ รพ.สต. ทุกแห่งในอำเภอ</p>
+    <ul><li>ภาพรวมอำเภอ รวมข้อมูลทุก รพ.สต.</li><li>ดู แก้ไข และลบข้อมูลรายแห่ง</li><li>ติดตามความก้าวหน้าการกรอกข้อมูล</li></ul>
+    <a class="btn p" href="district.html">เข้าหน้าระดับอำเภอ</a></article>
   </div>
  </section>
 
  <section id="how">
   <h2>วิธีเข้าใช้งาน</h2>
-  <p class="lead">ใช้ชื่อผู้ใช้และรหัสผ่านเดียวกันทั้งสองหน้า</p>
+  <p class="lead">ใช้ชื่อผู้ใช้และรหัสผ่านเดียวกันทุกหน้า</p>
   <div class="steps">
    <div><b>กด “เข้าสู่ระบบ”</b><small>กรอกชื่อผู้ใช้และรหัสผ่าน</small></div>
    <div><b>ระบบตรวจสิทธิ์</b><small>เจ้าหน้าที่ รพ.สต. ใช้รหัสสถานบริการ 5 หลักเป็นชื่อผู้ใช้และรหัสผ่านเริ่มต้น</small></div>
-   <div><b>เข้าหน้าที่ตรงกับสิทธิ์</b><small>ผู้ดูแลระบบเลือกได้ว่าจะเข้าหน้าผู้บริหารหรือหน้า รพ.สต.</small></div>
+   <div><b>เข้าหน้าที่ตรงกับสิทธิ์</b><small>ผู้ดูแลระบบเลือกได้ว่าจะเข้าหน้าผู้บริหารหรือหน้า รพ.สต. · PM ระดับอำเภอเข้าหน้าระดับอำเภอ</small></div>
   </div>
  </section>
 </main>
