@@ -1717,37 +1717,115 @@ function hrdPage(){
 }
 /* ===== หน้า งานบริหารทรัพยากรบุคคล: สรุปข้อมูลจากเมนูย่อย (ข้อมูลอัตรากำลัง) ===== */
 
-/* ===== หน้าผู้บริหาร: สรุปอัตรากำลังพนักงานจ้าง/จ้างเหมาบริการ จากข้อมูลที่ รพ.สต. ทุกแห่งกรอก (staffing2570/<รหัส>_em) ===== */
-function empSumData(){
- const L=D.map(u=>({u,r:emOf(u),s:pgEm(u)})),all=L.flatMap(x=>(x.r&&!x.r.none&&x.r.rows||[]).map(r=>({...r,a:x.u.a,n:x.u.n,cd:x.u.cd})));
- const sum=(l,k)=>emR2(l.reduce((a,x)=>a+(+x[k]||0),0)),cnt=l=>({ok:l.filter(x=>x.s.k==='ok').length,part:l.filter(x=>x.s.k==='part').length,none:l.filter(x=>x.s.k==='none').length,no:l.filter(x=>x.r&&x.r.none).length});
- const by=k=>[...all.reduce((m,x)=>{const v=x[k]||'ไม่ระบุ';(m.get(v)||m.set(v,[]).get(v)).push(x);return m},new Map())].sort((a,b)=>b[1].length-a[1].length).map(([v,l])=>[v,l.length,f2(sum(l,'sal')),f2(sum(l,'tot')),f2(sum(l,'ss'))]);
- const dh=['อำเภอ','รพ.สต. (แห่ง)','กรอกครบแล้ว','ไม่สมบูรณ์','ยังไม่กรอก','(แจ้งว่าไม่มีพนักงานจ้าง)','พนักงานจ้าง (คน)','เงินเดือนรวม/เดือน (บาท)','รวมงบประมาณ (บาท)','ประกันสังคม 5% (บาท)'];
- const line=(lab,l,p)=>{const c=cnt(l);return[lab,l.length,c.ok,c.part,c.none,c.no,p.length,f2(sum(p,'sal')),f2(sum(p,'tot')),f2(sum(p,'ss'))]};
- return{L,all,c:cnt(L),dh,dr:[...AM.map(a=>line(a,L.filter(x=>x.u.a===a),all.filter(x=>x.a===a))),line('รวม',L,all)],bt:by('typ'),bp:by('pos'),todo:L.filter(x=>x.s.k!=='ok')};
+/* ===== หน้าผู้บริหาร: สรุปอัตรากำลังพนักงานจ้าง/จ้างเหมาบริการ ภาพรวมทั้งจังหวัด =====
+   ดึงจากข้อมูลชุดเดียวกับเมนู “อัตรากำลังพนักงานจ้าง/จ้างเหมาบริการ” ฝั่ง รพ.สต. (staffing2570/<รหัส 5 หลัก>_em) แบบเรียลไทม์
+   · เงินงบประมาณ/ประกันสังคม คำนวณใหม่จาก เงินเดือน × จำนวนเดือน ทุกแถว (ไม่พึ่งยอดที่เก็บไว้) และนับเป็นสตางค์เพื่อไม่ให้เศษทศนิยมคลาดเคลื่อน
+   · ทุกครั้งที่เปิดหน้า ตรวจยอดรวมข้ามตาราง (จังหวัด = อำเภอ = ประเภท = ตำแหน่ง = รายแห่ง) และตรวจ key ที่ไม่ตรงทะเบียน 149 แห่ง */
+const ES_CATS=[EMTYP[0],EMTYP[1],EMTYP[2],EMTYP[3]],ES_GRP=['บริการ','เทคนิค','บริหารทั่วไป','วิชาชีพเฉพาะ'];
+const esC=v=>Math.round((+v||0)*100);
+const esList=r=>{const a=r&&r.rows;if(!a)return[];return(Array.isArray(a)?a:Object.keys(a).sort((p,q)=>p-q).map(k=>a[k])).filter(x=>x&&typeof x==='object')};
+const esRaw=r=>{const a=r&&r.rows;return !a?0:(Array.isArray(a)?a.length:Object.keys(a).length)};
+const esCat=t=>{const s=String(t==null?'':t).replace(/\s/g,'');if(!s)return'ไม่ระบุประเภท';
+ if(/เหมา/.test(s))return EMTYP[3];if(/รายวัน|รายคาบ/.test(s))return EMTYP[2];
+ if(/พกส|พนักงานกระทรวง/.test(s))return EMTYP[0];if(/ชั่วคราว|ลจช/.test(s))return EMTYP[1];
+ return'อื่น ๆ: '+String(t).trim()};
+function esRow(x,u){
+ const sal=wgNum(x.sal),mo=wgNum(x.mo),okc=!isNaN(sal)&&!isNaN(mo),cat=esCat(x.typ),con=cat===EMTYP[3],
+  st0=wgNum(x.tot),tot=okc?emR2(sal*mo):(isNaN(st0)?0:emR2(st0)),ss=con?0:emR2(tot*0.05),ss0=wgNum(x.ss);
+ const dif=okc&&((!isNaN(st0)&&Math.abs(emR2(st0)-tot)>0.009)||(!con&&!isNaN(ss0)&&Math.abs(emR2(ss0)-ss)>0.009));
+ return{nm:String(x.nm||'').trim(),pos:String(x.pos||'').trim()||'ไม่ระบุตำแหน่ง',typ:x.typ,edu:x.edu,st:x.st,hire:x.hire,grp:x.grp,note:x.note,
+  cd:u.cd,a:u.a,n:u.n,cat,sal:isNaN(sal)?0:sal,mo:isNaN(mo)?0:mo,tot,ss,okc,dif,ok:emOk(x)}}
+function esData(){
+ const cds=new Set(D.map(u=>u.cd));
+ const L=D.map(u=>{const r=emOf(u),rows=esList(r).map(x=>esRow(x,u));return{u,r,rows,s:pgEm(u),no:!!(r&&r.none),holes:esRaw(r)-rows.length,at:(r&&r.at)||''}});
+ const all=L.flatMap(x=>x.rows);
+ const ag=l=>({n:l.length,sal:l.reduce((a,x)=>a+esC(x.sal),0),tot:l.reduce((a,x)=>a+esC(x.tot),0),ss:l.reduce((a,x)=>a+esC(x.ss),0)});
+ const cc=l=>[...ES_CATS.map(c=>l.filter(x=>x.cat===c).length),l.filter(x=>!ES_CATS.includes(x.cat)).length];
+ const money=g=>[g.sal/100,g.tot/100,g.ss/100];
+ const sc=l=>({ok:l.filter(x=>x.s.k==='ok').length,part:l.filter(x=>x.s.k==='part').length,none:l.filter(x=>x.s.k==='none').length,no:l.filter(x=>x.no).length});
+ const dline=(lab,l,p)=>{const c=sc(l);return[lab,l.length,c.ok,c.part,c.none,c.no,p.length,...cc(p),...money(ag(p))]};
+ const dh=['อำเภอ','รพ.สต. (แห่ง)','กรอกครบแล้ว','ไม่สมบูรณ์','ยังไม่กรอก','(แจ้งว่าไม่มีพนักงานจ้าง)','พนักงานจ้างรวม (คน)','พกส. (คน)','ลจช. รายเดือน (คน)','รายวัน/รายคาบ (คน)','จ้างเหมาบริการ (คน)','อื่น ๆ/ไม่ระบุ (คน)','เงินเดือนรวม/เดือน (บาท)','รวมงบประมาณ (บาท)','ประกันสังคม 5% (บาท)'];
+ const dr=[...AM.map(a=>dline(a,L.filter(x=>x.u.a===a),all.filter(x=>x.a===a))),dline('รวม',L,all)];
+ const grp=(keys,kf,lab)=>{const m=new Map(keys.map(k=>[k,[]]));all.forEach(x=>{const k=kf(x);(m.get(k)||m.set(k,[]).get(k)).push(x)});return[...m].map(([k,l])=>[lab?lab(k):k,l.length,...money(ag(l))])};
+ const th=['รายการ','จำนวน (คน)','เงินเดือนรวม/เดือน (บาท)','รวมงบประมาณ (บาท)','ประกันสังคม 5% (บาท)'];
+ const bt=grp(ES_CATS,x=>x.cat);
+ const pk=all.filter(x=>x.cat===EMTYP[0]);
+ const bg=(()=>{const m=new Map(ES_GRP.map(k=>[k,[]]));pk.forEach(x=>{const k=String(x.grp||'').trim()||'ไม่ระบุกลุ่ม';(m.get(k)||m.set(k,[]).get(k)).push(x)});return[...m].map(([k,l])=>[k,l.length,...money(ag(l))])})();
+ const bp=grp([],x=>x.pos).sort((a,b)=>b[1]-a[1]||String(a[0]).localeCompare(String(b[0]),'th'));
+ const uh=['ที่','รหัส 5 หลัก','รพ.สต.','อำเภอ','สถานะ','พนักงานจ้าง (คน)','พกส.','ลจช.','รายวัน/รายคาบ','จ้างเหมา','อื่น ๆ','เงินเดือนรวม/เดือน (บาท)','รวมงบประมาณ (บาท)','ประกันสังคม 5% (บาท)'];
+ const ur=L.map(x=>[x.u.i+1,x.u.cd,x.u.n,x.u.a,x.s,x.rows.length,...cc(x.rows),...money(ag(x.rows))]);
+ /* ---- ตรวจสอบความถูกต้อง ---- */
+ const G=ag(all),T=r=>r.reduce((a,x)=>a+x,0);
+ const colS=(rows,j)=>rows.reduce((a,r)=>a+esC(r[j]),0);
+ const body=dr.slice(0,-1);
+ const cmp=(lab,rows,jn,js,jt,jss)=>{const n=rows.reduce((a,r)=>a+r[jn],0),ok=n===G.n&&colS(rows,js)===G.sal&&colS(rows,jt)===G.tot&&colS(rows,jss)===G.ss;
+  return[lab,ok?'ok':'bad',ok?`${f(n)} คน · ตรงกับยอดรวมทั้งจังหวัด`:`ไม่ตรง: ได้ ${f(n)} คน/งบ ${f2(colS(rows,jt)/100)} เทียบยอดรวม ${f(G.n)} คน/งบ ${f2(G.tot/100)}`]};
+ const orph=Object.keys(EDITS||{}).filter(k=>/_em$/.test(k)&&!cds.has(k.slice(0,-3)));
+ const orphP=orph.reduce((a,k)=>a+esList(EDITS[k]).length,0);
+ const conf=L.filter(x=>x.no&&x.rows.length),inc=all.filter(x=>!x.ok),dif=all.filter(x=>x.dif),holes=L.filter(x=>x.holes>0);
+ const dup=[];L.forEach(x=>{const m=new Map();x.rows.forEach(r=>{if(r.nm)m.set(r.nm,(m.get(r.nm)||0)+1)});m.forEach((v,k)=>{if(v>1)dup.push([x,k,v])})});
+ const cov=L.length===D.length&&sc(L).ok+sc(L).part+sc(L).none===D.length&&dr[dr.length-1][1]===D.length&&body.reduce((a,r)=>a+r[1],0)===D.length;
+ const checks=[
+  ['ครบทุก รพ.สต. ตามทะเบียน ('+D.length+' แห่ง)',cov?'ok':'bad',cov?'ครบ '+D.length+' แห่ง = กรอกครบ '+sc(L).ok+' + ไม่สมบูรณ์ '+sc(L).part+' + ยังไม่กรอก '+sc(L).none:'จำนวน รพ.สต. ในตารางไม่ครบ'],
+  cmp('ยอดรวมทั้งจังหวัด = ผลรวมรายอำเภอ',body,6,12,13,14),
+  cmp('ยอดรวมทั้งจังหวัด = ผลรวมรายประเภท',bt,1,2,3,4),
+  cmp('ยอดรวมทั้งจังหวัด = ผลรวมรายตำแหน่ง',bp,1,2,3,4),
+  cmp('ยอดรวมทั้งจังหวัด = ผลรวมรายแห่ง ('+D.length+' แห่ง)',ur,5,11,12,13),
+  ['ไม่พบข้อมูลที่ตกหล่น (key ที่ไม่ตรงรหัส รพ.สต.)',orph.length?'bad':'ok',orph.length?`พบ ${orph.length} key (${orphP} คน) ที่ไม่ตรงทะเบียน: ${orph.slice(0,6).join(', ')}`:'ทุก key ในฐานข้อมูลตรงกับรหัส รพ.สต. 149 แห่ง'],
+  ['เงินงบประมาณ/ประกันสังคม ตรงกับที่ รพ.สต. บันทึก',dif.length?'warn':'ok',dif.length?`${dif.length} คน ยอดที่เก็บไว้ไม่ตรงกับ เงินเดือน × เดือน (หน้านี้ใช้ค่าที่คำนวณใหม่)`:'ตรงกันทุกแถว'],
+  ['ข้อมูลรายคนครบถ้วน',inc.length?'warn':'ok',inc.length?`${inc.length} คนข้อมูลยังไม่ครบ (นับรวมในยอดตามที่กรอกไว้)`:`ครบทั้ง ${f(all.length)} คน`],
+  ['ไม่มีข้อมูลขัดแย้ง (ติ๊กไม่มีพนักงานจ้าง แต่มีรายชื่อ)',conf.length||holes.length?'warn':'ok',conf.length||holes.length?`${conf.length} แห่งติ๊กไม่มีแต่มีรายชื่อ (นับรายชื่อไว้) · ${holes.length} แห่งพบแถวว่าง`:'ไม่พบ'],
+  ['ไม่มีชื่อซ้ำใน รพ.สต. เดียวกัน',dup.length?'warn':'ok',dup.length?`พบชื่อซ้ำ ${dup.length} รายการ (ควรตรวจสอบว่ากรอกซ้ำหรือไม่)`:'ไม่พบ']];
+ const issues=[
+  ...orph.map(k=>['-','(key ไม่ตรงทะเบียน)','-','ข้อมูลตกหล่น',k+' · '+esList(EDITS[k]).length+' คน']),
+  ...L.filter(x=>x.rows.some(r=>!r.ok)).map(x=>[x.u.cd,x.u.n,x.u.a,'ข้อมูลรายคนไม่ครบ',x.rows.filter(r=>!r.ok).map(r=>r.nm||'(ไม่มีชื่อ)').join(', ')]),
+  ...L.filter(x=>x.rows.some(r=>r.dif)).map(x=>[x.u.cd,x.u.n,x.u.a,'ยอดที่เก็บไว้ไม่ตรงกับเงินเดือน × เดือน',x.rows.filter(r=>r.dif).map(r=>r.nm).join(', ')]),
+  ...conf.map(x=>[x.u.cd,x.u.n,x.u.a,'ติ๊กไม่มีพนักงานจ้าง แต่มีรายชื่อ',x.rows.length+' คน']),
+  ...holes.map(x=>[x.u.cd,x.u.n,x.u.a,'พบแถวว่าง',x.holes+' แถว']),
+  ...dup.map(([x,k,v])=>[x.u.cd,x.u.n,x.u.a,'ชื่อซ้ำใน รพ.สต. เดียวกัน',k+' ('+v+' แถว)'])];
+ const last=L.map(x=>x.at).filter(Boolean).sort().pop()||'';
+ return{L,all,G,sc:sc(L),cc:cc(all),dh,dr,th,bt,bg,bp,uh,ur,checks,issues,last,todo:L.filter(x=>x.s.k!=='ok')};
 }
 function empSumPage(){
- const d=empSumData(),c=d.c,n=D.length,tot=d.dr[d.dr.length-1];
- const kpi=(b,t)=>`<div class="glass kpi"><b>${b}</b><span>${t}</span></div>`,h=['รายการ','จำนวน (คน)','เงินเดือนรวม/เดือน (บาท)','รวมงบประมาณ (บาท)','ประกันสังคม 5% (บาท)'];
- return `<div class="glass hero"><h1>🧑‍🔧 สรุปอัตรากำลังพนักงานจ้าง/จ้างเหมาบริการ</h1><p class="sub">รวมข้อมูลที่เจ้าหน้าที่ รพ.สต. กรอกในเมนู “อัตรากำลังพนักงานจ้าง/จ้างเหมาบริการ” ปีงบประมาณ 2570 · ตัวเลขอัปเดตแบบเรียลไทม์ · ขอบเขต: ${SCOPE[st.role]}</p><div class="hchips"><span>${n} รพ.สต.</span><span>กรอกครบ ${c.ok} แห่ง</span><span>ไม่สมบูรณ์ ${c.part} แห่ง</span><span>ยังไม่กรอก ${c.none} แห่ง</span></div></div>
- ${db?'':'<div class="glass card"><div class="insight bad">เชื่อมต่อฐานข้อมูลกลาง (Firebase) ไม่ได้ จึงเห็นเฉพาะข้อมูลที่บันทึกในเครื่องนี้</div></div>'}
- <div class="kpis">${kpi(f(d.all.length),'พนักงานจ้างทั้งหมด (คน) · จาก '+(c.ok-c.no)+' รพ.สต. ที่มีพนักงานจ้าง')}${kpi(f2(tot[7]),'เงินเดือนรวม/เดือน (บาท)')}${kpi(f2(tot[8]),'รวมงบประมาณ (บาท)')}${kpi(f2(tot[9]),'ประกันสังคม 5% (บาท)')}</div>
- <div class="glass card"><h2>สถานะการกรอกข้อมูล</h2><p class="note" style="margin:0 0 10px">กรอกครบ ${c.ok}/${n} แห่ง (รวมแจ้งว่าไม่มีพนักงานจ้าง ${c.no} แห่ง) · ยังไม่สมบูรณ์ ${c.part} แห่ง · ยังไม่กรอกเลย ${c.none} แห่ง</p><div class="actions" style="margin:0 0 10px"><button class="btn" type="button" id="esx">⬇️ ดาวน์โหลด Excel</button></div></div>
- <div class="glass card"><h2>สรุปรายอำเภอ</h2>${tbl(d.dh,d.dr)}</div>
- <div class="glass card"><h2>แยกตามประเภทพนักงานจ้าง</h2>${tbl(h,d.bt)}</div>
- <div class="glass card"><h2>แยกตามตำแหน่ง</h2>${tbl(h,d.bp)}</div>
+ const d=esData(),c=d.sc,n=D.length,tot=d.dr[d.dr.length-1],G=d.G;
+ const kpi=(b,t)=>`<div class="glass kpi"><b>${b}</b><span>${t}</span></div>`;
+ const fm=(rows,mi)=>rows.map(r=>r.map((x,i)=>typeof x==='number'?(mi.includes(i)?f2(x):f(x)):x));
+ const bad=d.checks.filter(x=>x[1]==='bad').length,warn=d.checks.filter(x=>x[1]==='warn').length;
+ const mark={ok:'✅',warn:'⚠️',bad:'❌'};
+ const last=d.last?new Date(d.last).toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'}):'-';
+ const cname=['พกส.','ลจช.','รายวัน/รายคาบ','จ้างเหมาบริการ','อื่น ๆ'];
+ return `<div class="glass hero"><h1>🧑‍🔧 สรุปอัตรากำลังพนักงานจ้าง/จ้างเหมาบริการ ภาพรวมทั้งจังหวัด</h1><p class="sub">รวมข้อมูลที่เจ้าหน้าที่ รพ.สต. กรอกในเมนู “อัตรากำลังพนักงานจ้าง/จ้างเหมาบริการ” ของเว็บฝั่ง รพ.สต. ปีงบประมาณ 2570 · เชื่อมข้อมูลเดียวกันแบบเรียลไทม์ · บันทึกล่าสุด ${esc(last)} · ขอบเขต: ${SCOPE[st.role]}</p><div class="hchips"><span>${n} รพ.สต.</span><span>${AM.length} อำเภอ</span><span>กรอกครบ ${c.ok} แห่ง</span><span>ไม่สมบูรณ์ ${c.part} แห่ง</span><span>ยังไม่กรอก ${c.none} แห่ง</span></div></div>
+ ${db?'':'<div class="glass card"><div class="insight bad">เชื่อมต่อฐานข้อมูลกลาง (Firebase) ไม่ได้ จึงเห็นเฉพาะข้อมูลที่บันทึกในเครื่องนี้ — ตัวเลขอาจไม่ครบ</div></div>'}
+ <div class="kpis">${kpi(f(G.n),'พนักงานจ้าง/จ้างเหมาฯ ทั้งจังหวัด (คน) · จาก '+(c.ok-c.no)+' รพ.สต. ที่มีพนักงานจ้าง')}${kpi(f2(tot[12]),'เงินเดือนรวม/เดือน (บาท)')}${kpi(f2(tot[13]),'รวมงบประมาณ (บาท)')}${kpi(f2(tot[14]),'ประกันสังคม 5% (บาท)')}</div>
+ <div class="kpis">${d.cc.map((v,i)=>kpi(f(v),cname[i]+' (คน)')).join('')}</div>
+ <div class="glass card"><h2>ตรวจสอบความถูกต้องของข้อมูล ${bad?'❌ พบข้อผิดพลาด '+bad+' ข้อ':warn?'⚠️ มีข้อสังเกต '+warn+' ข้อ':'✅ ผ่านทุกข้อ'}</h2><p class="note" style="margin:0 0 10px">ระบบตรวจทุกครั้งที่เปิดหน้านี้ ว่าตัวเลขสรุปตรงกับข้อมูลที่ รพ.สต. กรอกทุกคน ไม่มีข้อมูลตกหล่นหรือนับซ้ำ</p>${d.checks.map(x=>`<div class="insight${x[1]==='bad'?' bad':''}">${mark[x[1]]} <b>${esc(x[0])}</b><br><small>${esc(x[2])}</small></div>`).join('')}<div class="actions" style="margin:10px 0 0"><button class="btn" type="button" id="esx">⬇️ ดาวน์โหลด Excel (ทุกตาราง + รายชื่อครบทุกคน)</button></div></div>
+ <div class="glass card"><h2>สรุปรายอำเภอ</h2>${tbl(d.dh,fm(d.dr,[12,13,14]))}</div>
+ <div class="glass card"><h2>แยกตามประเภทพนักงานจ้าง</h2>${tbl(d.th,fm([...d.bt,['รวม',G.n,G.sal/100,G.tot/100,G.ss/100]],[2,3,4]))}</div>
+ <div class="glass card"><h2>พนักงานกระทรวงสาธารณสุข (พกส.) แยกตามกลุ่ม</h2>${tbl(d.th,fm([...d.bg,['รวม',d.bg.reduce((a,r)=>a+r[1],0),d.bg.reduce((a,r)=>a+esC(r[2]),0)/100,d.bg.reduce((a,r)=>a+esC(r[3]),0)/100,d.bg.reduce((a,r)=>a+esC(r[4]),0)/100]],[2,3,4]))}</div>
+ <div class="glass card"><h2>แยกตามตำแหน่ง</h2>${tbl(d.th,fm([...d.bp,['รวม',G.n,G.sal/100,G.tot/100,G.ss/100]],[2,3,4]))}</div>
+ <div class="glass card"><details><summary><b>รายแห่งครบ ${n} รพ.สต.</b> (กดเพื่อดู/ซ่อน)</summary><div class="tw" style="max-height:none"><table><thead><tr>${d.uh.map(x=>`<th>${esc(x)}</th>`).join('')}</tr></thead><tbody>${d.ur.map(r=>`<tr><td>${r[0]}</td><td>${cdTag(r[1])}</td><td>${esc(r[2])}</td><td>${esc(r[3])}</td><td>${pgChip(r[4])}</td>${r.slice(5,11).map(v=>`<td class="n">${f(v)}</td>`).join('')}${r.slice(11).map(v=>`<td class="n">${f2(v)}</td>`).join('')}</tr>`).join('')}<tr class="tot"><td></td><td></td><td>รวมทั้งจังหวัด</td><td></td><td></td><td class="n">${f(G.n)}</td>${d.cc.map(v=>`<td class="n">${f(v)}</td>`).join('')}<td class="n">${f2(G.sal/100)}</td><td class="n">${f2(G.tot/100)}</td><td class="n">${f2(G.ss/100)}</td></tr></tbody></table></div></details></div>
+ ${d.issues.length?`<div class="glass card"><h2>รายการที่ควรตรวจสอบ (${d.issues.length} รายการ)</h2><div class="tw" style="max-height:none"><table><thead><tr><th>รหัส</th><th>รพ.สต.</th><th>อำเภอ</th><th>ประเด็น</th><th>รายละเอียด</th></tr></thead><tbody>${d.issues.map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td><td>${esc(r[3])}</td><td>${esc(r[4])}</td></tr>`).join('')}</tbody></table></div></div>`:''}
  <div class="glass card"><h2>รพ.สต. ที่ยังไม่กรอก/กรอกไม่สมบูรณ์ (${d.todo.length} แห่ง)</h2>${d.todo.length?`<div class="tw" style="max-height:none"><table><thead><tr><th>ที่</th><th>รหัส 5 หลัก</th><th>รพ.สต.</th><th>อำเภอ</th><th>สถานะ</th></tr></thead><tbody>${d.todo.map(x=>`<tr><td>${x.u.i+1}</td><td>${cdTag(x.u.cd)}</td><td>${esc(x.u.n)}</td><td>${esc(x.u.a)}</td><td>${pgChip(x.s)}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">ทุก รพ.สต. กรอกครบแล้ว</div>'}</div>`;
 }
 function bindEmpSum(){
  const b=$('#esx');if(!b)return;
  b.onclick=()=>{if(!canSee())return;if(!window.XLSX){alert('โหลดตัวสร้างไฟล์ Excel ไม่ได้ (ต้องเชื่อมต่ออินเทอร์เน็ต)');return}
-  const d=empSumData(),H=['ลำดับ','รหัสสถานบริการ (5 หลัก)','อำเภอ','รพ.สต.','ชื่อ - สกุล','ตำแหน่ง','ประเภทพนักงานจ้าง','วุฒิการศึกษา','วันที่เริ่มปฏิบัติงาน','ลักษณะการจ้าง','เงินเดือนปัจจุบัน (บาท)','จำนวนเดือน','รวมเงินงบประมาณ (บาท)','ประกันสังคม 5% (บาท)','หมายเหตุ'],T=['ประเภท/ตำแหน่ง','จำนวน (คน)','เงินเดือนรวม/เดือน','รวมงบประมาณ','ประกันสังคม 5%'];
-  const wb=XLSX.utils.book_new();
-  [['สรุปรายอำเภอ',[d.dh,...d.dr]],['ตามประเภทพนักงานจ้าง',[T,...d.bt]],['ตามตำแหน่ง',[T,...d.bp]],
-   ['รายชื่อพนักงานจ้าง ทั้งหมด',[H,...d.all.map((x,i)=>[i+1,x.cd,x.a,x.n,x.nm,x.pos,x.typ,x.edu,x.st,x.hire,+x.sal||0,+x.mo||0,+x.tot||0,+x.ss||0,x.note||''])]],
+  const d=esData(),G=d.G,
+   H=['ลำดับ','รหัสสถานบริการ (5 หลัก)','อำเภอ','รพ.สต.','ชื่อ - สกุล','ตำแหน่ง','ประเภทพนักงานจ้าง','ประเภท (จัดกลุ่ม)','กลุ่ม พกส.','วุฒิการศึกษา','วันที่เริ่มปฏิบัติงาน','ลักษณะการจ้าง','เงินเดือนปัจจุบัน (บาท)','จำนวนเดือน','รวมเงินงบประมาณ (บาท)','ประกันสังคม 5% (บาท)','หมายเหตุ'],
+   tl=r=>[...r,[]],
+   ov=[['สรุปอัตรากำลังพนักงานจ้าง/จ้างเหมาบริการ ภาพรวมทั้งจังหวัดสกลนคร ปีงบประมาณ 2570'],['ข้อมูล ณ',new Date().toLocaleString('th-TH',{dateStyle:'long',timeStyle:'short'})],[],
+    ['รพ.สต. ทั้งหมด (แห่ง)',D.length],['กรอกครบแล้ว',d.sc.ok],['ไม่สมบูรณ์',d.sc.part],['ยังไม่กรอก',d.sc.none],['(แจ้งว่าไม่มีพนักงานจ้าง)',d.sc.no],[],
+    ['พนักงานจ้าง/จ้างเหมาฯ ทั้งจังหวัด (คน)',G.n],['เงินเดือนรวม/เดือน (บาท)',G.sal/100],['รวมงบประมาณ (บาท)',G.tot/100],['ประกันสังคม 5% (บาท)',G.ss/100],[],
+    ['พกส. (คน)',d.cc[0]],['ลจช. รายเดือน (คน)',d.cc[1]],['รายวัน/รายคาบ (คน)',d.cc[2]],['จ้างเหมาบริการ (คน)',d.cc[3]],['อื่น ๆ/ไม่ระบุ (คน)',d.cc[4]]],
+   chk=[['ข้อตรวจสอบ','ผล','รายละเอียด'],...d.checks.map(x=>[x[0],{ok:'ผ่าน',warn:'ข้อสังเกต',bad:'ผิดพลาด'}[x[1]],x[2]])],
+   wb=XLSX.utils.book_new();
+  [['ภาพรวมจังหวัด',ov],['สรุปรายอำเภอ',[d.dh,...d.dr]],['ตามประเภท',[d.th,...d.bt,['รวม',G.n,G.sal/100,G.tot/100,G.ss/100]]],['พกส.ตามกลุ่ม',[d.th,...d.bg]],['ตามตำแหน่ง',[d.th,...d.bp,['รวม',G.n,G.sal/100,G.tot/100,G.ss/100]]],
+   ['รายรพ.สต.',[d.uh,...d.ur.map(r=>[r[0],r[1],r[2],r[3],PGT[r[4].k]+(r[4].d?' · '+r[4].d:''),...r.slice(5)])]],
+   ['รายชื่อพนักงานจ้าง ทั้งหมด',[H,...d.all.map((x,i)=>[i+1,x.cd,x.a,x.n,x.nm,x.pos,x.typ,x.cat,x.grp||'',x.edu,x.st,x.hire,x.sal,x.mo,x.tot,x.ss,x.note||''])]],
+   ['ตรวจสอบความถูกต้อง',chk],['ประเด็นที่ควรตรวจ',[['รหัส','รพ.สต.','อำเภอ','ประเด็น','รายละเอียด'],...d.issues]],
    ['ยังไม่กรอก-ไม่สมบูรณ์',[['รหัส','อำเภอ','รพ.สต.','สถานะ','รายละเอียด'],...d.todo.map(x=>[x.u.cd,x.u.a,x.u.n,PGT[x.s.k],x.s.d])]]
   ].forEach(([n,ar])=>{const ws=XLSX.utils.aoa_to_sheet(ar);ws['!cols']=widths(ar);XLSX.utils.book_append_sheet(wb,ws,n)});
-  XLSX.writeFile(wb,'สรุปอัตรากำลังพนักงานจ้าง_รพ.สต..xlsx')};
+  XLSX.writeFile(wb,'สรุปอัตรากำลังพนักงานจ้าง_ทั้งจังหวัด.xlsx')};
 }
 function hrPage(){
  const a=ana(),low=a.am.slice(0,3),sub=MENUS.filter(m=>m.p==='hr'&&CAN[st.role].includes(m.id));
