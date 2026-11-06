@@ -2281,15 +2281,60 @@ const ADK=u=>u.cd+'_ad',adOf=u=>EDITS[ADK(u)]||null;   /* เก็บในโ�
 let adDirty=false;
 async function adSet(u,rec){if(!db){EDITS[ADK(u)]=rec;eSave();return}await db.ref(EPATH+'/'+ADK(u)).set(rec);EDITS[ADK(u)]=rec}
 const adCeil10=v=>Math.ceil(Math.round(v*100)/1000)*10;   /* ปัดขึ้นทางเดียวเป็นหลักสิบ (เช่น 10,110.02 → 10,120) */
-const adLate=x=>!!(x.st&&x.st>=ADEFF);
-function adLookup(x){
- if(x.typ===EMTYP[0]){const i=(EMPKS[x.grp]||[]).indexOf(x.hire);return i>=0&&ADPKS[x.grp]?(ADPKS[x.grp][i]||null):null}
- if(x.typ===EMTYP[1]){const i=EMTMP.indexOf(x.hire);return i>=0?ADTMP[i]:null}
+/* ---- ตัวช่วยจับคู่อัตราค่าจ้างอัตโนมัติ (ทนต่อข้อมูลเก่า/พิมพ์ไม่ตรง/ไม่มีกลุ่ม/ไม่มีลักษณะการจ้าง) ---- */
+const adNorm=t=>String(t==null?'':t).replace(/[\s\u200b.\-–—()（）,]/g,'').replace(/วุฒิ/g,'');
+const adDate=v=>{let s=String(v==null?'':v).trim(),m;
+ if((m=/^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s))){let y=+m[1];if(y>=2400)y-=543;return y+'-'+String(+m[2]).padStart(2,'0')+'-'+String(+m[3]).padStart(2,'0')}
+ if((m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(s))){let y=+m[3];if(y>=2400)y-=543;return y+'-'+String(+m[2]).padStart(2,'0')+'-'+String(+m[1]).padStart(2,'0')}
+ return s};
+const adLate=x=>{const d=adDate(x&&x.st);return !!(d&&d>=ADEFF)};
+/* ชนิด: 'P' = พกส. · 'T' = ลูกจ้างชั่วคราวรายเดือน (ลจช.) · null = ไม่เข้าบัญชี (รายวัน/รายคาบ/จ้างเหมา) */
+function adKind(x){const t=adNorm(x&&x.typ);if(!t)return null;
+ if(/เหมา|รายวัน|รายคาบ/.test(t))return null;
+ if(t===adNorm(EMTYP[0])||/พกส|พนักงานกระทรวง/.test(t))return'P';
+ if(t===adNorm(EMTYP[1])||/ลจช|ชั่วคราว|เงินบำรุง/.test(t))return'T';
  return null}
+const AD_PROF=/พยาบาลวิชาชีพ|นักวิชาการ|แพทย์|ทันตแพทย์|เภสัช|กายภาพ|เทคนิคการแพทย์|โภชนา|จิตวิทยา|รังสี|นักวิทยาศาสตร์|นักสาธารณสุข|ผู้ประกอบวิชาชีพ|นักกิจกรรม|นักสังคม/;
+const AD_TECH=/เจ้าพนักงาน|พยาบาลเทคนิค|ช่าง/;
+function adEduLv(e){const t=adNorm(e);
+ if(/เอก/.test(t))return'D';if(/โท/.test(t))return'M';if(/ตรี|ปริญญา/.test(t))return'B';
+ if(/ปวส|อนุปริญญา|ปวท/.test(t))return'S';if(/ปวช/.test(t))return'C';
+ if(/มัธยมศึกษาตอนปลาย|ม\.?6/.test(t))return'H';if(/มัธยม|ม\.?3|ประถม/.test(t))return'J';return'N'}
+function adTmpIdx(x){
+ let i=EMTMP.indexOf(x.hire);if(i>=0)return i;
+ for(const src of [x.hire,x.edu]){const t=adNorm(src);if(!t)continue;
+  if(/ปริญญาเอก|ปริญญาโท|เอก|โท/.test(t))return 6;
+  if(/6ปี/.test(t))return 6;if(/5ปี/.test(t))return 5;if(/4ปี|ปริญญาตรี|ตรี/.test(t))return 4;
+  if(/ปวส|อนุปริญญา/.test(t))return 3;if(/ปวท/.test(t))return 2;if(/ปวช/.test(t))return 1;
+  if(/ไม่กำหนด|ไม่มี|มัธยม|ประถม/.test(t))return 0}
+ return -1}
+/* คืน {a:[ขั้นต่ำ,ขั้นสูง]|null, inf:ข้อความถ้าเป็นการประมาณ} */
+function adResolve(x){
+ const k=adKind(x);if(!k)return{a:null,inf:''};
+ if(k==='T'){const i=adTmpIdx(x);if(i<0)return{a:null,inf:''};
+  return{a:ADTMP[i]||null,inf:EMTMP.indexOf(x.hire)>=0?'':'ประมาณอัตราจากวุฒิการศึกษา'}}
+ const hn=adNorm(x.hire),grps=Object.keys(EMPKS);
+ const find=g=>{const L=EMPKS[g]||[];let i=L.indexOf(x.hire);if(i<0&&hn)i=L.findIndex(v=>adNorm(v)===hn);if(i<0&&hn)i=L.findIndex(v=>{const n=adNorm(v);return n.length>6&&(n.includes(hn)||hn.includes(n))});return i};
+ const g=EMPKS[x.grp]?x.grp:'';
+ if(g){const i=find(g);if(i>=0&&ADPKS[g]&&ADPKS[g][i])return{a:ADPKS[g][i],inf:''}}
+ if(hn){const c=grps.map(G=>[G,find(G)]).filter(z=>z[1]>=0&&ADPKS[z[0]]&&ADPKS[z[0]][z[1]]);
+  if(c.length){const want=AD_PROF.test(x.pos||'')?'วิชาชีพเฉพาะ':AD_TECH.test(x.pos||'')?'เทคนิค':'บริการ';
+   const pick=c.length===1?c[0]:(c.find(z=>z[0]===want)||c[0]);
+   return{a:ADPKS[pick[0]][pick[1]],inf:g?'':'ไม่ระบุกลุ่ม ระบบเลือกกลุ่ม “'+pick[0]+'” ให้'}}}
+ /* ไม่มีลักษณะการจ้าง/จับคู่ไม่ได้ → ประมาณจากวุฒิ + ตำแหน่ง */
+ const lv=adEduLv(x.edu),prof=AD_PROF.test(x.pos||''),tech=AD_TECH.test(x.pos||''),deg=lv==='B'||lv==='M'||lv==='D';
+ const G=g||(deg?(prof?'วิชาชีพเฉพาะ':'บริหารทั่วไป'):((lv==='S'||lv==='C')&&tech?'เทคนิค':'บริการ'));let i=-1;
+ if(G==='วิชาชีพเฉพาะ')i=lv==='D'?5:lv==='M'?3:lv==='B'?0:-1;
+ else if(G==='บริหารทั่วไป')i=lv==='D'?2:lv==='M'?1:lv==='B'?0:-1;
+ else if(G==='เทคนิค')i=lv==='C'?0:2;
+ else i=lv==='N'?0:(lv==='J'||lv==='H')?1:lv==='C'?2:4;
+ if(i>=0&&ADPKS[G]&&ADPKS[G][i])return{a:ADPKS[G][i],inf:'ประมาณอัตราจากวุฒิ/ตำแหน่ง (กลุ่ม'+G+') กรุณาตรวจสอบ'};
+ return{a:null,inf:''}}
+function adLookup(x){return adResolve(x).a}
 function adCalc(x,o){
- o=o||{};const num=v=>{const n=wgNum(v);return isNaN(n)?null:n},a=adLookup(x);
- const h=o.h!==undefined?num(o.h):num(x.sal),mn=o.mn!==undefined?num(o.mn):(a?a[0]:null),mx=o.mx!==undefined?num(o.mx):(a?a[1]:null);
- const R={h,mn,mx,K:0,L:0,M:h,N:null,st:''};
+ o=o||{};const num=v=>{const n=wgNum(v);return isNaN(n)?null:n},rs=adResolve(x),a=rs.a;
+ const h=o.h!==undefined?num(o.h):num(x.sal),mn=a?a[0]:(o.mn!==undefined?num(o.mn):null),mx=a?a[1]:(o.mx!==undefined?num(o.mx):null);
+ const R={h,mn,mx,K:0,L:0,M:h,N:null,st:'',inf:rs.inf,auto:!!a};
  if(h==null||h<=0){R.M=null;R.st='inc';return R}
  R.N=h;
  if(adLate(x)){R.st='new';return R}
@@ -2304,19 +2349,20 @@ function adCalc(x,o){
 function adRows(u){
  const r=emOf(u),all=(r&&r.rows)||[],seen={},rows=[];let ex=0;
  all.forEach(x=>{
-  if(x.typ!==EMTYP[0]&&x.typ!==EMTYP[1]){ex++;return}
+  if(!adKind(x)){ex++;return}
   const k=(x.nm||'')+(seen[x.nm]?'#'+seen[x.nm]:'');seen[x.nm]=(seen[x.nm]||0)+1;rows.push({k,x})});
  return{rows,ex,has:!!r,none:!!(r&&r.none)}}
+const adNOf=(R,o)=>(o&&o.n!=null&&(o.man===1||!R.auto))?+o.n:R.N;   /* ค่าจ้างตามจริงที่กรอกเอง ใช้เฉพาะเมื่อกดแก้เอง (man) หรือไม่มีอัตราในบัญชี · นอกนั้นคำนวณอัตโนมัติเสมอ */
 const adOv=u=>{const m={};Object.values(((adOf(u)||{}).rows)||{}).forEach(o=>{if(o&&o.k!=null)m[o.k]=o});return m};
 function adData(u){
  const d=adRows(u),ov=adOv(u);
- const rows=d.rows.map(it=>{const o=ov[it.k]||{},R=adCalc(it.x,o),n=o.n!=null?+o.n:R.N,oo=(n!=null&&R.h!=null)?emR2(n-R.h):null;
-  return{x:it.x,o,R,n,oo,note:[ADST[R.st]||'',o.note||''].filter(Boolean).join(' · ')}});
+ const rows=d.rows.map(it=>{const o=ov[it.k]||{},R=adCalc(it.x,o),n=adNOf(R,o),oo=(n!=null&&R.h!=null)?emR2(n-R.h):null;
+  return{x:it.x,o,R,n,oo,note:[(ADST[R.st]||'')+(R.inf?' ('+R.inf+')':''),o.note||''].filter(Boolean).join(' · ')}});
  const S=k=>emR2(rows.reduce((a,z)=>a+(+z[k]||0),0));
  return{rows,ex:d.ex,tot:{h:emR2(rows.reduce((a,z)=>a+(+z.R.h||0),0)),k:emR2(rows.reduce((a,z)=>a+z.R.K,0)),l:emR2(rows.reduce((a,z)=>a+z.R.L,0)),m:emR2(rows.reduce((a,z)=>a+(+z.R.M||0),0)),n:S('n'),o:S('oo')}}}
 const adHireTxt=x=>(x.grp?x.grp+' · ':'')+(x.hire||'');
 function adRowHtml(i,u,it,o,dis){
- const x=it.x,hasA=!!adLookup(x),R=adCalc(x,o),man=o&&o.n!=null,hv=(o&&o.h!==undefined)?o.h:x.sal,
+ const x=it.x,R=adCalc(x,o),hasA=R.auto,man=!!(o&&o.n!=null&&(o.man===1||!R.auto)),hv=(o&&o.h!==undefined)?o.h:x.sal,
  inp=(f,v)=>`<input type="text" class="adn" data-f="${f}" inputmode="decimal" autocomplete="off" value="${v==null?'':esc(v)}"${dis}>`;
  return `<tr data-i="${i}"><td class="n">${i+1}</td><td>${esc(u.a)}</td><td>${esc(u.n)}</td><td>${esc(x.nm)}</td><td>${esc(x.typ)}</td><td>${esc(x.pos)}</td><td>${esc(x.hire||'')}${x.grp?`<div class="adhr">กลุ่ม ${esc(x.grp)}</div>`:''}</td>
  <td>${inp('h',hv)}</td>
@@ -2368,7 +2414,7 @@ function bindAdj(){
    const ni=q(tr,'n');if(ni.dataset.man!=='1')ni.value=R.N==null?'':R.N;
    const n=wgNum(ni.value),oo=(!isNaN(n)&&R.h!=null)?emR2(n-R.h):null;
    tr.querySelector('.c-o').textContent=oo==null?'':f2(oo);
-   tr.querySelector('.c-st').textContent=ADST[R.st]||'';
+   tr.querySelector('.c-st').textContent=(ADST[R.st]||'')+(R.inf?' ('+R.inf+')':'');
    if(R.h)th+=R.h;tk+=R.K;tl+=R.L;if(R.M!=null)tm+=R.M;if(!isNaN(n))tn+=n;if(oo!=null)to+=oo});
   $('#adcnt').textContent='รวม '+items.length+' คน';
   show($('#t-h'),emR2(th));show($('#t-k'),emR2(tk));show($('#t-l'),emR2(tl));show($('#t-m'),emR2(tm));show($('#t-n'),emR2(tn));show($('#t-o'),emR2(to));
@@ -2392,7 +2438,9 @@ function bindAdj(){
     if(!adLate(it.x)&&(isNaN(a)||isNaN(b)||a<=0||b<a)){bad=tag+'ไม่พบอัตราในบัญชี กรุณากรอกขั้นต่ำ/ขั้นสูงให้ถูกต้อง (ขั้นสูงต้องไม่น้อยกว่าขั้นต่ำ)';return}
     if(!isNaN(a))o.mn=a;if(!isNaN(b))o.mx=b}
    const ni=q(tr,'n');
-   if(ni.dataset.man==='1'){const n=wgNum(ni.value);if(isNaN(n)||n<0){bad=tag+'ค่าจ้างที่ได้รับตามจริงต้องเป็นตัวเลข';return}o.n=n}
+   if(ni.dataset.man==='1'){const n=wgNum(ni.value);if(isNaN(n)||n<0){bad=tag+'ค่าจ้างที่ได้รับตามจริงต้องเป็นตัวเลข';return}
+    const Ra=adCalc(it.x,{h:q(tr,'h').value,mn:q(tr,'mn')?q(tr,'mn').value:undefined,mx:q(tr,'mx')?q(tr,'mx').value:undefined});
+    if(!Ra.auto||Ra.N==null||n!==Ra.N){o.n=n;o.man=1}}
    const nt=q(tr,'note').value.trim();if(nt)o.note=nt;
    if(Object.keys(o).length>1)rows.push(o)});
   if(bad){err.textContent='กรุณาตรวจสอบ: '+bad;return}
