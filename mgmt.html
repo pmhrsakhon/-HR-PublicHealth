@@ -2119,7 +2119,7 @@ $('#nav').onclick=e=>{const b=e.target.closest('[data-go]');if(!b)return;const i
  if(b.dataset.par){if(st.view===id||MENUS.some(x=>x.p===id&&x.id===st.view)){st.exp[id]=!(st.exp[id]||MENUS.some(x=>x.p===id&&x.id===st.view));renderNav();return}st.exp[id]=true}
  go(id)};
 /* ===== ระบบลงชื่อเข้าใช้ (ฝั่งเบราว์เซอร์: รหัสผ่านเก็บเป็นค่าแฮช ไม่เก็บตัวอักษรจริง) ===== */
-const ROLES={admin:'ผู้ดูแลระบบ',exec:'ผู้บริหาร',pm:'PM บุคลากร',staff:'เจ้าหน้าที่ รพ.สต.',guest:'บุคคลทั่วไป'};
+const ROLES={admin:'ผู้ดูแลระบบ',dpm:'PM บุคลากร ระดับอำเภอ',exec:'ผู้บริหาร',pm:'PM บุคลากร',staff:'เจ้าหน้าที่ รพ.สต.',guest:'บุคคลทั่วไป'};
 function sha256(m){
  const rr=(x,n)=>x>>>n|x<<32-n,K=[],H=[];
  for(let p=2,c=0;c<64;p++){let ok=1;for(let d=2;d*d<=p;d++)if(p%d===0){ok=0;break}
@@ -2195,7 +2195,7 @@ $('#lgb').onclick=()=>{
   try{await userSync()}catch(e){}   /* ดึงบัญชีล่าสุดจากฐานข้อมูลกลางก่อนตรวจรหัสผ่าน */
   const u=USERS.find(x=>x.u===(d.u||'').trim().toLowerCase());
   if(!u||hpw(d.p||'',u.salt)!==u.h)return 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
-  if(!modeOK(u)){const T=APP_MODE==='unit'?'mgmt':'unit';if(MODE_ROLES[T].includes(u.role)){try{sessionStorage.setItem(T==='unit'?'hr_sess_unit_v1':'hr_sess_v1',u.u)}catch(e){}location.href=T==='unit'?'unit.html':'mgmt.html';return}return 'บัญชีนี้ไม่มีสิทธิ์เข้าใช้งาน'}
+  if(!modeOK(u)){if(u.role==='dpm'){try{sessionStorage.setItem('hr_sess_dist_v1',u.u)}catch(e){}location.href='district.html';return}const T=APP_MODE==='unit'?'mgmt':'unit';if(MODE_ROLES[T].includes(u.role)){try{sessionStorage.setItem(T==='unit'?'hr_sess_unit_v1':'hr_sess_v1',u.u)}catch(e){}location.href=T==='unit'?'unit.html':'mgmt.html';return}return 'บัญชีนี้ไม่มีสิทธิ์เข้าใช้งาน'}
   setUser(u)});
 };
 $('#pwb').onclick=()=>dlg(`<h2>เปลี่ยนรหัสผ่าน</h2>${FM}<label>รหัสผ่านเดิม<input name="o" type="password" autocomplete="current-password"></label><label>รหัสผ่านใหม่ (อย่างน้อย 6 ตัวอักษร)<input name="n" type="password" autocomplete="new-password"></label><label>ยืนยันรหัสผ่านใหม่<input name="c" type="password" autocomplete="new-password"></label>${BT('บันทึก')}`,d=>{
@@ -2205,7 +2205,7 @@ $('#pwb').onclick=()=>dlg(`<h2>เปลี่ยนรหัสผ่าน</h2
  if(d.n!==d.c)return 'ยืนยันรหัสผ่านไม่ตรงกัน';
  u.salt=newSalt();u.h=hpw(d.n,u.salt);saveU();uWarn(uPut(u));alert('เปลี่ยนรหัสผ่านเรียบร้อยแล้ว')});
 function usersPage(){
- const ro=['admin','exec','pm','staff'],sel=(v,x='')=>`<select ${x}>${ro.map(r=>`<option value="${r}"${r===v?' selected':''}>${ROLES[r]}</option>`).join('')}</select>`;
+ const ro=['admin','exec','pm','dpm','staff'],sel=(v,x='')=>`<select ${x}>${ro.map(r=>`<option value="${r}"${r===v?' selected':''}>${ROLES[r]}</option>`).join('')}</select>`;
  return `<div class="glass hero"><h1>🔐 จัดการผู้ใช้งาน</h1><p class="sub">สร้างผู้ใช้ กำหนดสิทธิ์ รีเซ็ตรหัสผ่าน และลบผู้ใช้ · เก็บในเบราว์เซอร์เครื่องนี้</p></div>
  ${st.msg?`<div class="insight" role="status">${esc(st.msg)}</div>`:''}
  <div class="glass card"><h2>เพิ่มผู้ใช้</h2><div class="form"><label>ชื่อผู้ใช้ (อังกฤษ/ตัวเลข)<input id="nu" autocomplete="off"></label><label>ชื่อ-สกุล<input id="nn"></label><label>สิทธิ์<select id="nr">${ro.map(r=>`<option value="${r}">${ROLES[r]}</option>`).join('')}</select></label><label>รหัสผ่าน (อย่างน้อย 6 ตัวอักษร)<input id="np" autocomplete="off"></label><div class="actions full"><button class="btn" data-act="u_add">เพิ่มผู้ใช้</button></div></div></div>
