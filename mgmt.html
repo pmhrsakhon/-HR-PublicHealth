@@ -1922,6 +1922,37 @@ function waProv(L){const s=k=>waR2(L.reduce((a,x)=>a+x.d.T[k],0));return{n:L.red
 const waAllD=(L,PV)=>({a:'ทั้งจังหวัด',us:D,d:{grp:L.reduce((a,x)=>a.concat(x.d.grp),[]),skip:L.reduce((a,x)=>a.concat(x.d.skip),[]),flag:PV.flag,ex:PV.ex,n:PV.n,T:PV.T}});
 let waWide=false;   /* ซ่อนเมนูด้านซ้ายเพื่อให้ตารางกว้างเต็มจอ (PC) */
 let waAm='';        /* อำเภอที่เปิดดูอยู่ (1 อำเภอ ต่อ 1 หน้า) */
+let waFlagOpen=false;   /* เปิด/ปิดรายชื่อ รพ.สต. ที่คำนวณตามเกณฑ์ไม่ได้ (คลิกที่ข้อความเตือน) */
+/* วินิจฉัยสาเหตุที่ adLookup ไม่พบอัตราขั้นต่ำ–ขั้นสูง (ใช้ตรรกะเดียวกับ adLookup: ประเภท + กลุ่มงาน + ลักษณะการจ้าง ต้องตรงกับรายการในเกณฑ์) */
+const waWhy=x=>{
+ const grp=String(x.grp||'').trim(),hire=String(x.hire||'').trim(),q=s=>'“'+esc(s)+'”';
+ if(x.typ===EMTYP[0]){
+  if(!grp)return['nogrp','พกส.: ไม่ได้ระบุกลุ่มงาน (บริการ / เทคนิค / บริหารทั่วไป / วิชาชีพเฉพาะ) จึงไม่รู้ว่าต้องใช้ตารางอัตราชุดใด'];
+  if(!EMPKS[x.grp])return['badgrp','กลุ่มงาน '+q(grp)+' ไม่อยู่ในเกณฑ์ พกส. (มีเฉพาะ บริการ / เทคนิค / บริหารทั่วไป / วิชาชีพเฉพาะ)'];
+  if(!hire)return['nohire','ไม่ได้ระบุลักษณะการจ้าง/วุฒิ ในกลุ่ม'+esc(grp)];
+  if(EMPKS[x.grp].indexOf(x.hire)<0)return['hirebad','ลักษณะการจ้าง '+q(hire)+' ไม่ตรงกับรายการของกลุ่ม'+esc(grp)+' ในเกณฑ์ (อาจพิมพ์เอง/สะกดหรือเว้นวรรคต่างจากเกณฑ์)'];
+  return['noacct','กลุ่ม'+esc(grp)+' · '+q(hire)+' มีในรายการ แต่ตารางอัตราขั้นต่ำ–ขั้นสูงของวุฒินี้ยังไม่ได้กำหนด'];
+ }
+ if(x.typ===EMTYP[1]){
+  if(!hire)return['tnohire','ลจช.: ไม่ได้ระบุลักษณะการจ้าง/วุฒิ'];
+  if(EMTMP.indexOf(x.hire)<0)return['tbad','ลจช.: ลักษณะการจ้าง '+q(hire)+' ไม่อยู่ในเกณฑ์ (มีเฉพาะ ไม่กำหนดวุฒิ / ปวช. / ปวท. / ปวส. / ปริญญาตรี 4, 5, 6 ปี) เช่น ปริญญาโท/เอก ยังไม่มีอัตรา'];
+  return['noacct','ลจช.: '+q(hire)+' ยังไม่มีอัตราขั้นต่ำ–ขั้นสูงในตารางเกณฑ์'];
+ }
+ return['other','ประเภทพนักงานจ้างไม่ใช่ พกส./ลจช.'];
+};
+const WA_WHYH={nogrp:'ไม่ได้ระบุกลุ่มงาน (พกส.)',badgrp:'กลุ่มงานไม่อยู่ในเกณฑ์ (พกส.)',nohire:'ไม่ได้ระบุลักษณะการจ้าง/วุฒิ (พกส.)',hirebad:'ลักษณะการจ้างไม่ตรงกับรายการในเกณฑ์ (พกส.)',noacct:'มีในรายการ แต่ยังไม่มีอัตราขั้นต่ำ–ขั้นสูงในตารางเกณฑ์',tnohire:'ไม่ได้ระบุลักษณะการจ้าง/วุฒิ (ลจช.)',tbad:'ลักษณะการจ้างไม่อยู่ในเกณฑ์ (ลจช.) เช่น ปริญญาโท/เอก',other:'ประเภทพนักงานจ้างไม่ถูกต้อง'};
+function waFlagPanel(L){
+ const nc=v=>`<td class="n">${v}</td>`,cnt={};let tp=0,tu=new Set();
+ const ams=L.map(x=>({a:x.a,rows:x.d.grp.reduce((r,g)=>r.concat(g.rows.filter(y=>!y.c.g).map(y=>({u:g.u,y,w:waWhy(y.x)}))),[])})).filter(o=>o.rows.length);
+ const blocks=ams.map(o=>{
+  const us=new Set(o.rows.map(r=>r.u.cd));tp+=o.rows.length;us.forEach(c=>tu.add(c));
+  const tr=o.rows.map((r,i)=>{const x=r.y.x;cnt[r.w[0]]=(cnt[r.w[0]]||0)+1;
+   return `<tr><td class="n c">${i+1}</td><td>${cdTag(r.u.cd)}</td><td>${esc(r.u.n)}</td><td>${esc(x.nm||'')}</td><td>${esc(WA_T[x.typ]||x.typ||'')}</td><td>${esc(x.pos||'')}</td><td>${esc(adHireTxt(x)||'-')}</td><td>${esc(x.edu||'-')}</td>${nc(waF0(r.y.c.G))}<td style="color:var(--bad)">${r.w[1]}</td></tr>`}).join('');
+  return `<h3 style="margin:14px 0 6px">อำเภอ${esc(o.a)} · ${us.size} รพ.สต. · ${o.rows.length} คน</h3><div class="tw" style="max-height:none"><table><thead><tr>${['ที่','รหัส 5 หลัก','รพ.สต.','ชื่อ - สกุล','ประเภท','ตำแหน่ง','กลุ่มงาน · ลักษณะการจ้างที่กรอก','วุฒิการศึกษา','ค่าจ้างปัจจุบัน (บาท)','ข้อผิดพลาดที่ทำให้คำนวณตามเกณฑ์ไม่ได้'].map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${tr}<tr class="tot"><td colspan="8">รวมอำเภอ${esc(o.a)} (${o.rows.length} คน)</td>${nc(waF0(waR2(o.rows.reduce((s,r)=>s+r.y.c.G,0))))}<td></td></tr></tbody></table></div>`}).join('');
+ const why=Object.keys(cnt).map(k=>`<li><b>${esc(WA_WHYH[k]||k)}</b> — ${cnt[k]} คน</li>`).join('');
+ return `<div class="glass card" id="waflagp"><h2>รพ.สต. ที่มีพนักงานคำนวณตามเกณฑ์ไม่ได้ (${tu.size} แห่ง · ${tp} คน · ${ams.length} อำเภอ)</h2><p class="note" style="margin:0 0 6px">แยกตามอำเภอ · เรียงตามลำดับอำเภอและ รพ.สต. · ข้อมูลอัปเดตตามที่ รพ.สต. กรอกล่าสุด</p>${blocks}
+ <div class="insight" style="margin-top:14px"><b>หมายเหตุ: ข้อผิดพลาดที่ทำให้คำนวณตามเกณฑ์ไม่ได้</b><br>ระบบหาอัตราขั้นต่ำ–ขั้นสูงจากการจับคู่ “ประเภท + กลุ่มงาน + ลักษณะการจ้าง” ที่ รพ.สต. กรอกในเมนูอัตรากำลังพนักงานจ้าง กับรายการในเกณฑ์ ถ้าไม่พบคู่ที่ตรงกัน จะแสดงเป็นไม่ปรับ (ค่าจ้างหลังปรับ = ค่าจ้างปัจจุบัน) สาเหตุที่พบ:<ul style="margin:6px 0 6px 20px">${why}</ul>วิธีแก้: รพ.สต. แก้ข้อมูลกลุ่มงาน/ลักษณะการจ้างให้ตรงกับรายการที่ให้เลือก หรือ PM บุคลากรระดับอำเภอกรอกอัตราขั้นต่ำ–ขั้นสูงเองที่หน้าอำเภอ (วุฒิที่ยังไม่มีอัตราในเกณฑ์ เช่น ปริญญาโท/เอก ต้องกรอกเอง)</div></div>`;
+}
 function wgAdjSumPage(){
  const L=waByAm(),PV=waProv(L),kpi=(b,t)=>`<div class="glass kpi"><b>${b}</b><span>${t}</span></div>`,nc=v=>`<td class="n">${v}</td>`;
  const isAll=waAm==='all';
@@ -1939,7 +1970,7 @@ function wgAdjSumPage(){
  return `<div class="glass hero"><h1>💵 บัญชีรายละเอียดการปรับค่าจ้าง พนักงานจ้าง พกส. และ ลจช.</h1><p class="sub">รวมข้อมูลพนักงานจ้างที่เจ้าหน้าที่ รพ.สต. ทั้ง ${D.length} แห่งกรอกในเมนู “อัตรากำลังพนักงานจ้าง/จ้างเหมาบริการ” แสดงแบบเดียวกับหน้า PM บุคลากรระดับอำเภอ แยกหน้าละ 1 อำเภอ · ตัวเลขอัปเดตแบบเรียลไทม์ · ขอบเขต: ${SCOPE[st.role]}</p><div class="hchips"><span>${D.length} รพ.สต.</span><span>${L.length} อำเภอ</span><span>มีข้อมูล ${PV.g} แห่ง</span><span>พนักงานจ้าง พกส./ลจช. ${f(PV.n)} คน</span></div></div>
  ${db?'':'<div class="glass card"><div class="insight bad">เชื่อมต่อฐานข้อมูลกลาง (Firebase) ไม่ได้ จึงเห็นเฉพาะข้อมูลที่บันทึกในเครื่องนี้ — ตัวเลขอาจไม่ครบ</div></div>'}
  <div class="kpis">${kpi(f(PV.n),'พนักงานจ้าง พกส./ลจช. ทั้งจังหวัด (คน) · จาก '+PV.g+' รพ.สต.')}${kpi(waF0(T0.G),'ค่าจ้างปัจจุบันรวม/เดือน (บาท)')}${kpi(waF0(T0.M),'ค่าจ้างหลังปรับรวม/เดือน (บาท)')}${kpi(waF0(T0.M-T0.G),'ปรับเพิ่มขึ้นรวม/เดือน (บาท) · ปีละ '+waFm((T0.M-T0.G)*12))}</div>
- ${PV.flag?`<div class="glass card"><div class="insight bad">⚠️ มีพนักงาน ${PV.flag} คน ที่วุฒิ/ลักษณะการจ้างยังไม่มีอัตราขั้นต่ำ–ขั้นสูงในเกณฑ์ (เช่น ปวช. อนุปริญญา ปริญญาโท/เอก) ระบบแสดงเป็นไม่ปรับ (ค่าจ้างหลังปรับ = ค่าจ้างปัจจุบัน) · ให้ รพ.สต. หรือ PM บุคลากรระดับอำเภอตรวจสอบ/แก้ไขข้อมูล</div></div>`:''}
+ ${PV.flag?`<div class="glass card"><div class="insight bad" id="waflag" role="button" tabindex="0" aria-expanded="${waFlagOpen}" style="cursor:pointer" title="คลิกเพื่อดู/ซ่อนรายชื่อ รพ.สต. ที่มีปัญหา">⚠️ มีพนักงาน ${PV.flag} คน ที่วุฒิ/ลักษณะการจ้างยังไม่มีอัตราขั้นต่ำ–ขั้นสูงในเกณฑ์ (เช่น ปวช. อนุปริญญา ปริญญาโท/เอก) ระบบแสดงเป็นไม่ปรับ (ค่าจ้างหลังปรับ = ค่าจ้างปัจจุบัน) · ให้ รพ.สต. หรือ PM บุคลากรระดับอำเภอตรวจสอบ/แก้ไขข้อมูล <span class="act">▶ คลิกที่ข้อความนี้เพื่อ${waFlagOpen?'ซ่อน':'ดู'}รายชื่อ รพ.สต. ที่มีปัญหา (แยกรายอำเภอ)</span></div></div>${waFlagOpen?waFlagPanel(L):''}`:''}
  <div class="glass card"><h2>สรุปรายอำเภอ (${L.length} อำเภอ)</h2><p class="note" style="margin:0 0 10px">คลิกแถวเพื่อเปิดหน้าของอำเภอนั้น</p><div class="tw" style="max-height:none"><table id="wasm"><thead><tr>${['ที่','อำเภอ','รพ.สต. (แห่ง)','มีข้อมูล (แห่ง)','พนักงาน (คน)','ค่าจ้างปัจจุบัน (บาท)','ปรับเพิ่ม (บาท)','ปรับ ร้อยละ 1 (บาท)','ค่าจ้างหลังปรับ (บาท)','ค่าจ้างตามจริง (บาท)','ปรับเพิ่มขึ้น ต่อเดือน (บาท)'].map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${sm}</tbody></table></div></div>
  <div class="glass card"><h2>${esc(WA_T1)}</h2><p class="note" style="margin:0 0 10px;font-size:1rem">ลูกจ้างชั่วคราวเงินนอกงบประมาณ (เงินบำรุง) · ${isAll?'รายงานข้อมูลทั้งหมด ทุกอำเภอ':'อำเภอ'+esc(am)} องค์การบริหารส่วนจังหวัดสกลนคร</p><div class="fl"><button class="btn sec sm" type="button" id="wapv"${gi<=0?' disabled':''}>◀ ก่อนหน้า</button><select id="wasel" aria-label="เลือกอำเภอ">${L.map((x,i)=>`<option value="${esc(x.a)}"${x.a===waAm?' selected':''}>${i+1}. อำเภอ${esc(x.a)} (${x.d.n} คน · ${x.d.grp.length}/${x.us.length} รพ.สต.)</option>`).join('')}<option value="all"${isAll?' selected':''}>ทั้งจังหวัด — ข้อมูลทั้งหมด (${PV.n} คน · ${PV.g}/${PV.u} รพ.สต.)</option></select><button class="btn sec sm" type="button" id="wanx"${gi<0||gi>=L.length-1?' disabled':''}>ถัดไป ▶</button><span class="note">${isAll?'รายงานข้อมูลทั้งหมด ต่อเนื่องทุกอำเภอ':'หน้า '+(gi+1)+' / '+L.length+' · 1 หน้าต่อ 1 อำเภอ'}</span></div><div class="actions" style="margin:0 0 10px">${isAll?'':'<button class="btn" type="button" id="waall">📄 รายงานข้อมูลทั้งหมด (ทุกอำเภอ)</button>'}<button class="btn sec" type="button" id="wawd">${waWide?'↩ แสดงเมนูด้านซ้าย':'⤢ ขยายตารางเต็มจอ'}</button><button class="btn" type="button" id="wax">⬇️ Excel ทั้งจังหวัด (ชีตละ 1 อำเภอ)</button><button class="btn sec" type="button" id="waxo">⬇️ Excel ${isAll?'ข้อมูลทั้งหมด':'เฉพาะอำเภอนี้'}</button><button class="btn sec" type="button" id="wap">🖨️ พิมพ์/PDF ทุกอำเภอ (แยกหน้าละ 1 อำเภอ)</button><button class="btn sec" type="button" id="wapo">🖨️ พิมพ์/PDF ${isAll?'ข้อมูลทั้งหมด':'เฉพาะอำเภอนี้'}</button></div>
  <h3 style="margin:4px 0 8px">${isAll?'ทั้งจังหวัดสกลนคร · ข้อมูลทั้งหมด':'อำเภอ'+esc(am)} · ${cur.us.length} รพ.สต. · มีข้อมูล ${d.grp.length} แห่ง · ${d.n} คน</h3>
@@ -2014,6 +2045,7 @@ function bindWgAdjSum(){
  const b=(id,fn)=>{const e=$('#'+id);if(e)e.onclick=fn};
  b('wax',()=>waXlsx(false));b('waxo',()=>waXlsx(true));b('wap',()=>waPdf(false));b('wapo',()=>waPdf(true));
  b('waall',()=>{waAm='all';render();scrollTo(0,0)});
+  {const fl=$('#waflag');if(fl){const tg=()=>{const y=scrollY;waFlagOpen=!waFlagOpen;render();scrollTo(0,y)};fl.onclick=tg;fl.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();tg()}}}}
  b('wawd',()=>{waWide=!waWide;render();scrollTo(0,0)});
  const go=a=>{waAm=a;render();scrollTo(0,0)},ams=waAmList(),sl=$('#wasel');
  if(sl)sl.onchange=()=>go(sl.value);
