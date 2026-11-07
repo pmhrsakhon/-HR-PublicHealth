@@ -1900,10 +1900,12 @@ function waCalc(x,ov){const o=Object.assign({},ov||{});if(x.wgc!=null&&x.wgc!=='
  let M=(R.st==='inc'||R.N==null)?G:R.N;if(o.n!=null&&o.n!==''&&!isNaN(+o.n))M=+o.n;
  const L=(R.M==null)?G:R.M;
  return{g:has?'1':'',lab:adHireTxt(x),mn:R.mn,mx:R.mx,G,J:R.K,K:R.L,L,M,N:waR2(M-G),fK:R.st==='p1'||R.st==='cap',st:R.st}}
+/* ให้ตรงกับหน้า "สรุปพนักงานจ้าง": ประเภทที่พิมพ์เองแต่ความหมายคือ พกส./ลจช. (เช่น "พกส.") ต้องไม่ตกหล่น → แปลงเป็นชื่อมาตรฐานเพื่อคำนวณ และบันทึกค่าที่กรอกไว้ในหมายเหตุ */
+const waNorm=x=>{const c=esCat(x.typ);if((c===EMTYP[0]||c===EMTYP[1])&&x.typ!==c)return Object.assign({},x,{typ:c,note:((x.note||'').trim()?(x.note||'').trim()+' · ':'')+'ประเภทที่ รพ.สต. กรอก: '+String(x.typ||'').trim()});return x};
 function waData(list){
  const grp=[],skip=[];let flag=0,ex=0;
  list.forEach(u=>{
-  const r=emOf(u),all=(r&&!r.none&&r.rows)||[],its=all.map((x,ix)=>({x,ix})).filter(o=>WA_T[o.x.typ]);
+  const r=emOf(u),all=esList(r),its=all.map((x,ix)=>({x:waNorm(x),ix})).filter(o=>WA_T[o.x.typ]);
   ex+=all.length-its.length;
   if(!its.length){skip.push({u,why:!r?'ยังไม่กรอกข้อมูลพนักงานจ้าง':r.none?'แจ้งว่าไม่มีพนักงานจ้าง':'ไม่มีพนักงาน พกส./ลจช.'});return}
   const ovm=adOv(u),seen={};const rows=its.map(o=>{const x=o.x,k=(x.nm||'')+(seen[x.nm]?'#'+seen[x.nm]:'');seen[x.nm]=(seen[x.nm]||0)+1;const c=waCalc(x,ovm[k]);if(!c.g)flag++;return{x,ix:o.ix,c,t:WA_T[x.typ],ed:x.wgc!=null&&x.wgc!=='',note:[WA_T[x.typ],ADST[c.st]||'',(x.note||'').trim()].filter(Boolean).join(' · ')}});
@@ -1917,17 +1919,20 @@ const WA_AMS=['เมืองสกลนคร','กุสุมาลย์',
 const waAmList=()=>{const o=WA_AMS.filter(a=>AM.includes(a));AM.forEach(a=>{if(!o.includes(a))o.push(a)});return o};
 const waByAm=()=>waAmList().map(a=>{const us=D.filter(u=>u.a===a);return{a,us,d:waData(us)}});
 function waProv(L){const s=k=>waR2(L.reduce((a,x)=>a+x.d.T[k],0));return{n:L.reduce((a,x)=>a+x.d.n,0),g:L.reduce((a,x)=>a+x.d.grp.length,0),u:L.reduce((a,x)=>a+x.us.length,0),flag:L.reduce((a,x)=>a+x.d.flag,0),ex:L.reduce((a,x)=>a+x.d.ex,0),T:{G:s('G'),J:s('J'),K:s('K'),L:s('L'),M:s('M'),N:s('N')}}}
+const waAllD=(L,PV)=>({a:'ทั้งจังหวัด',us:D,d:{grp:L.reduce((a,x)=>a.concat(x.d.grp),[]),skip:L.reduce((a,x)=>a.concat(x.d.skip),[]),flag:PV.flag,ex:PV.ex,n:PV.n,T:PV.T}});
 let waWide=false;   /* ซ่อนเมนูด้านซ้ายเพื่อให้ตารางกว้างเต็มจอ (PC) */
 let waAm='';        /* อำเภอที่เปิดดูอยู่ (1 อำเภอ ต่อ 1 หน้า) */
 function wgAdjSumPage(){
  const L=waByAm(),PV=waProv(L),kpi=(b,t)=>`<div class="glass kpi"><b>${b}</b><span>${t}</span></div>`,nc=v=>`<td class="n">${v}</td>`;
- if(!L.some(x=>x.a===waAm))waAm=L.length?L[0].a:'';
- const gi=L.findIndex(x=>x.a===waAm),cur=L[gi]||{a:waAm,us:[],d:waData([])},d=cur.d,T=d.T,am=cur.a,T0=PV.T;
+ const isAll=waAm==='all';
+ if(!isAll&&!L.some(x=>x.a===waAm))waAm=L.length?L[0].a:'';
+ const gi=L.findIndex(x=>x.a===waAm),cur=isAll?waAllD(L,PV):(L[gi]||{a:waAm,us:[],d:waData([])}),d=cur.d,T=d.T,am=cur.a,T0=PV.T;
  const bad=x=>`<span style="color:var(--bad)">⚠️ ไม่พบอัตราในเกณฑ์ (วุฒิ: ${esc(x.edu||'-')})</span>`;
- const body=d.grp.map(g=>g.rows.map((y,i)=>{const c=y.c,x=y.x;
+ const gh=g=>g.rows.map((y,i)=>{const c=y.c,x=y.x;
   return `<tr><td class="n c">${i+1}</td><td>${esc(g.u.a)}</td><td>${esc(g.u.n)}</td><td>${esc(x.nm||'')}</td><td>${esc(x.typ||'')}</td><td>${esc(x.pos||'')}</td><td>${c.g?esc(c.lab)+(c.g==='b'?'<br><small class="mut">กลุ่ม บริการ</small>':''):bad(x)}</td><td class="n"${y.ed?` title="อำเภอปรับค่าจ้างปัจจุบัน (ค่าเดิมจากข้อมูลพนักงานจ้าง ${esc(x.sal)})"`:''}>${waF0(c.G)}${y.ed?' <small class="mut">✎</small>':''}</td>${nc(c.g?waF0(c.mn):'—')}${nc(c.g?waF0(c.mx):'—')}${nc(waF0(c.J))}${nc(waF0(c.K))}${nc(waF0(c.L))}${nc('<b>'+waF0(c.M)+'</b>')}${nc(waF0(c.N))}<td>${esc((x.note||'').trim())}</td></tr>`}).join('')
-  +`<tr class="tot"><td colspan="7">รวม ${esc(g.u.n)} (${g.rows.length} คน)</td>${nc(waF0(g.G))}<td></td><td></td>${nc(waF0(g.J))}${nc(waF0(g.K))}${nc(waF0(g.L))}${nc(waF0(g.M))}${nc(waF0(g.N))}<td></td></tr>`).join('');
- const tot=d.grp.length?`<tr class="tot"><td colspan="7">รวมทั้งอำเภอ${esc(am)} (${d.n} คน · ${d.grp.length} รพ.สต.)</td>${nc(waF0(T.G))}<td></td><td></td>${nc(waF0(T.J))}${nc(waF0(T.K))}${nc(waF0(T.L))}${nc(waF0(T.M))}${nc(waF0(T.M-T.G))}<td></td></tr>`:'';
+  +`<tr class="tot"><td colspan="7">รวม ${esc(g.u.n)} (${g.rows.length} คน)</td>${nc(waF0(g.G))}<td></td><td></td>${nc(waF0(g.J))}${nc(waF0(g.K))}${nc(waF0(g.L))}${nc(waF0(g.M))}${nc(waF0(g.N))}<td></td></tr>`;
+ const body=isAll?L.filter(x=>x.d.grp.length).map(x=>x.d.grp.map(gh).join('')+`<tr class="tot"><td colspan="7">▶ รวมอำเภอ${esc(x.a)} (${x.d.n} คน · ${x.d.grp.length} รพ.สต.)</td>${nc(waF0(x.d.T.G))}<td></td><td></td>${nc(waF0(x.d.T.J))}${nc(waF0(x.d.T.K))}${nc(waF0(x.d.T.L))}${nc(waF0(x.d.T.M))}${nc(waF0(waR2(x.d.T.M-x.d.T.G)))}<td></td></tr>`).join(''):d.grp.map(gh).join('');
+ const tot=d.grp.length?`<tr class="tot"><td colspan="7">${isAll?'รวมทั้งจังหวัด':'รวมทั้งอำเภอ'+esc(am)} (${d.n} คน · ${d.grp.length} รพ.สต.)</td>${nc(waF0(T.G))}<td></td><td></td>${nc(waF0(T.J))}${nc(waF0(T.K))}${nc(waF0(T.L))}${nc(waF0(T.M))}${nc(waF0(T.M-T.G))}<td></td></tr>`:'';
  const sm=L.map((x,i)=>`<tr data-wa="${esc(x.a)}" style="cursor:pointer"${x.a===waAm?' aria-current="true"':''} title="คลิกเพื่อเปิดหน้าอำเภอ${esc(x.a)}"><td class="n c">${i+1}</td><td><b>${esc(x.a)}</b>${x.a===waAm?' <small class="mut">(กำลังดู)</small>':''}</td>${nc(x.us.length)}${nc(x.d.grp.length)}${nc(f(x.d.n))}${nc(waF0(x.d.T.G))}${nc(waF0(x.d.T.J))}${nc(waF0(x.d.T.K))}${nc(waF0(x.d.T.L))}${nc(waF0(x.d.T.M))}${nc(waF0(waR2(x.d.T.M-x.d.T.G)))}</tr>`).join('')
   +`<tr class="tot"><td></td><td>รวมทั้งจังหวัด</td>${nc(PV.u)}${nc(PV.g)}${nc(f(PV.n))}${nc(waF0(T0.G))}${nc(waF0(T0.J))}${nc(waF0(T0.K))}${nc(waF0(T0.L))}${nc(waF0(T0.M))}${nc(waF0(waR2(T0.M-T0.G)))}</tr>`;
  const rt=Object.values(WA_R).map(r=>[r[0],waFm(r[1]),waFm(r[2])]);
@@ -1936,19 +1941,19 @@ function wgAdjSumPage(){
  <div class="kpis">${kpi(f(PV.n),'พนักงานจ้าง พกส./ลจช. ทั้งจังหวัด (คน) · จาก '+PV.g+' รพ.สต.')}${kpi(waF0(T0.G),'ค่าจ้างปัจจุบันรวม/เดือน (บาท)')}${kpi(waF0(T0.M),'ค่าจ้างหลังปรับรวม/เดือน (บาท)')}${kpi(waF0(T0.M-T0.G),'ปรับเพิ่มขึ้นรวม/เดือน (บาท) · ปีละ '+waFm((T0.M-T0.G)*12))}</div>
  ${PV.flag?`<div class="glass card"><div class="insight bad">⚠️ มีพนักงาน ${PV.flag} คน ที่วุฒิ/ลักษณะการจ้างยังไม่มีอัตราขั้นต่ำ–ขั้นสูงในเกณฑ์ (เช่น ปวช. อนุปริญญา ปริญญาโท/เอก) ระบบแสดงเป็นไม่ปรับ (ค่าจ้างหลังปรับ = ค่าจ้างปัจจุบัน) · ให้ รพ.สต. หรือ PM บุคลากรระดับอำเภอตรวจสอบ/แก้ไขข้อมูล</div></div>`:''}
  <div class="glass card"><h2>สรุปรายอำเภอ (${L.length} อำเภอ)</h2><p class="note" style="margin:0 0 10px">คลิกแถวเพื่อเปิดหน้าของอำเภอนั้น</p><div class="tw" style="max-height:none"><table id="wasm"><thead><tr>${['ที่','อำเภอ','รพ.สต. (แห่ง)','มีข้อมูล (แห่ง)','พนักงาน (คน)','ค่าจ้างปัจจุบัน (บาท)','ปรับเพิ่ม (บาท)','ปรับ ร้อยละ 1 (บาท)','ค่าจ้างหลังปรับ (บาท)','ค่าจ้างตามจริง (บาท)','ปรับเพิ่มขึ้น ต่อเดือน (บาท)'].map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${sm}</tbody></table></div></div>
- <div class="glass card"><h2>${esc(WA_T1)}</h2><p class="note" style="margin:0 0 10px;font-size:1rem">ลูกจ้างชั่วคราวเงินนอกงบประมาณ (เงินบำรุง) · อำเภอ${esc(am)} องค์การบริหารส่วนจังหวัดสกลนคร</p><div class="fl"><button class="btn sec sm" type="button" id="wapv"${gi<=0?' disabled':''}>◀ ก่อนหน้า</button><select id="wasel" aria-label="เลือกอำเภอ">${L.map((x,i)=>`<option value="${esc(x.a)}"${x.a===waAm?' selected':''}>${i+1}. อำเภอ${esc(x.a)} (${x.d.n} คน · ${x.d.grp.length}/${x.us.length} รพ.สต.)</option>`).join('')}</select><button class="btn sec sm" type="button" id="wanx"${gi<0||gi>=L.length-1?' disabled':''}>ถัดไป ▶</button><span class="note">หน้า ${gi+1} / ${L.length} · 1 หน้าต่อ 1 อำเภอ</span></div><div class="actions" style="margin:0 0 10px"><button class="btn sec" type="button" id="wawd">${waWide?'↩ แสดงเมนูด้านซ้าย':'⤢ ขยายตารางเต็มจอ'}</button><button class="btn" type="button" id="wax">⬇️ Excel ทั้งจังหวัด (ชีตละ 1 อำเภอ)</button><button class="btn sec" type="button" id="waxo">⬇️ Excel เฉพาะอำเภอนี้</button><button class="btn sec" type="button" id="wap">🖨️ พิมพ์/PDF ทุกอำเภอ (แยกหน้าละ 1 อำเภอ)</button><button class="btn sec" type="button" id="wapo">🖨️ พิมพ์/PDF เฉพาะอำเภอนี้</button></div>
- <h3 style="margin:4px 0 8px">อำเภอ${esc(am)} · ${cur.us.length} รพ.สต. · มีข้อมูล ${d.grp.length} แห่ง · ${d.n} คน</h3>
+ <div class="glass card"><h2>${esc(WA_T1)}</h2><p class="note" style="margin:0 0 10px;font-size:1rem">ลูกจ้างชั่วคราวเงินนอกงบประมาณ (เงินบำรุง) · ${isAll?'รายงานข้อมูลทั้งหมด ทุกอำเภอ':'อำเภอ'+esc(am)} องค์การบริหารส่วนจังหวัดสกลนคร</p><div class="fl"><button class="btn sec sm" type="button" id="wapv"${gi<=0?' disabled':''}>◀ ก่อนหน้า</button><select id="wasel" aria-label="เลือกอำเภอ">${L.map((x,i)=>`<option value="${esc(x.a)}"${x.a===waAm?' selected':''}>${i+1}. อำเภอ${esc(x.a)} (${x.d.n} คน · ${x.d.grp.length}/${x.us.length} รพ.สต.)</option>`).join('')}<option value="all"${isAll?' selected':''}>ทั้งจังหวัด — ข้อมูลทั้งหมด (${PV.n} คน · ${PV.g}/${PV.u} รพ.สต.)</option></select><button class="btn sec sm" type="button" id="wanx"${gi<0||gi>=L.length-1?' disabled':''}>ถัดไป ▶</button><span class="note">${isAll?'รายงานข้อมูลทั้งหมด ต่อเนื่องทุกอำเภอ':'หน้า '+(gi+1)+' / '+L.length+' · 1 หน้าต่อ 1 อำเภอ'}</span></div><div class="actions" style="margin:0 0 10px">${isAll?'':'<button class="btn" type="button" id="waall">📄 รายงานข้อมูลทั้งหมด (ทุกอำเภอ)</button>'}<button class="btn sec" type="button" id="wawd">${waWide?'↩ แสดงเมนูด้านซ้าย':'⤢ ขยายตารางเต็มจอ'}</button><button class="btn" type="button" id="wax">⬇️ Excel ทั้งจังหวัด (ชีตละ 1 อำเภอ)</button><button class="btn sec" type="button" id="waxo">⬇️ Excel ${isAll?'ข้อมูลทั้งหมด':'เฉพาะอำเภอนี้'}</button><button class="btn sec" type="button" id="wap">🖨️ พิมพ์/PDF ทุกอำเภอ (แยกหน้าละ 1 อำเภอ)</button><button class="btn sec" type="button" id="wapo">🖨️ พิมพ์/PDF ${isAll?'ข้อมูลทั้งหมด':'เฉพาะอำเภอนี้'}</button></div>
+ <h3 style="margin:4px 0 8px">${isAll?'ทั้งจังหวัดสกลนคร · ข้อมูลทั้งหมด':'อำเภอ'+esc(am)} · ${cur.us.length} รพ.สต. · มีข้อมูล ${d.grp.length} แห่ง · ${d.n} คน</h3>
  ${d.grp.length?`<div class="tw" style="max-height:none"><table id="wat"><thead><tr>${WA_HD.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${body}${tot}</tbody></table></div>`:'<div class="empty">ยังไม่มี รพ.สต. ใดในอำเภอนี้กรอกข้อมูลพนักงานจ้าง พกส./ลจช.</div>'}
  <p class="note">เรียงตาม รพ.สต. ในอำเภอ · ไม่รวมจ้างเหมาบริการ/ลูกจ้างรายวัน/ประเภทอื่น ๆ${d.ex?' (อำเภอนี้ '+d.ex+' คน · ทั้งจังหวัด '+PV.ex+' คน)':PV.ex?' (ทั้งจังหวัด '+PV.ex+' คน)':''} · เครื่องหมาย ✎ = PM บุคลากรระดับอำเภอปรับค่าจ้างปัจจุบันไว้ · หน้านี้แสดงอย่างเดียว การแก้ไขทำที่หน้า รพ.สต. / หน้าอำเภอ</p></div>
  <div class="glass card"><h2>เกณฑ์การคำนวณ</h2><p class="note" style="margin:0 0 10px">ค่าจ้างปัจจุบันต่ำกว่าขั้นต่ำ → ปรับเป็นขั้นต่ำ · ถึงขั้นต่ำแล้ว → ปรับเพิ่มร้อยละ 1 แล้วปัดขึ้นเป็นหลักสิบ (ไม่เกินขั้นสูง) · ลักษณะการจ้าง “จ้างแบบไม่มีวุฒิ” ใช้กลุ่มไม่กำหนดวุฒิ · หมายเหตุ: พกส. = พนักงานกระทรวงสาธารณสุข, ลจช. = ลูกจ้างชั่วคราวรายเดือน</p>${tbl(['วุฒิตามเงื่อนไขการจ้าง','อัตราขั้นต่ำ (บาท)','อัตราขั้นสูง (บาท)'],rt)}</div>
- ${d.skip.length?`<div class="glass card"><h2>รพ.สต. อำเภอ${esc(am)} ที่ไม่มีข้อมูลพนักงานจ้าง พกส./ลจช. (${d.skip.length} แห่ง)</h2><div class="tw" style="max-height:none"><table><thead><tr><th>ที่</th><th>รหัส 5 หลัก</th><th>รพ.สต.</th><th>สถานะ</th></tr></thead><tbody>${d.skip.map((x,i)=>`<tr><td>${i+1}</td><td>${cdTag(x.u.cd)}</td><td>${esc(x.u.n)}</td><td>${esc(x.why)}</td></tr>`).join('')}</tbody></table></div></div>`:''}`;
+ ${d.skip.length?`<div class="glass card"><h2>รพ.สต. ${isAll?'ทั้งจังหวัด':'อำเภอ'+esc(am)} ที่ไม่มีข้อมูลพนักงานจ้าง พกส./ลจช. (${d.skip.length} แห่ง)</h2><div class="tw" style="max-height:none"><table><thead><tr><th>ที่</th><th>รหัส 5 หลัก</th><th>รพ.สต.</th><th>สถานะ</th></tr></thead><tbody>${d.skip.map((x,i)=>`<tr><td>${i+1}</td><td>${cdTag(x.u.cd)}</td><td>${esc(x.u.n)}${isAll?' <small class="mut">อ.'+esc(x.u.a)+'</small>':''}</td><td>${esc(x.why)}</td></tr>`).join('')}</tbody></table></div></div>`:''}`;
 }
 /* Excel: ชีตของ 1 อำเภอ — โครงเดียวกับ waXlsx ของหน้าอำเภอ (สูตร SUM/ผลต่างเหมือนเดิม) */
-function waSheet(a,d){
+function waSheet(a,d,o){
  const ws={},mg=[],E=XLSX.utils.encode_cell,CL='ABCDEFGHIJKLMNO';
  const set=(r,c,v,fm,z)=>{const o=typeof v==='number'?{t:'n',v,z:z||'#,##0.00'}:{t:'s',v:String(v==null?'':v)};if(fm)o.f=fm;ws[E({r,c})]=o};
  set(0,0,WA_T1);mg.push({s:{r:0,c:0},e:{r:0,c:14}});
- set(1,0,WA_T2(a));mg.push({s:{r:1,c:0},e:{r:1,c:14}});
+ set(1,0,(o&&o.t2)||WA_T2(a));mg.push({s:{r:1,c:0},e:{r:1,c:14}});
  WA_H.forEach((h,c)=>{set(2,c,h);mg.push({s:{r:2,c},e:{r:3,c}})});
  let r=4;const subs=[];
  d.grp.forEach(g=>{const a0=r;
@@ -1960,7 +1965,7 @@ function waSheet(a,d){
   [6,9,10,11,12,13].forEach(c=>set(r,c,g[CL[c]],`SUM(${CL[c]}${a0+1}:${CL[c]}${r})`));
   subs.push(r+1);r++});
  if(d.grp.length){
-  set(r,0,'รวมทั้งอำเภอ');mg.push({s:{r,c:0},e:{r,c:4}});
+  set(r,0,(o&&o.tot)||'รวมทั้งอำเภอ');mg.push({s:{r,c:0},e:{r,c:4}});
   [6,9,10,11,12].forEach(c=>set(r,c,d.T[CL[c]],subs.map(n=>CL[c]+n).join('+')));
   set(r,13,waR2(d.T.M-d.T.G),`M${r+1}-G${r+1}`);
  }
@@ -1969,7 +1974,7 @@ function waSheet(a,d){
  return ws}
 function waXlsx(only){
  if(!canSee())return;if(!window.XLSX){alert('โหลดตัวสร้างไฟล์ Excel ไม่ได้ (ต้องเชื่อมต่ออินเทอร์เน็ต)');return}
- const all=waByAm(),Ls=only?all.filter(x=>x.a===waAm):all,wb=XLSX.utils.book_new(),PV=waProv(all);
+ const all=waByAm(),isAll=!!only&&waAm==='all',Ls=only&&!isAll?all.filter(x=>x.a===waAm):all,wb=XLSX.utils.book_new(),PV=waProv(all);
  if(!only){
   const sum=[['สรุปบัญชีรายละเอียดการปรับค่าจ้าง พนักงานจ้าง พกส. และ ลจช. ทั้งจังหวัดสกลนคร'],['ข้อมูล ณ',new Date().toLocaleString('th-TH',{dateStyle:'long',timeStyle:'short'})],[],
    ['ที่','อำเภอ','รพ.สต. (แห่ง)','มีข้อมูล (แห่ง)','พนักงาน (คน)','ค่าจ้างปัจจุบัน','ปรับเพิ่ม','ปรับ ร้อยละ 1','ค่าจ้างหลังปรับ','ค่าจ้างตามจริง','ปรับเพิ่มขึ้นต่อเดือน'],
@@ -1977,15 +1982,16 @@ function waXlsx(only){
    ['','รวมทั้งจังหวัด',PV.u,PV.g,PV.n,PV.T.G,PV.T.J,PV.T.K,PV.T.L,PV.T.M,waR2(PV.T.M-PV.T.G)]];
   const ws=XLSX.utils.aoa_to_sheet(sum);ws['!cols']=[6,18,14,14,14,18,16,16,18,18,20].map(w=>({wch:w}));XLSX.utils.book_append_sheet(wb,ws,'สรุปรายอำเภอ');
  }
- Ls.forEach(x=>XLSX.utils.book_append_sheet(wb,waSheet(x.a,x.d),x.a));
+ if(!only||isAll)XLSX.utils.book_append_sheet(wb,waSheet('ทั้งจังหวัด',waAllD(all,PV).d,{t2:'ลูกจ้างชั่วคราวเงินนอกงบประมาณ (เงินบำรุง) โรงพยาบาลส่งเสริมสุขภาพตำบล ทั้งจังหวัดสกลนคร (ข้อมูลทั้งหมด ทุกอำเภอ) องค์การบริหารส่วนจังหวัดสกลนคร',tot:'รวมทั้งจังหวัด'}),'ข้อมูลทั้งหมด');
+ if(!isAll)Ls.forEach(x=>XLSX.utils.book_append_sheet(wb,waSheet(x.a,x.d),x.a));
  const sk=[];Ls.forEach(x=>x.d.skip.forEach(s=>sk.push([s.u.cd,s.u.a,s.u.n,s.why])));
  if(sk.length){const w2=XLSX.utils.aoa_to_sheet([['รหัส','อำเภอ','รพ.สต.','สถานะ'],...sk]);w2['!cols']=[{wch:10},{wch:16},{wch:30},{wch:32}];XLSX.utils.book_append_sheet(wb,w2,'ไม่มีข้อมูล')}
- XLSX.writeFile(wb,only?'บัญชีปรับค่าจ้าง_พกส_ลจช_อำเภอ'+waAm+'.xlsx':'บัญชีปรับค่าจ้าง_พกส_ลจช_ทุกอำเภอ.xlsx');
+ XLSX.writeFile(wb,isAll?'บัญชีปรับค่าจ้าง_พกส_ลจช_ข้อมูลทั้งหมด.xlsx':only?'บัญชีปรับค่าจ้าง_พกส_ลจช_อำเภอ'+waAm+'.xlsx':'บัญชีปรับค่าจ้าง_พกส_ลจช_ทุกอำเภอ.xlsx');
 }
 /* พิมพ์/PDF: 1 อำเภอ ต่อ 1 ส่วน (ขึ้นหน้าใหม่ทุกอำเภอ) ตามด้วยสรุปรายอำเภอ */
 function waPdf(only){
  if(!canSee())return;
- const all=waByAm(),Ls=only?all.filter(x=>x.a===waAm):all,PV=waProv(all),now=new Date().toLocaleString('th-TH',{dateStyle:'long',timeStyle:'short'}),tc=v=>`<td class="r">${v}</td>`;
+ const all=waByAm(),Ls=only&&waAm!=='all'?all.filter(x=>x.a===waAm):all,PV=waProv(all),now=new Date().toLocaleString('th-TH',{dateStyle:'long',timeStyle:'short'}),tc=v=>`<td class="r">${v}</td>`;
  const hd=['ลำดับ','ชื่อ สอ.น./รพ.สต.','ชื่อ - สกุล','ประเภทพนักงานจ้าง','ตำแหน่ง','ลักษณะการจ้าง','ค่าจ้างปัจจุบัน ณ 1 ต.ค. 69','อัตราขั้นต่ำ','อัตราขั้นสูง','ปรับเพิ่ม','ปรับ ร้อยละ 1','ค่าจ้างหลังปรับ','ค่าจ้างตามจริง','ปรับเพิ่ม/เดือน','หมายเหตุ'].map(h=>`<th>${esc(h)}</th>`).join('');
  const page=x=>{const d=x.d,T=d.T;return `<section class="pg"><h1>${esc(WA_T1)}</h1><p>ลูกจ้างชั่วคราวเงินนอกงบประมาณ (เงินบำรุง) โรงพยาบาลส่งเสริมสุขภาพตำบล <b>อำเภอ${esc(x.a)}</b> องค์การบริหารส่วนจังหวัดสกลนคร · ${d.grp.length}/${x.us.length} รพ.สต. · ${d.n} คน</p>
  ${d.grp.length?`<table><thead><tr>${hd}</tr></thead><tbody>${d.grp.map(g=>g.rows.map((y,i)=>{const c=y.c,z=y.x;
@@ -1993,7 +1999,7 @@ function waPdf(only){
   +`<tr class="t"><td colspan="6">รวม ${esc(g.u.n)} (${g.rows.length} คน)</td>${tc(waFm(g.G))}<td></td><td></td>${tc(waFm(g.J))}${tc(waFm(g.K))}${tc(waFm(g.L))}${tc(waFm(g.M))}${tc(waFm(g.N))}<td></td></tr>`).join('')}
   <tr class="t"><td colspan="6">รวมทั้งอำเภอ${esc(x.a)} (${d.n} คน · ${d.grp.length} รพ.สต.)</td>${tc(waFm(T.G))}<td></td><td></td>${tc(waFm(T.J))}${tc(waFm(T.K))}${tc(waFm(T.L))}${tc(waFm(T.M))}${tc(waFm(T.M-T.G))}<td></td></tr></tbody></table>`:'<p>ยังไม่มีข้อมูลพนักงานจ้าง พกส./ลจช.</p>'}</section>`};
  const sum=`<section class="pg"><h1>สรุปรายอำเภอ จังหวัดสกลนคร</h1><p>${esc(WA_T1)} · พิมพ์เมื่อ ${esc(now)}</p><table><thead><tr>${['ที่','อำเภอ','รพ.สต. (แห่ง)','มีข้อมูล (แห่ง)','จำนวน (คน)','ค่าจ้างปัจจุบัน','ปรับเพิ่ม','ปรับ ร้อยละ 1','ค่าจ้างหลังปรับ','ค่าจ้างตามจริง','ปรับเพิ่ม/เดือน'].map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${Ls.map((x,i)=>`<tr><td class="c">${i+1}</td><td>${esc(x.a)}</td><td class="c">${x.us.length}</td><td class="c">${x.d.grp.length}</td><td class="c">${x.d.n}</td>${tc(waFm(x.d.T.G))}${tc(waFm(x.d.T.J))}${tc(waFm(x.d.T.K))}${tc(waFm(x.d.T.L))}${tc(waFm(x.d.T.M))}${tc(waFm(x.d.T.M-x.d.T.G))}</tr>`).join('')}
- ${only?'':`<tr class="t"><td colspan="2">รวมทั้งจังหวัด</td><td class="c">${PV.u}</td><td class="c">${PV.g}</td><td class="c">${PV.n}</td>${tc(waFm(PV.T.G))}${tc(waFm(PV.T.J))}${tc(waFm(PV.T.K))}${tc(waFm(PV.T.L))}${tc(waFm(PV.T.M))}${tc(waFm(PV.T.M-PV.T.G))}</tr>`}</tbody></table></section>`;
+ ${only&&waAm!=='all'?'':`<tr class="t"><td colspan="2">รวมทั้งจังหวัด</td><td class="c">${PV.u}</td><td class="c">${PV.g}</td><td class="c">${PV.n}</td>${tc(waFm(PV.T.G))}${tc(waFm(PV.T.J))}${tc(waFm(PV.T.K))}${tc(waFm(PV.T.L))}${tc(waFm(PV.T.M))}${tc(waFm(PV.T.M-PV.T.G))}</tr>`}</tbody></table></section>`;
  const html=`<!doctype html><html lang="th"><head><meta charset="utf-8"><title>${esc(WA_T1)}</title><style>
  @page{size:A4 landscape;margin:10mm}body{font-family:'Sarabun','TH Sarabun New','Noto Sans Thai',Tahoma,sans-serif;color:#000;font-size:10px}
  section.pg{page-break-after:always}section.pg:last-child{page-break-after:auto}
@@ -2007,6 +2013,7 @@ function waPdf(only){
 function bindWgAdjSum(){
  const b=(id,fn)=>{const e=$('#'+id);if(e)e.onclick=fn};
  b('wax',()=>waXlsx(false));b('waxo',()=>waXlsx(true));b('wap',()=>waPdf(false));b('wapo',()=>waPdf(true));
+ b('waall',()=>{waAm='all';render();scrollTo(0,0)});
  b('wawd',()=>{waWide=!waWide;render();scrollTo(0,0)});
  const go=a=>{waAm=a;render();scrollTo(0,0)},ams=waAmList(),sl=$('#wasel');
  if(sl)sl.onchange=()=>go(sl.value);
