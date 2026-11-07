@@ -2187,11 +2187,11 @@ function bdField(k,iso,dis){dis=dis||'';return `<span class="bdp"><input type="t
  addEventListener('scroll',()=>{if(pop&&!pop.hidden)place()},true);
 })();
 function emRow(i,x,dis){
- x=x||{};const pks=emIsPks(x.typ),mo=x.mo!=null?x.mo:12,tot=x.sal!=null?emR2(x.sal*mo):'',ssv=emIsCon(x.typ)?'-':(tot===''?'':f2(emR2(tot*0.05)));
+ x=x||{};const pks=emIsPks(x.typ),mo=12,tot=x.sal!=null?emR2(x.sal*mo):'',ssv=emIsCon(x.typ)?'-':(tot===''?'':f2(emR2(tot*0.05)));
  return `<div class="frr emr"><div class="frh"><span class="frno">${i+1}</span><button type="button" class="btn sec sm" data-em="del"${dis}>ลบแถว</button></div>
  <div class="fr4"><label>ชื่อ - สกุล<input type="text" data-f="nm" autocomplete="off" placeholder="เช่น นางสาวสมหญิง ใจดี" value="${esc(x.nm||'')}"${dis}></label>${emSel('pos','ตำแหน่ง',EMPOS,x.pos,dis,1)}${emSel('typ','ประเภทพนักงานจ้าง',EMTYP,x.typ,dis,1)}${emSel('edu','วุฒิการศึกษา',EMEDU,x.edu,dis,1)}</div>
  <div class="fr4"><label>วันที่เริ่มปฏิบัติงาน${bdField('st',x.st,dis)}</label><label data-grpw${pks?'':' hidden'}>กลุ่มพนักงาน พกส.<select data-f="grp"${dis}><option value="">เลือก</option>${EMGRP.map(p=>`<option${p===x.grp?' selected':''}>${esc(p)}</option>`).join('')}</select></label><label>ลักษณะการจ้าง<select data-f="hire"${dis}>${emHireOpts(pks,x.grp,x.hire)}</select></label><label>เงินเดือนปัจจุบัน (บาท)<input type="text" data-f="sal" inputmode="decimal" autocomplete="off" placeholder="เช่น 15000" value="${x.sal!=null?esc(x.sal):''}"${dis}></label></div>
- <div class="fr4"><label>จำนวนเดือน<input type="text" data-f="mo" inputmode="numeric" autocomplete="off" value="${esc(mo)}"${dis}></label>
+ <div class="fr4"><label>จำนวนเดือน · อัตโนมัติ<input type="text" data-f="mo" readonly tabindex="-1" value="12" style="background:var(--acs)"></label>
  <label>รวมเงินงบประมาณ (บาท) · คำนวณอัตโนมัติ<input type="text" data-f="tot" readonly tabindex="-1" value="${tot===''?'':f2(tot)}" placeholder="—" style="background:var(--acs)"></label><label>ประกันสังคม (5%) (บาท) · คำนวณอัตโนมัติ<input type="text" data-f="ss" readonly tabindex="-1" value="${ssv}" placeholder="—" style="background:var(--acs)"></label><label>หมายเหตุ<input type="text" data-f="note" autocomplete="off" value="${esc(x.note||'')}"${dis}></label></div></div>`}
 function unitEmp(u){
  emDirty=false;
