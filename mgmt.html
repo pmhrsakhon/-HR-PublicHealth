@@ -1953,6 +1953,57 @@ function waFlagPanel(L){
  return `<div class="glass card" id="waflagp"><h2>รพ.สต. ที่มีพนักงานคำนวณตามเกณฑ์ไม่ได้ (${tu.size} แห่ง · ${tp} คน · ${ams.length} อำเภอ)</h2><p class="note" style="margin:0 0 6px">แยกตามอำเภอ · เรียงตามลำดับอำเภอและ รพ.สต. · ข้อมูลอัปเดตตามที่ รพ.สต. กรอกล่าสุด</p>${blocks}
  <div class="insight" style="margin-top:14px"><b>หมายเหตุ: ข้อผิดพลาดที่ทำให้คำนวณตามเกณฑ์ไม่ได้</b><br>ระบบหาอัตราขั้นต่ำ–ขั้นสูงจากการจับคู่ “ประเภท + กลุ่มงาน + ลักษณะการจ้าง” ที่ รพ.สต. กรอกในเมนูอัตรากำลังพนักงานจ้าง กับรายการในเกณฑ์ ถ้าไม่พบคู่ที่ตรงกัน จะแสดงเป็นไม่ปรับ (ค่าจ้างหลังปรับ = ค่าจ้างปัจจุบัน) สาเหตุที่พบ:<ul style="margin:6px 0 6px 20px">${why}</ul>วิธีแก้: รพ.สต. แก้ข้อมูลกลุ่มงาน/ลักษณะการจ้างให้ตรงกับรายการที่ให้เลือก หรือ PM บุคลากรระดับอำเภอกรอกอัตราขั้นต่ำ–ขั้นสูงเองที่หน้าอำเภอ (วุฒิที่ยังไม่มีอัตราในเกณฑ์ เช่น ปริญญาโท/เอก ต้องกรอกเอง)</div></div>`;
 }
+/* ===== รายงานการกรอกข้อมูลรายอำเภอ (หน้าต่างที่เปิดเมื่อคลิกแถวในตารางสรุปรายอำเภอ) ===== */
+const WA_ST={1:['✅','กรอกครบถ้วน ถูกต้อง','var(--ok,#1a7f4b)'],2:['🛠️','กรอกครบถ้วน แต่ยังไม่ถูกต้อง','var(--amber,#b7791f)'],3:['📝','กรอกยังไม่ครบถ้วน','var(--amber,#b7791f)'],4:['❌','กรอกข้อมูลผิด','var(--bad)'],5:['⏳','ยังไม่ดำเนินการ','var(--mut,#667)']};
+/* ตรวจรายคน → [{k:ระดับ(2/3/4), m:ข้อความหมายเหตุ}] */
+function waChk(x,c,dupe){
+ const o=[],blank=v=>v==null||String(v).trim()==='',miss=[];
+ if(blank(x.nm))miss.push('ชื่อ-สกุล');if(blank(x.pos))miss.push('ตำแหน่ง');if(blank(x.edu))miss.push('วุฒิการศึกษา');
+ if(blank(x.st))miss.push('วันที่เริ่มปฏิบัติงาน');if(blank(x.hire))miss.push('ลักษณะการจ้าง');if(blank(x.sal))miss.push('เงินเดือนปัจจุบัน');if(blank(x.mo))miss.push('จำนวนเดือน');
+ if(miss.length)o.push({k:3,m:'ยังไม่ได้กรอกช่อง: '+miss.join(', ')});
+ if(!blank(x.sal)){const s=wgNum(x.sal);if(isNaN(s)||s<=0)o.push({k:4,m:'เงินเดือนปัจจุบัน “'+esc(String(x.sal))+'” ไม่ใช่ตัวเลขที่ถูกต้อง (ต้องเป็นตัวเลขมากกว่า 0 เช่น 15000)'})}
+ if(!blank(x.mo)){const m=wgNum(x.mo);if(isNaN(m)||!Number.isInteger(m)||m<1||m>12)o.push({k:4,m:'จำนวนเดือน “'+esc(String(x.mo))+'” ผิด (ต้องเป็นจำนวนเต็ม 1–12)'})}
+ if(!blank(x.st)){const s=String(x.st).trim(),ok=/^\d{4}-\d{2}-\d{2}$/.test(s)&&!isNaN(Date.parse(s)),y=+s.slice(0,4);
+  if(!ok)o.push({k:4,m:'วันที่เริ่มปฏิบัติงาน “'+esc(s)+'” รูปแบบไม่ถูกต้อง'});
+  else if(y>2400)o.push({k:4,m:'วันที่เริ่มปฏิบัติงาน “'+esc(s)+'” ปีเป็น พ.ศ. (ต้องกรอกเป็น ค.ศ.)'});
+  else if(y<1950)o.push({k:4,m:'วันที่เริ่มปฏิบัติงาน “'+esc(s)+'” ปีผิดปกติ'})}
+ if(dupe)o.push({k:4,m:'ชื่อ-สกุลซ้ำกับพนักงานคนอื่นใน รพ.สต. เดียวกัน (ตรวจว่ากรอกซ้ำหรือไม่)'});
+ const tm=/ประเภทที่ รพ\.สต\. กรอก: (.*)$/.exec(String(x.note||''));
+ if(tm)o.push({k:2,m:'ประเภทพนักงานจ้างพิมพ์เอง “'+esc(tm[1])+'” → แก้เป็นการเลือกจากรายการ “พนักงานกระทรวงสาธารณสุข (พกส.)” หรือ “ลูกจ้างชั่วคราวรายเดือน”'});
+ if(!c.g&&!blank(x.hire)){const w=waWhy(x);
+  o.push({k:2,m:w[1]+' → แก้: รพ.สต. เลือกลักษณะการจ้าง/วุฒิให้ตรงรายการในเกณฑ์ หรือ PM อำเภอกรอกอัตราขั้นต่ำ–ขั้นสูงเองที่หน้าอำเภอ'})}
+ if(c.st==='over')o.push({k:2,m:'ค่าจ้างปัจจุบันเกินอัตราขั้นสูงของเกณฑ์ → ตรวจว่ากรอกค่าจ้างหรือวุฒิ/ลักษณะการจ้างผิดหรือไม่ (ระบบคงค่าจ้างเดิม)'});
+ return o}
+function waRep(u){
+ const r=emOf(u);
+ if(!r)return{k:5,n:0,notes:['ยังไม่มีการบันทึกข้อมูลพนักงานจ้างของ รพ.สต. นี้']};
+ const all=esList(r);
+ if(r.none&&!all.length)return{k:1,n:0,notes:['แจ้งว่าไม่มีพนักงานจ้าง']};
+ if(!all.length)return{k:3,n:0,notes:['บันทึกแล้วแต่ไม่มีรายชื่อพนักงาน และไม่ได้ติ๊ก “ไม่มีพนักงานจ้าง/จ้างเหมาบริการ”']};
+ const its=all.map(waNorm).filter(x=>WA_T[x.typ]);
+ if(!its.length)return{k:1,n:0,notes:['มีพนักงานจ้างเฉพาะประเภทอื่น (จ้างเหมาบริการ/ลูกจ้างรายวัน) ไม่มี พกส./ลจช. จึงไม่เข้าบัญชีนี้']};
+ const ovm=adOv(u),seen={},cn={};its.forEach(x=>{const k=String(x.nm||'').trim();if(k)cn[k]=(cn[k]||0)+1});
+ const notes=[];let mx=1;
+ its.forEach((x,i)=>{const k=(x.nm||'')+(seen[x.nm]?'#'+seen[x.nm]:'');seen[x.nm]=(seen[x.nm]||0)+1;
+  const c=waCalc(x,ovm[k]),nm=String(x.nm||'').trim(),is=waChk(x,c,!!nm&&cn[nm]>1);
+  is.forEach(t=>{const lv=t.k===4?4:t.k===3?3:2;if(lv>mx)mx=lv});
+  if(is.length)notes.push({n:(nm||'(ไม่มีชื่อ) แถวที่ '+(i+1)),is})});
+ return{k:mx,n:its.length,notes}}
+function waRepOpen(a){
+ let dg=$('#wad');if(!dg){dg=document.createElement('dialog');dg.id='wad';dg.style.maxWidth='1100px';dg.style.width='calc(100% - 24px)';
+  dg.onclick=e=>{const g=e.target.closest('[data-wago]');if(g){dg.close();waAm=g.dataset.wago;render();scrollTo(0,0);return}if(e.target===dg||e.target.closest('[data-x]'))dg.close()};document.body.appendChild(dg)}
+ const us=D.filter(u=>u.a===a),rs=us.map(u=>({u,r:waRep(u)})),cnt={1:0,2:0,3:0,4:0,5:0};rs.forEach(o=>cnt[o.r.k]++);
+ const tag=k=>`<span style="color:${WA_ST[k][2]};font-weight:700;white-space:nowrap">${WA_ST[k][0]} ${WA_ST[k][1]}</span>`;
+ const KL={2:'ต้องแก้ไข',3:'ไม่ครบ',4:'ผิด'};
+ const rows=rs.map((o,i)=>{const r=o.r,str=r.notes.length&&typeof r.notes[0]==='string',
+  nt=str?r.notes.map(s=>`<div>${esc(s)}</div>`).join(''):'<ul style="margin:0 0 0 18px;padding:0">'+r.notes.map(p=>`<li><b>${esc(p.n)}</b><ul style="margin:2px 0 4px 16px;padding:0">${p.is.map(t=>`<li><span style="color:${WA_ST[t.k][2]}">[${KL[t.k]}]</span> ${t.m}</li>`).join('')}</ul></li>`).join('')+'</ul>';
+  return `<tr><td class="n c">${i+1}</td><td>${cdTag(o.u.cd)}</td><td>${esc(o.u.n)}</td><td>${tag(r.k)}</td><td class="n">${r.n}</td><td>${r.k===1&&r.n&&!r.notes.length?'<span class="mut">ตรวจครบทุกช่อง ไม่พบข้อผิดพลาด</span>':nt}</td></tr>`}).join('');
+ const chips=[1,2,3,4,5].map(k=>`<span style="border:1px solid ${WA_ST[k][2]};color:${WA_ST[k][2]};border-radius:999px;padding:3px 12px;font-weight:600;white-space:nowrap">${WA_ST[k][0]} ${k}. ${WA_ST[k][1]} ${cnt[k]} แห่ง</span>`).join(' ');
+ dg.innerHTML=`<div class="glass" style="max-height:86vh;overflow:auto"><h2 style="margin:0 0 4px">รายงานการกรอกข้อมูลพนักงานจ้าง พกส./ลจช. · อำเภอ${esc(a)}</h2><p class="note" style="margin:0 0 10px">${us.length} รพ.สต. · ตรวจจากข้อมูลที่ รพ.สต. กรอกในเมนู “อัตรากำลังพนักงานจ้าง/จ้างเหมาบริการ” ณ ขณะที่เปิดหน้าต่างนี้</p><div style="display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px">${chips}</div>
+ ${us.length?`<div class="tw" style="max-height:none"><table><thead><tr>${['ที่','รหัส 5 หลัก','รพ.สต.','สถานะการกรอกข้อมูล','พนักงาน พกส./ลจช. (คน)','หมายเหตุ'].map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>`:'<div class="empty">ไม่พบ รพ.สต. ในอำเภอนี้</div>'}
+ <p class="note">เกณฑ์จัดสถานะ (ถ้า รพ.สต. มีหลายปัญหา จะแสดงสถานะที่รุนแรงที่สุด: ผิด → ไม่ครบ → ต้องแก้ไข) · <b>ครบถ้วน ถูกต้อง</b> = กรอกทุกช่องและหาอัตราขั้นต่ำ–ขั้นสูงในเกณฑ์ได้ (หรือแจ้งว่าไม่มีพนักงานจ้าง) · <b>ครบ แต่ยังไม่ถูกต้อง</b> = กรอกครบแต่ค่าไม่ตรงเกณฑ์/ไม่พบอัตรา/ประเภทพิมพ์เอง/ค่าจ้างเกินขั้นสูง · <b>ไม่ครบ</b> = มีช่องที่ยังว่าง · <b>ผิด</b> = ค่าที่กรอกผิดรูปแบบ เช่น เงินเดือนไม่ใช่ตัวเลข วันที่/จำนวนเดือนผิด ชื่อซ้ำ · <b>ยังไม่ดำเนินการ</b> = ยังไม่มีการบันทึกใด ๆ</p>
+ <div class="actions"><button class="btn" type="button" data-wago="${esc(a)}">เปิดตารางค่าจ้างของอำเภอ${esc(a)}</button><button class="btn sec" type="button" data-x>ปิด</button></div></div>`;
+ dg.showModal()}
 function wgAdjSumPage(){
  const L=waByAm(),PV=waProv(L),kpi=(b,t)=>`<div class="glass kpi"><b>${b}</b><span>${t}</span></div>`,nc=v=>`<td class="n">${v}</td>`;
  const isAll=waAm==='all';
@@ -1964,14 +2015,14 @@ function wgAdjSumPage(){
   +`<tr class="tot"><td colspan="7">รวม ${esc(g.u.n)} (${g.rows.length} คน)</td>${nc(waF0(g.G))}<td></td><td></td>${nc(waF0(g.J))}${nc(waF0(g.K))}${nc(waF0(g.L))}${nc(waF0(g.M))}${nc(waF0(g.N))}<td></td></tr>`;
  const body=isAll?L.filter(x=>x.d.grp.length).map(x=>x.d.grp.map(gh).join('')+`<tr class="tot"><td colspan="7">▶ รวมอำเภอ${esc(x.a)} (${x.d.n} คน · ${x.d.grp.length} รพ.สต.)</td>${nc(waF0(x.d.T.G))}<td></td><td></td>${nc(waF0(x.d.T.J))}${nc(waF0(x.d.T.K))}${nc(waF0(x.d.T.L))}${nc(waF0(x.d.T.M))}${nc(waF0(waR2(x.d.T.M-x.d.T.G)))}<td></td></tr>`).join(''):d.grp.map(gh).join('');
  const tot=d.grp.length?`<tr class="tot"><td colspan="7">${isAll?'รวมทั้งจังหวัด':'รวมทั้งอำเภอ'+esc(am)} (${d.n} คน · ${d.grp.length} รพ.สต.)</td>${nc(waF0(T.G))}<td></td><td></td>${nc(waF0(T.J))}${nc(waF0(T.K))}${nc(waF0(T.L))}${nc(waF0(T.M))}${nc(waF0(T.M-T.G))}<td></td></tr>`:'';
- const sm=L.map((x,i)=>`<tr data-wa="${esc(x.a)}" style="cursor:pointer"${x.a===waAm?' aria-current="true"':''} title="คลิกเพื่อเปิดหน้าอำเภอ${esc(x.a)}"><td class="n c">${i+1}</td><td><b>${esc(x.a)}</b>${x.a===waAm?' <small class="mut">(กำลังดู)</small>':''}</td>${nc(x.us.length)}${nc(x.d.grp.length)}${nc(f(x.d.n))}${nc(waF0(x.d.T.G))}${nc(waF0(x.d.T.J))}${nc(waF0(x.d.T.K))}${nc(waF0(x.d.T.L))}${nc(waF0(x.d.T.M))}${nc(waF0(waR2(x.d.T.M-x.d.T.G)))}</tr>`).join('')
+ const sm=L.map((x,i)=>`<tr data-wa="${esc(x.a)}" style="cursor:pointer"${x.a===waAm?' aria-current="true"':''} title="คลิกเพื่อดูรายงานการกรอกข้อมูลของอำเภอ${esc(x.a)}"><td class="n c">${i+1}</td><td><b>${esc(x.a)}</b>${x.a===waAm?' <small class="mut">(กำลังดู)</small>':''}</td>${nc(x.us.length)}${nc(x.d.grp.length)}${nc(f(x.d.n))}${nc(waF0(x.d.T.G))}${nc(waF0(x.d.T.J))}${nc(waF0(x.d.T.K))}${nc(waF0(x.d.T.L))}${nc(waF0(x.d.T.M))}${nc(waF0(waR2(x.d.T.M-x.d.T.G)))}</tr>`).join('')
   +`<tr class="tot"><td></td><td>รวมทั้งจังหวัด</td>${nc(PV.u)}${nc(PV.g)}${nc(f(PV.n))}${nc(waF0(T0.G))}${nc(waF0(T0.J))}${nc(waF0(T0.K))}${nc(waF0(T0.L))}${nc(waF0(T0.M))}${nc(waF0(waR2(T0.M-T0.G)))}</tr>`;
  const rt=Object.values(WA_R).map(r=>[r[0],waFm(r[1]),waFm(r[2])]);
  return `<div class="glass hero"><h1>💵 บัญชีรายละเอียดการปรับค่าจ้าง พนักงานจ้าง พกส. และ ลจช.</h1><p class="sub">รวมข้อมูลพนักงานจ้างที่เจ้าหน้าที่ รพ.สต. ทั้ง ${D.length} แห่งกรอกในเมนู “อัตรากำลังพนักงานจ้าง/จ้างเหมาบริการ” แสดงแบบเดียวกับหน้า PM บุคลากรระดับอำเภอ แยกหน้าละ 1 อำเภอ · ตัวเลขอัปเดตแบบเรียลไทม์ · ขอบเขต: ${SCOPE[st.role]}</p><div class="hchips"><span>${D.length} รพ.สต.</span><span>${L.length} อำเภอ</span><span>มีข้อมูล ${PV.g} แห่ง</span><span>พนักงานจ้าง พกส./ลจช. ${f(PV.n)} คน</span></div></div>
  ${db?'':'<div class="glass card"><div class="insight bad">เชื่อมต่อฐานข้อมูลกลาง (Firebase) ไม่ได้ จึงเห็นเฉพาะข้อมูลที่บันทึกในเครื่องนี้ — ตัวเลขอาจไม่ครบ</div></div>'}
  <div class="kpis">${kpi(f(PV.n),'พนักงานจ้าง พกส./ลจช. ทั้งจังหวัด (คน) · จาก '+PV.g+' รพ.สต.')}${kpi(waF0(T0.G),'ค่าจ้างปัจจุบันรวม/เดือน (บาท)')}${kpi(waF0(T0.M),'ค่าจ้างหลังปรับรวม/เดือน (บาท)')}${kpi(waF0(T0.M-T0.G),'ปรับเพิ่มขึ้นรวม/เดือน (บาท) · ปีละ '+waFm((T0.M-T0.G)*12))}</div>
  ${PV.flag?`<div class="glass card"><div class="insight bad" id="waflag" role="button" tabindex="0" aria-expanded="${waFlagOpen}" style="cursor:pointer" title="คลิกเพื่อดู/ซ่อนรายชื่อ รพ.สต. ที่มีปัญหา">⚠️ มีพนักงาน ${PV.flag} คน ที่วุฒิ/ลักษณะการจ้างยังไม่มีอัตราขั้นต่ำ–ขั้นสูงในเกณฑ์ (เช่น ปวช. อนุปริญญา ปริญญาโท/เอก) ระบบแสดงเป็นไม่ปรับ (ค่าจ้างหลังปรับ = ค่าจ้างปัจจุบัน) · ให้ รพ.สต. หรือ PM บุคลากรระดับอำเภอตรวจสอบ/แก้ไขข้อมูล <span class="act">▶ คลิกที่ข้อความนี้เพื่อ${waFlagOpen?'ซ่อน':'ดู'}รายชื่อ รพ.สต. ที่มีปัญหา (แยกรายอำเภอ)</span></div></div>${waFlagOpen?waFlagPanel(L):''}`:''}
- <div class="glass card"><h2>สรุปรายอำเภอ (${L.length} อำเภอ)</h2><p class="note" style="margin:0 0 10px">คลิกแถวเพื่อเปิดหน้าของอำเภอนั้น</p><div class="tw" style="max-height:none"><table id="wasm"><thead><tr>${['ที่','อำเภอ','รพ.สต. (แห่ง)','มีข้อมูล (แห่ง)','พนักงาน (คน)','ค่าจ้างปัจจุบัน (บาท)','ปรับเพิ่ม (บาท)','ปรับ ร้อยละ 1 (บาท)','ค่าจ้างหลังปรับ (บาท)','ค่าจ้างตามจริง (บาท)','ปรับเพิ่มขึ้น ต่อเดือน (บาท)'].map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${sm}</tbody></table></div></div>
+ <div class="glass card"><h2>สรุปรายอำเภอ (${L.length} อำเภอ)</h2><p class="note" style="margin:0 0 10px">คลิกแถวเพื่อเปิดหน้าต่างรายงานการกรอกข้อมูลของอำเภอนั้น (แยกราย รพ.สต.)</p><div class="tw" style="max-height:none"><table id="wasm"><thead><tr>${['ที่','อำเภอ','รพ.สต. (แห่ง)','มีข้อมูล (แห่ง)','พนักงาน (คน)','ค่าจ้างปัจจุบัน (บาท)','ปรับเพิ่ม (บาท)','ปรับ ร้อยละ 1 (บาท)','ค่าจ้างหลังปรับ (บาท)','ค่าจ้างตามจริง (บาท)','ปรับเพิ่มขึ้น ต่อเดือน (บาท)'].map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${sm}</tbody></table></div></div>
  <div class="glass card"><h2>${esc(WA_T1)}</h2><p class="note" style="margin:0 0 10px;font-size:1rem">ลูกจ้างชั่วคราวเงินนอกงบประมาณ (เงินบำรุง) · ${isAll?'รายงานข้อมูลทั้งหมด ทุกอำเภอ':'อำเภอ'+esc(am)} องค์การบริหารส่วนจังหวัดสกลนคร</p><div class="fl"><button class="btn sec sm" type="button" id="wapv"${gi<=0?' disabled':''}>◀ ก่อนหน้า</button><select id="wasel" aria-label="เลือกอำเภอ">${L.map((x,i)=>`<option value="${esc(x.a)}"${x.a===waAm?' selected':''}>${i+1}. อำเภอ${esc(x.a)} (${x.d.n} คน · ${x.d.grp.length}/${x.us.length} รพ.สต.)</option>`).join('')}<option value="all"${isAll?' selected':''}>ทั้งจังหวัด — ข้อมูลทั้งหมด (${PV.n} คน · ${PV.g}/${PV.u} รพ.สต.)</option></select><button class="btn sec sm" type="button" id="wanx"${gi<0||gi>=L.length-1?' disabled':''}>ถัดไป ▶</button><span class="note">${isAll?'รายงานข้อมูลทั้งหมด ต่อเนื่องทุกอำเภอ':'หน้า '+(gi+1)+' / '+L.length+' · 1 หน้าต่อ 1 อำเภอ'}</span></div><div class="actions" style="margin:0 0 10px">${isAll?'':'<button class="btn" type="button" id="waall">📄 รายงานข้อมูลทั้งหมด (ทุกอำเภอ)</button>'}<button class="btn sec" type="button" id="wawd">${waWide?'↩ แสดงเมนูด้านซ้าย':'⤢ ขยายตารางเต็มจอ'}</button><button class="btn" type="button" id="wax">⬇️ Excel ทั้งจังหวัด (ชีตละ 1 อำเภอ)</button><button class="btn sec" type="button" id="waxo">⬇️ Excel ${isAll?'ข้อมูลทั้งหมด':'เฉพาะอำเภอนี้'}</button><button class="btn sec" type="button" id="wap">🖨️ พิมพ์/PDF ทุกอำเภอ (แยกหน้าละ 1 อำเภอ)</button><button class="btn sec" type="button" id="wapo">🖨️ พิมพ์/PDF ${isAll?'ข้อมูลทั้งหมด':'เฉพาะอำเภอนี้'}</button></div>
  <h3 style="margin:4px 0 8px">${isAll?'ทั้งจังหวัดสกลนคร · ข้อมูลทั้งหมด':'อำเภอ'+esc(am)} · ${cur.us.length} รพ.สต. · มีข้อมูล ${d.grp.length} แห่ง · ${d.n} คน</h3>
  ${d.grp.length?`<div class="tw" style="max-height:none"><table id="wat"><thead><tr>${WA_HD.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${body}${tot}</tbody></table></div>`:'<div class="empty">ยังไม่มี รพ.สต. ใดในอำเภอนี้กรอกข้อมูลพนักงานจ้าง พกส./ลจช.</div>'}
@@ -2050,7 +2101,7 @@ function bindWgAdjSum(){
  const go=a=>{waAm=a;render();scrollTo(0,0)},ams=waAmList(),sl=$('#wasel');
  if(sl)sl.onchange=()=>go(sl.value);
  const k=ams.indexOf(waAm);b('wapv',()=>{if(k>0)go(ams[k-1])});b('wanx',()=>{if(k>=0&&k<ams.length-1)go(ams[k+1])});
- const t=$('#wasm');if(t)t.onclick=e=>{const r=e.target.closest('tr[data-wa]');if(r)go(r.dataset.wa)};
+ const t=$('#wasm');if(t)t.onclick=e=>{const r=e.target.closest('tr[data-wa]');if(r)waRepOpen(r.dataset.wa)};
 }
 function hrPage(){
  const a=ana(),low=a.am.slice(0,3),sub=MENUS.filter(m=>m.p==='hr'&&CAN[st.role].includes(m.id));
