@@ -2333,7 +2333,7 @@ function adResolve(x){
 function adLookup(x){return adResolve(x).a}
 function adCalc(x,o){
  o=o||{};const num=v=>{const n=wgNum(v);return isNaN(n)?null:n},rs=adResolve(x),a=rs.a;
- const h=o.h!==undefined?num(o.h):num(x.sal),mn=a?a[0]:(o.mn!==undefined?num(o.mn):null),mx=a?a[1]:(o.mx!==undefined?num(o.mx):null);
+ const hw=(x&&x.wgc!=null&&x.wgc!=='')?num(x.wgc):null,h=hw!=null?hw:(o.h!==undefined?num(o.h):num(x.sal)),mn=a?a[0]:(o.mn!==undefined?num(o.mn):null),mx=a?a[1]:(o.mx!==undefined?num(o.mx):null);
  const R={h,mn,mx,K:0,L:0,M:h,N:null,st:'',inf:rs.inf,auto:!!a};
  if(h==null||h<=0){R.M=null;R.st='inc';return R}
  R.N=h;
@@ -2362,10 +2362,10 @@ function adData(u){
  return{rows,ex:d.ex,tot:{h:emR2(rows.reduce((a,z)=>a+(+z.R.h||0),0)),k:emR2(rows.reduce((a,z)=>a+z.R.K,0)),l:emR2(rows.reduce((a,z)=>a+z.R.L,0)),m:emR2(rows.reduce((a,z)=>a+(+z.R.M||0),0)),n:S('n'),o:S('oo')}}}
 const adHireTxt=x=>(x.grp?x.grp+' · ':'')+(x.hire||'');
 function adRowHtml(i,u,it,o,dis){
- const x=it.x,R=adCalc(x,o),hasA=R.auto,man=!!(o&&o.n!=null&&(o.man===1||!R.auto)),hv=(o&&o.h!==undefined)?o.h:x.sal,
+ const x=it.x,R=adCalc(x,o),hasA=R.auto,man=!!(o&&o.n!=null&&(o.man===1||!R.auto)),hw=x.wgc!=null&&x.wgc!=='',hv=hw?x.wgc:((o&&o.h!==undefined)?o.h:x.sal),
  inp=(f,v)=>`<input type="text" class="adn" data-f="${f}" inputmode="decimal" autocomplete="off" value="${v==null?'':esc(v)}"${dis}>`;
  return `<tr data-i="${i}"><td class="n">${i+1}</td><td>${esc(u.a)}</td><td>${esc(u.n)}</td><td>${esc(x.nm)}</td><td>${esc(x.typ)}</td><td>${esc(x.pos)}</td><td>${esc(x.hire||'')}${x.grp?`<div class="adhr">กลุ่ม ${esc(x.grp)}</div>`:''}</td>
- <td>${inp('h',hv)}</td>
+ <td>${hw?inp('h',hv).replace('class="adn"','class="adn" readonly tabindex="-1" style="background:var(--acs)"')+'<div class="adhr">อำเภอปรับค่าจ้างปัจจุบันแล้ว</div>':inp('h',hv)}</td>
  <td class="r">${hasA?'<span class="c-mn"></span>':inp('mn',(o&&o.mn!==undefined)?o.mn:'')}</td><td class="r">${hasA?'<span class="c-mx"></span>':inp('mx',(o&&o.mx!==undefined)?o.mx:'')}</td>
  <td class="r c-k"></td><td class="r c-l"></td><td class="r c-m"></td>
  <td><input type="text" class="adn" data-f="n" data-man="${man?1:0}" inputmode="decimal" autocomplete="off" value="${man?esc(o.n):''}"${dis}></td><td class="r c-o"></td>
@@ -2432,7 +2432,7 @@ function bindAdj(){
    if(bad)return;const it=items[+tr.dataset.i],tag=(it.x.nm||'แถวที่ '+(+tr.dataset.i+1))+' : ',o={k:it.k};
    const h=wgNum(q(tr,'h').value);
    if(isNaN(h)||h<=0){bad=tag+'ค่าจ้างปัจจุบันต้องเป็นตัวเลขมากกว่า 0';return}
-   if(h!==+it.x.sal)o.h=h;
+   if(h!==+it.x.sal&&!(it.x.wgc!=null&&it.x.wgc!==''))o.h=h;
    if(q(tr,'mn')){
     const a=wgNum(q(tr,'mn').value),b=wgNum(q(tr,'mx').value);
     if(!adLate(it.x)&&(isNaN(a)||isNaN(b)||a<=0||b<a)){bad=tag+'ไม่พบอัตราในบัญชี กรุณากรอกขั้นต่ำ/ขั้นสูงให้ถูกต้อง (ขั้นสูงต้องไม่น้อยกว่าขั้นต่ำ)';return}
