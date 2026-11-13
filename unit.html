@@ -2084,10 +2084,8 @@ function unitHome(m){
   ['ps','สำรวจลูกจ้าง พว.วิชาชีพ แพทย์แผนไทย จพ.ทันตกรรม','กรอกชื่อ-สกุล วุฒิ สถาบัน และระยะเวลาที่ทำงานของลูกจ้างแต่ละคน',b,chip(b)],
   ['survey','แบบสำรวจความต้องการฝึกอบรม ปี 2570','บุคลากรแต่ละคนของ รพ.สต. เลือกหลักสูตรที่ต้องการเข้ารับการอบรม',sv,chip(sv,svT)]];
  const req=tasks.slice(0,2).filter(x=>x[3].k!=='na'),done=req.filter(x=>x[3].k==='ok').length;
- return unitHead('🏥',esc(u.n),`รหัสสถานบริการ ${esc(u.cd)} · อำเภอ${esc(u.a)} · ขนาด ${esc(u.s)} · อัตรากำลังตามกรอบ ${u.fr} คน`)
- +`<div class="insight">งานที่ต้องดำเนินการของ รพ.สต. ท่าน: เสร็จแล้ว <b>${done}</b> จาก <b>${req.length}</b> รายการ${done===req.length?' 🎉 ครบแล้ว ขอบคุณครับ/ค่ะ':' · กดปุ่มในแต่ละการ์ดเพื่อไปกรอก'}</div>`
- +`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:16px">${tasks.map(x=>`<div class="glass card"><h2>${x[1]}</h2><p class="note">${x[2]}</p><p>${x[4]}</p><div class="actions"><button class="btn" type="button" data-act="go" data-i="${x[0]}">${x[3].k==='ok'?'ดู/แก้ไข':'ไปกรอกข้อมูล'}</button></div></div>`).join('')}</div>`
- +dashBoard(m);
+ return unitHead('🏥',esc(u.n),`รหัสสถานบริการ ${esc(u.cd)} · อำเภอ${esc(u.a)} · ขนาด ${esc(u.s)}`)
++dashBoard(m);
 }
 function unitDir(u){
  const s=stOf(u);
