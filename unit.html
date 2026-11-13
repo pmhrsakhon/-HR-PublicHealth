@@ -674,6 +674,54 @@ table{font-size:.82rem}
 .adtw{max-height:72vh!important}
 .adrule li{margin:3px 0}
 </style>
+<style id="dbcss">
+/* ===== Dashboard หน้าหลัก รพ.สต. ===== */
+.dbbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 16px}
+.dbbar label{display:flex;gap:8px;align-items:center;font-weight:600}
+.dbbar select{background:var(--panel);color:var(--tx);border:1.5px solid var(--line);border-radius:12px;padding:7px 12px;font-weight:600}
+.dbjump{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+.dbjump button{background:var(--acs);border:1px solid var(--line);border-radius:99px;padding:5px 14px;font-size:.86rem;font-weight:600;color:var(--tx)}
+.dbjump button:hover{border-color:var(--ac)}
+.dbsh{display:flex;align-items:center;gap:12px;margin:10px 4px 0;scroll-margin-top:16px}
+.dbsh i{font-style:normal;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;color:#fff;font-weight:700;background:var(--c,var(--ac));box-shadow:0 6px 14px color-mix(in srgb,var(--c,var(--ac)) 35%,transparent)}
+.dbsh h2{margin:0;font-size:1.3rem}.dbsh p{margin:0}
+.dbgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:16px}
+.dbgrid>.card{min-width:0}
+.dbgrid h3,.dbc h3{margin:0 0 10px;font-size:1.02rem;font-weight:700}
+.dbmini{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.dbmini div{background:var(--acs);border-radius:14px;padding:10px 14px;border-left:5px solid var(--c,var(--ac))}
+.dbmini b{display:block;font-size:1.45rem;line-height:1.25;font-variant-numeric:tabular-nums}
+.dbmini span{font-size:.83rem;color:var(--mut);font-weight:600}
+.dbdn{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.dbdn svg{width:160px;height:160px;flex:none}
+.dbdb{font-size:17px;font-weight:700;fill:var(--tx)}.dbds{font-size:7.5px;fill:var(--mut);font-weight:600}
+.dbleg{list-style:none;margin:0;padding:0;display:grid;gap:6px;flex:1;min-width:170px;font-size:.9rem}
+.dbleg li{display:grid;grid-template-columns:14px 1fr auto auto;gap:8px;align-items:center}
+.dbleg i,.dbleg2 i{width:12px;height:12px;border-radius:4px;display:inline-block}
+.dbleg small{color:var(--mut);min-width:46px;text-align:right}
+.dbleg2{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:.84rem;font-weight:600;margin-bottom:6px}
+.dbleg2 span{display:inline-flex;gap:6px;align-items:center}
+.dbbs{display:grid;gap:7px}
+.dbb{display:grid;grid-template-columns:minmax(90px,34%) 1fr 64px;gap:10px;align-items:center;font-size:.88rem;font-weight:500}
+.dbb>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dbb>span small{display:block;font-size:.72rem;color:var(--mut);overflow:hidden;text-overflow:ellipsis}
+.dbb>b{text-align:right;font-variant-numeric:tabular-nums}
+.dbt{height:16px;border-radius:99px;background:rgba(110,140,160,.22);overflow:hidden}
+.dbf,.dbst{height:100%;border-radius:99px}
+.dbst{display:flex;overflow:hidden}.dbst>div{height:100%;min-width:2px}
+@media(prefers-reduced-motion:no-preference){.dbf,.dbst{transition:width .5s}}
+.dbh{font-size:.86rem}.dbh th,.dbh td{text-align:center;padding:7px 8px;white-space:nowrap}.dbh td:first-child,.dbh th:first-child{text-align:left}
+.dbh td b{font-variant-numeric:tabular-nums}
+.dbai{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:12px}
+.dbai .insight{margin:0;border-left-width:6px}
+.dbai .insight.warn{border-left-color:#F2A900;background:rgba(242,169,0,.13)}
+.dbai .insight.ok{border-left-color:#16a34a;background:rgba(22,163,74,.12)}
+.dbai .insight.info{border-left-color:#4A63D8;background:rgba(74,99,216,.12)}
+.dbai .insight.bad{border-left-color:#dc2626}
+.dbai .insight small{display:block;margin-top:4px;color:var(--mut);font-weight:600}
+.dbtag{display:inline-block;background:linear-gradient(135deg,#6D4AFF,#06B6D4);color:#fff;border-radius:99px;padding:1px 12px;font-size:.78rem;font-weight:700;margin-left:8px;vertical-align:middle}
+@media(max-width:860px){.dbb{grid-template-columns:96px 1fr 54px}.dbjump{margin-left:0}.dbdn svg{width:130px;height:130px}}
+</style>
 </head>
 <body>
 <div class="app">
@@ -1898,6 +1946,134 @@ function unitLogin(){return `<div class="glass hero"><h1>🏥 พอร์ทั
 <div class="glass card"><h2>เข้าสู่ระบบ</h2><p class="note">ใช้ชื่อผู้ใช้เป็น <b>รหัสสถานบริการ 5 หลัก</b> ของ รพ.สต. (รหัสผ่านเริ่มต้นเป็นรหัสเดียวกัน แล้วควรเปลี่ยนรหัสผ่านหลังเข้าใช้ครั้งแรก)</p><div class="actions"><button class="btn" type="button" onclick="document.getElementById('lgb').click()">เข้าสู่ระบบ</button></div><p class="note" style="margin-top:12px">ผู้บริหาร / หัวหน้างานบุคลากร / ผู้ดูแลระบบ ใช้หน้า <a href="mgmt.html">บริหารจัดการ</a></p></div>`}
 function unitNone(){return `<div class="glass hero"><h1>🏥 พอร์ทัลสำหรับ รพ.สต.</h1></div><div class="glass card"><div class="insight bad">ไม่พบ รพ.สต. ที่ตรงกับรหัสผู้ใช้ ${esc(st.user||'')} ในรายการ 149 แห่ง กรุณาติดต่อผู้ดูแลระบบ</div></div>`}
 const unitHead=(ic,title,sub)=>`<div class="glass hero"><h1>${ic} ${title}</h1><p class="sub">${sub}</p></div>`;
+/* ===== Dashboard หน้าหลัก รพ.สต. : วิเคราะห์ข้อมูลทั้ง 149 แห่ง (คำนวณอัตโนมัติจากข้อมูลที่ทุกหน่วยกรอก แบบเรียลไทม์) ===== */
+let dbAm='';
+const DBC=['#0A8F9E','#4A63D8','#F2A900','#E0584A','#8B5CF6','#16A34A','#EC4899','#0EA5E9','#F97316','#64748B'];
+const dbP=(a,b)=>b?Math.round(a/b*1000)/10:0;
+const dbSh=n=>String(n||'').replace(/^รพ\.สต\./,'').replace(/^บ้าน/,'บ.');
+const dbM=n=>n>=1e6?(n/1e6).toFixed(2)+' ล้านบาท':f(Math.round(n))+' บาท';
+function dbDonut(parts,big,small){
+ const T=parts.reduce((a,p)=>a+p[1],0),C=2*Math.PI*46;let off=0;
+ const seg=T?parts.filter(p=>p[1]>0).map(p=>{const l=p[1]/T*C,s=`<circle cx="60" cy="60" r="46" fill="none" stroke="${p[2]}" stroke-width="16" stroke-dasharray="${l.toFixed(2)} ${(C-l).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 60 60)"><title>${esc(p[0])}: ${f(p[1])} (${dbP(p[1],T)}%)</title></circle>`;off+=l;return s}).join(''):'';
+ return `<div class="dbdn"><svg viewBox="0 0 120 120" role="img" aria-label="${esc(big+' '+small)}"><circle cx="60" cy="60" r="46" fill="none" stroke="rgba(110,140,160,.22)" stroke-width="16"/>${seg}<text x="60" y="60" text-anchor="middle" class="dbdb">${esc(big)}</text><text x="60" y="74" text-anchor="middle" class="dbds">${esc(small)}</text></svg><ul class="dbleg">${parts.map(p=>`<li><i style="background:${p[2]}"></i><span>${esc(p[0])}</span><b>${f(p[1])}</b><small>${dbP(p[1],T)}%</small></li>`).join('')}</ul></div>`}
+function dbBars(rows,o){o=o||{};if(!rows.length)return '<p class="note">ยังไม่มีข้อมูล</p>';const m=o.max||Math.max(1,...rows.map(r=>r[1]));
+ return `<div class="dbbs">${rows.map((r,i)=>`<div class="dbb"><span title="${esc(r[0])}${r[2]?' · '+esc(r[2]):''}">${esc(r[0])}${r[2]?`<small>${esc(r[2])}</small>`:''}</span><div class="dbt"><div class="dbf" style="width:${r[1]>0?Math.max(2,r[1]/m*100):0}%;background:${o.multi?DBC[i%DBC.length]:(o.color||DBC[0])}"></div></div><b>${o.fmt?o.fmt(r[1]):f(r[1])}</b></div>`).join('')}</div>`}
+function dbStack(rows,ser){if(!rows.length)return '<p class="note">ยังไม่มีข้อมูล</p>';const m=Math.max(1,...rows.map(r=>sm(r[1])));
+ return `<div class="dbleg2">${ser.map(s=>`<span><i style="background:${s[1]}"></i>${esc(s[0])}</span>`).join('')}</div><div class="dbbs">${rows.map(r=>{const t=sm(r[1]);return `<div class="dbb"><span title="${esc(r[0])}">${esc(r[0])}</span><div class="dbt"><div class="dbst" style="width:${t/m*100}%">${r[1].map((v,i)=>v>0?`<div style="flex:${v};background:${ser[i][1]}" title="${esc(ser[i][0])}: ${f(v)}"></div>`:'').join('')}</div></div><b>${f(t)}</b></div>`}).join('')}</div>`}
+function dbHeat(rows,cols,h0){
+ const col=p=>p>=80?'#16a34a':p>=50?'#84cc16':p>=25?'#F2A900':p>0?'#f97316':'#dc2626';
+ return `<div class="tw"><table class="dbh"><thead><tr><th>${esc(h0)}</th><th>รพ.สต. (แห่ง)</th>${cols.map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr${r[0]==='รวม'?' class="tot"':''}><td>${esc(r[0])}</td><td>${f(r[1])}</td>${r[2].map(p=>p==null?'<td>—</td>':`<td style="background:color-mix(in srgb,${col(p)} 30%,transparent)"><b>${p}%</b></td>`).join('')}</tr>`).join('')}</tbody></table></div>`}
+const dbSec=(n,c,t,s,id)=>`<div class="dbsh" id="${id}" style="--c:${c}"><i>${n}</i><div><h2>${t}</h2><p class="note">${s}</p></div></div>`;
+const dbCard=(t,b,x)=>`<div class="glass card"${x?' '+x:''}><h3>${t}</h3>${b}</div>`;
+const dbMini=a=>`<div class="dbmini">${a.map(x=>`<div style="--c:${x[2]||'var(--ac)'}"><b>${x[0]}</b><span>${x[1]}</span></div>`).join('')}</div>`;
+const DBST={min:['ต่ำกว่าขั้นต่ำ → ปรับเป็นขั้นต่ำ','#E0584A'],p1:['ปรับเพิ่ม 1%','#16A34A'],cap:['ปรับถึงขั้นสูง','#4A63D8'],max:['ถึงขั้นสูงแล้ว','#8B5CF6'],over:['เกินขั้นสูง','#F97316'],noacct:['ไม่พบอัตราในบัญชี','#64748B'],inc:['ค่าจ้างยังไม่ครบ','#F2A900']};
+
+function dbFs(u,r){const sp=FRS[String(u.s||'').trim().toUpperCase()],tot=sp?sp.reduce((a,g)=>a+g[1].length,0):0;let fl=0,vc=0;if(r&&r.rows&&sp)r.rows.slice(0,tot).forEach(x=>{if(!x)return;if(x.nm==='ว่าง')vc++;else if(String(x.nm||'').trim())fl++});return{tot,fl,vc,rep:!!(r&&sp)}}
+function dashBoard(m){
+ const UA=D.map(u=>{const fr=frOf(u);return{u,fr,fs:dbFs(u,fr),em:emOf(u),ad:adData(u),ps:psSlots(u)}});
+ const X=UA.filter(x=>!dbAm||x.u.a===dbAm),N=X.length;
+ const grp=dbAm?X.map(x=>[dbSh(x.u.n),[x]]):AM.map(a=>[a,UA.filter(x=>x.u.a===a)]);
+ const sumU=(l,k)=>l.reduce((a,x)=>a+x.u[k],0),vacU=l=>l.reduce((a,x)=>a+Math.max(0,x.u.gg),0);
+ const scope=dbAm?'อำเภอ'+dbAm:'ทั้ง 149 แห่ง';
+ /* ---------- 1) กรอบข้าราชการ ---------- */
+ const RP=X.filter(x=>x.fs.rep),sf=(l,k)=>l.reduce((a,x)=>a+x.fs[k],0),FRALL=sf(X,'tot'),FR=sf(RP,'tot'),GIN=sf(RP,'fl'),VAC=sf(RP,'vc'),PEND=FRALL-GIN-VAC,OCC=dbP(GIN,FR);
+ const grFr=grp.map(([n,l])=>{const r=l.filter(x=>x.fs.rep);return[n,sf(r,'vc'),sf(r,'tot')]});
+ const sizes=['S','M','L'].map(s=>{const l=RP.filter(x=>String(x.u.s||'').trim().toUpperCase()===s);return[FRZ[s],dbP(sf(l,'vc'),sf(l,'tot')),l.length+' แห่ง · ว่าง '+sf(l,'vc')+' / กรอบ '+sf(l,'tot'),l.length]}).filter(r=>r[3]>0);
+ const topVac=RP.filter(x=>x.fs.vc>0).sort((a,b)=>b.fs.vc-a.fs.vc||a.u.n.localeCompare(b.u.n,'th')).slice(0,10).map(x=>[dbSh(x.u.n),x.fs.vc,'อ.'+x.u.a+' · กรอบ '+x.fs.tot]);
+ const frFilled={},frVac={};let frUnits=0;
+ X.forEach(x=>{if(!x.fr)return;frUnits++;((x.fr.rows)||[]).forEach(r=>{if(!r)return;const p=r.pos||'';if(r.nm==='ว่าง'){const k=p||'ไม่ระบุตำแหน่ง';frVac[k]=(frVac[k]||0)+1}else if(String(r.nm||'').trim()){const k=p||'ไม่ระบุตำแหน่ง';frFilled[k]=(frFilled[k]||0)+1}})});
+ const frPos=[...new Set([...Object.keys(frFilled),...Object.keys(frVac)])].map(p=>[p,[frFilled[p]||0,frVac[p]||0]]).sort((a,b)=>b[1][1]-a[1][1]||sm(b[1])-sm(a[1])).slice(0,10);
+ let lnV=0,lnG=0;X.forEach(x=>{if(!x.fr)return;(x.fr.rows||[]).forEach(r=>{if(!r||!String(r.nm||'').trim()||r.nm==='ว่าง')return;const l=frLine(r.pos);if(l==='v')lnV++;else if(l==='g')lnG++})});
+ /* ---------- 2) พนักงานจ้าง / จ้างเหมา ---------- */
+ const EMR=[];X.forEach(x=>((x.em&&x.em.rows)||[]).forEach(r=>{if(r)EMR.push({u:x.u,...r})}));
+ const emU=X.filter(x=>x.em).length,emNone=X.filter(x=>x.em&&x.em.none).length;
+ const tCnt=EMTYP.map(t=>EMR.filter(r=>r.typ===t).length),tOth=EMR.length-sm(tCnt);
+ const cnt=(l,fn)=>{const o={};l.forEach(r=>{const k=fn(r)||'ไม่ระบุ';o[k]=(o[k]||0)+1});return Object.entries(o).sort((a,b)=>b[1]-a[1])};
+ const posTop=cnt(EMR,r=>r.pos).slice(0,10),eduRows=EMEDU.map(e=>[e,EMR.filter(r=>r.edu===e).length]).filter(r=>r[1]>0);
+ const pay=l=>l.reduce((a,r)=>a+(+r.sal>0?+r.sal:0),0),payM=pay(EMR);
+ const payT=EMTYP.map((t,i)=>[t.replace('พนักงานกระทรวงสาธารณสุข (พกส.)','พกส.'),pay(EMR.filter(r=>r.typ===t))*12]).filter(r=>r[1]>0);
+ const emSer=[['พกส.',DBC[0]],['ลจช.',DBC[1]],['รายวัน/รายคาบ',DBC[2]],['จ้างเหมา',DBC[3]]];
+ const grEm=grp.map(([n,l])=>{const r=[];l.forEach(x=>((x.em&&x.em.rows)||[]).forEach(z=>r.push(z)));return[n,EMTYP.map(t=>r.filter(z=>z&&z.typ===t).length)]}).filter(r=>sm(r[1])>0).sort((a,b)=>sm(b[1])-sm(a[1]));
+ const CT=tCnt[3],conShare=dbP(CT,EMR.length),ALL=GIN+EMR.length;
+ /* ---------- 3) ปรับค่าจ้าง พกส./ลจช. ---------- */
+ const AR=[];X.forEach(x=>x.ad.rows.forEach(z=>AR.push({u:x.u,...z})));
+ const stC={};AR.forEach(z=>{stC[z.R.st]=(stC[z.R.st]||0)+1});
+ const adCur=AR.reduce((a,z)=>a+(+z.R.h>0?+z.R.h:0),0),adNew=AR.reduce((a,z)=>a+(+z.n>0?+z.n:0),0),adInc=AR.reduce((a,z)=>a+(+z.oo>0?+z.oo:0),0);
+ const kP=AR.filter(z=>adKind(z.x)==='P'),kT=AR.filter(z=>adKind(z.x)==='T');
+ const incOf=l=>l.reduce((a,z)=>a+(+z.oo>0?+z.oo:0),0);
+ const bands=[['< 10,000',0,10000],['10,000 – 12,999',10000,13000],['13,000 – 15,999',13000,16000],['16,000 – 19,999',16000,20000],['20,000 – 24,999',20000,25000],['≥ 25,000',25000,1e12]].map(b=>[b[0],AR.filter(z=>+z.R.h>=b[1]&&+z.R.h<b[2]).length]);
+ const grAd=grp.map(([n,l])=>{const r=[];l.forEach(x=>x.ad.rows.forEach(z=>r.push(z)));return[n,incOf(r),r.length]}).filter(r=>r[2]>0).sort((a,b)=>b[1]-a[1]);
+ const minN=stC.min||0,noN=(stC.noacct||0)+(stC.inc||0);
+ /* ---------- 4) สำรวจลูกจ้างวิชาชีพ ---------- */
+ const PA=[];X.forEach(x=>x.ps.forEach(s=>PA.push({u:x.u,s,r:psRow(x.u,s)})));
+ const psDn=PA.filter(z=>psDone(z.r)).length,psTot=PA.length,psUn=X.filter(x=>x.ps.length).length;
+ const psStack=PSN.map(p=>[p,PST.map(t=>PA.filter(z=>z.s.pos===p&&z.s.typ===t).length)]);
+ const grPs=grp.map(([n,l])=>{const r=PA.filter(z=>l.some(x=>x.u===z.u));return[n,dbP(r.filter(z=>psDone(z.r)).length,r.length),r.length]}).filter(r=>r[2]>0).sort((a,b)=>a[1]-b[1]);
+ const psEd=cnt(PA.filter(z=>z.r&&String(z.r.ed||'').trim()),z=>String(z.r.ed).trim()).slice(0,8);
+ const durB=[['< 1 ปี',0,1],['1 – 2 ปี',1,3],['3 – 4 ปี',3,5],['5 – 9 ปี',5,10],['≥ 10 ปี',10,999]].map(b=>[b[0],PA.filter(z=>{if(!z.r||z.r.y===''||z.r.y==null)return false;const y=(+z.r.y||0)+(+z.r.m||0)/12;return y>=b[1]&&y<b[2]}).length]);
+ /* ---------- 5) ความก้าวหน้าการกรอกข้อมูล ---------- */
+ const prog=l=>{const n=l.length,d=l.filter(x=>stOf(x.u)!=='pending').length,fr=l.filter(x=>x.fr).length,em=l.filter(x=>x.em).length,pl=l.filter(x=>x.ps.length),pd=pl.filter(x=>pgPs(x.u).k==='ok').length;return{n,d,fr,em,pl:pl.length,pd}};
+ const pg=prog(X),pgAllP=dbP(pg.d+pg.fr+pg.em+pg.pd,pg.n*3+pg.n-0+pg.pl-pg.n+pg.n-pg.n+0);
+ const progAll=dbP(pg.d+pg.fr+pg.em+pg.pd,pg.n*3+pg.pl);
+ const heat=grp.map(([n,l])=>{const p=prog(l);return[n,p.n,[dbP(p.d,p.n),dbP(p.fr,p.n),dbP(p.em,p.n),p.pl?dbP(p.pd,p.pl):null]]});
+ const hAll=['รวม',pg.n,[dbP(pg.d,pg.n),dbP(pg.fr,pg.n),dbP(pg.em,pg.n),pg.pl?dbP(pg.pd,pg.pl):null]];
+ /* ---------- AI วิเคราะห์ ---------- */
+ const I=[],add=(c,t,b,a)=>I.push([c,t,b,a||'']);
+ const wv=grFr.filter(r=>r[2]>0).sort((a,b)=>dbP(b[1],b[2])-dbP(a[1],a[2])||b[1]-a[1])[0];
+ if(!RP.length)add('bad','กรอบอัตรากำลังข้าราชการ','ยังไม่มี รพ.สต. กรอกแบบกรอบอัตรากำลังข้าราชการเลย จึงยังวิเคราะห์ไม่ได้','แจ้ง รพ.สต. กรอกที่เมนู ข้อมูลอัตรากำลัง › กรอบอัตรากำลังข้าราชการ');else add(OCC>=90?'ok':OCC>=70?'warn':'bad','กรอบอัตรากำลังข้าราชการ','ข้าราชการครองกรอบ <b>'+OCC+'%</b> ('+f(GIN)+' / '+f(FR)+' อัตรา จากแบบที่ '+RP.length+' แห่งกรอกแล้ว) ระบุว่าง <b>'+f(VAC)+'</b> อัตรา กระจายใน '+RP.filter(x=>x.fs.vc>0).length+' แห่ง'+(wv&&wv[1]>0?' · '+(dbAm?'หน่วยที่ขาดมากสุด: ':'อำเภอที่ขาดสัดส่วนสูงสุด: ')+'<b>'+esc(wv[0])+'</b> (ขาด '+wv[1]+' จาก '+wv[2]+' = '+dbP(wv[1],wv[2])+'%)':''),'ควรจัดลำดับการสรรหา/ย้าย-โอนตามหน่วยที่ขาดสัดส่วนสูงก่อน');
+ const v2=RP.filter(x=>x.fs.vc>=2).length;
+ if(v2)add('warn','รพ.สต. ที่ขาดหลายอัตรา','มี <b>'+v2+'</b> แห่งที่มีตำแหน่งว่างตั้งแต่ 2 อัตราขึ้นไป'+(topVac.length?' · สูงสุด: '+esc(topVac[0][0])+' ('+topVac[0][1]+' อัตรา)':''),'พิจารณาเกลี่ยอัตรากำลังหรือทดแทนด้วยพนักงานจ้างชั่วคราวในหน่วยที่ขาดมาก');
+ if(frPos.length&&frPos[0][1][1]>0)add('info','ตำแหน่งที่ว่างมากที่สุด (จากแบบกรอกกรอบ)','<b>'+esc(frPos[0][0])+'</b> ว่าง '+frPos[0][1][1]+' อัตรา · มี รพ.สต. กรอกกรอบแล้ว '+frUnits+' จาก '+N+' แห่ง','ใช้ประกอบการวางแผนสอบแข่งขัน/คัดเลือกตามสายงาน');
+ if(EMR.length)add(conShare>=40?'warn':'info','โครงสร้างพนักงานจ้าง','จ้างเหมาบริการคิดเป็น <b>'+conShare+'%</b> ของพนักงานจ้างในบัญชี ('+f(CT)+' จาก '+f(EMR.length)+' คน) · ตำแหน่งมากสุดในบัญชี: <b>'+esc(posTop[0]?posTop[0][0]:'-')+'</b> ('+(posTop[0]?posTop[0][1]:0)+' คน)',conShare>=40?'สัดส่วนจ้างเหมาสูง เสี่ยงต่อความต่อเนื่องของบริการ ควรทบทวนการแปลงเป็นพนักงานจ้างตามกรอบ':'โครงสร้างอยู่ในระดับสมดุล ติดตามต่อเนื่อง');
+ add(emU===N?'ok':'warn','ความครบถ้วนบัญชีพนักงานจ้าง','กรอกบัญชีแล้ว <b>'+emU+'</b> จาก '+N+' แห่ง'+(emNone?' (แจ้งไม่มีพนักงานจ้าง '+emNone+' แห่ง)':'')+' · รวมพนักงานจ้างในบัญชี '+f(EMR.length)+' คน',emU<N?'แจ้ง รพ.สต. ที่ยังไม่กรอกบัญชี หรือติ๊ก “ไม่มีพนักงานจ้าง” หากไม่มี':'');
+ if(AR.length)add(minN?'warn':'ok','การปรับค่าจ้าง พกส./ลจช.','มีผู้เข้าข่ายปรับ <b>'+f(AR.length)+'</b> คน · ค่าจ้างเพิ่มรวม <b>'+f(Math.round(adInc))+'</b> บาท/เดือน (ประมาณ <b>'+dbM(adInc*12)+'</b>/ปี)'+(minN?' · <b>'+minN+'</b> คนค่าจ้างต่ำกว่าขั้นต่ำของบัญชี ต้องปรับขึ้นทันที':''),'ใช้ยอดนี้ประกอบการตั้งงบประมาณค่าจ้างปีถัดไป');
+ if(noN)add('warn','คุณภาพข้อมูลบัญชีค่าจ้าง','มี <b>'+noN+'</b> รายการที่ยังคำนวณไม่ได้ (ไม่พบอัตราในบัญชี/กรอกค่าจ้างไม่ครบ)','ให้ รพ.สต. เลือกกลุ่ม/ลักษณะการจ้างและกรอกค่าจ้างปัจจุบันให้ครบ');
+ if(psTot)add(psDn===psTot?'ok':'warn','สำรวจลูกจ้างวิชาชีพ/แพทย์แผนไทย/จพ.ทันตฯ','กรอกครบ <b>'+psDn+'</b> จาก '+psTot+' คน ('+dbP(psDn,psTot)+'%) ใน '+psUn+' แห่งที่ต้องกรอก · ค้างอีก <b>'+(psTot-psDn)+'</b> คน'+(grPs.length&&grPs[0][1]<100?' · '+(dbAm?'หน่วย':'อำเภอ')+'ที่ล่าช้าสุด: <b>'+esc(grPs[0][0])+'</b> ('+grPs[0][1]+'%)':''),psDn===psTot?'':'ติดตามหน่วยที่ยังไม่กรอก เพื่อใช้ข้อมูลวางแผนพัฒนาและเลื่อนระดับ');
+ const zero=X.filter(x=>stOf(x.u)==='pending'&&!x.fr&&!x.em).length;
+ add(progAll>=90?'ok':progAll>=50?'info':'bad','ความก้าวหน้าการกรอกข้อมูลภาพรวม','เฉลี่ย <b>'+progAll+'%</b> ของแบบทั้งหมด'+(zero?' · มี <b>'+zero+'</b> แห่งที่ยังไม่เริ่มกรอกอะไรเลย':''),zero?'ควรแจ้งเตือนหน่วยที่ยังไม่เริ่ม และกำหนดวันปิดรับข้อมูล':'');
+ if(m){const me=UA.find(x=>x.u.cd===m.u.cd);if(me){const u=m.u,mp=prog([me]);const ne=((me.em&&me.em.rows)||[]).length;add(me.fs.rep&&me.fs.vc>0?'warn':'info','รพ.สต. ของท่านเทียบกับ'+scope,(me.fs.rep?'ข้าราชการครองกรอบ <b>'+dbP(me.fs.fl,me.fs.tot)+'%</b> (กอง '+OCC+'%) · ว่าง '+me.fs.vc+' อัตรา':'ยังไม่ได้กรอกกรอบข้าราชการ')+' · '+(me.em?'พนักงานจ้างในบัญชี '+ne+' คน (เฉลี่ย '+(emU?Math.round(EMR.length/emU*10)/10:0)+' คน/แห่งที่กรอก)':'ยังไม่ได้กรอกบัญชีพนักงานจ้าง'),'ท่านกรอกแล้ว '+(mp.d+mp.fr+mp.em+mp.pd)+' จาก '+(3+mp.pl)+' แบบ')}}
+ /* ---------- ประกอบหน้า ---------- */
+ const ord={bad:0,warn:1,info:2,ok:3};I.sort((a,b)=>ord[a[0]]-ord[b[0]]);
+ const opts='<option value="">ทั้งหมด (149 แห่ง)</option>'+AM.map(a=>`<option${a===dbAm?' selected':''}>${esc(a)}</option>`).join('');
+ const grLab=dbAm?'รายหน่วยบริการ':'รายอำเภอ';
+ let h=`<div class="glass card dbbar"><label>📍 ขอบเขตข้อมูล <select id="dbAm" aria-label="เลือกอำเภอ">${opts}</select></label><span class="note">แสดง: ${esc(scope)} · ${N} แห่ง · ข้อมูลจากหน้ากรอบอัตรากำลังข้าราชการ และอัตรากำลังพนักงานจ้างที่ รพ.สต. กรอก (เรียลไทม์)</span><div class="dbjump"><button type="button" data-dbj="db1">🏛️ กรอบข้าราชการ</button><button type="button" data-dbj="db2">🧑‍🔧 พนักงานจ้าง</button><button type="button" data-dbj="db3">💰 ปรับค่าจ้าง</button><button type="button" data-dbj="db4">🩺 ลูกจ้างวิชาชีพ</button><button type="button" data-dbj="db5">📋 ความก้าวหน้า</button></div></div>`;
+ h+=`<div class="kpis"><div class="glass kpi"><b>${f(ALL)}</b><span>ข้าราชการ + พนักงานจ้าง ตามที่กรอก (คน)</span></div><div class="glass kpi"><b>${OCC}%</b><span>ข้าราชการครองกรอบ (${f(GIN)}/${f(FR)})</span></div><div class="glass kpi"><b>${f(VAC)}</b><span>อัตราข้าราชการที่ว่าง (ตามแบบที่กรอก)</span></div><div class="glass kpi"><b>${progAll}%</b><span>ความก้าวหน้าการกรอกข้อมูล</span></div></div>`;
+ h+=`<div class="glass card"><h2>🤖 AI วิเคราะห์ภาพรวม<span class="dbtag">AI Insight</span></h2><p class="note">ระบบวิเคราะห์อัตโนมัติจากข้อมูลทั้งหมดที่อยู่ในระบบ เรียงตามความเร่งด่วน (แดง = เร่งด่วน · เหลือง = ควรติดตาม · ฟ้า = ข้อสังเกต · เขียว = ปกติ)</p><div class="dbai">${I.map(i=>`<div class="insight ${i[0]}"><b>${i[1]}</b><br>${i[2]}${i[3]?`<small>💡 ${i[3]}</small>`:''}</div>`).join('')}</div></div>`;
+ /* 1 */
+ h+=dbSec(1,'#0A8F9E','กรอบอัตรากำลังข้าราชการ','จากหน้า “กรอบอัตรากำลังข้าราชการ” ที่ รพ.สต. กรอก · กรอกแล้ว '+RP.length+' จาก '+N+' แห่ง','db1');
+ h+=`<div class="dbgrid">${dbCard('สัดส่วนการครองกรอบ',dbDonut([['มีผู้ครองตำแหน่ง',GIN,'#0A8F9E'],['ตำแหน่งว่าง',VAC,'#E0584A'],['ยังไม่ได้กรอก',PEND,'#94A3B8']],OCC+'%','ครองกรอบ')+'<br>'+dbMini([[f(FRALL),'กรอบข้าราชการตามขนาด รพ.สต. (อัตรา)'],[f(GIN),'มีผู้ครอง (คน)','#4A63D8'],[f(VAC),'ว่าง (อัตรา)','#E0584A'],[f(RP.filter(x=>x.fs.vc>0).length),'รพ.สต. ที่มีตำแหน่งว่าง (แห่ง)','#F2A900']]))}
+ ${dbCard('ครองกรอบ / ว่าง '+grLab+' (เรียงตามจำนวนว่าง)',dbStack(grp.map(([n,l])=>[n,[sf(l,'fl'),sf(l,'vc'),sf(l,'tot')-sf(l,'fl')-sf(l,'vc')]]).sort((a,b)=>b[1][1]-a[1][1]),[['มีผู้ครอง','#0A8F9E'],['ว่าง','#E0584A'],['ยังไม่กรอก','#94A3B8']]))}
+ ${dbCard('อัตราว่างแยกตามขนาด รพ.สต. (%) · เฉพาะแห่งที่กรอกแล้ว',dbBars(sizes,{fmt:v=>v+'%',color:'#F2A900',max:100}))}
+ ${dbCard('10 อันดับ รพ.สต. ที่มีตำแหน่งว่างมากที่สุด (อัตรา)',topVac.length?dbBars(topVac,{color:'#E0584A'}):'<div class="insight ok">ไม่มีตำแหน่งว่างในแบบที่กรอกแล้ว</div>')}
+ ${dbCard('ตำแหน่งในกรอบ: มีผู้ครอง / ว่าง แยกตามตำแหน่ง',frPos.length?dbStack(frPos,[['มีผู้ครอง','#4A63D8'],['ว่าง','#E0584A']])+`<p class="note">สายวิชาชีพ ${lnV} คน · สายทั่วไป ${lnG} คน (เฉพาะที่กรอกแล้ว)</p>`:'<p class="note">ยังไม่มี รพ.สต. กรอกแบบกรอบอัตรากำลัง</p>')}</div>`;
+ /* 2 */
+ h+=dbSec(2,'#4A63D8','อัตรากำลังพนักงานจ้าง / จ้างเหมาบริการ','จากหน้า “อัตรากำลังพนักงานจ้าง/จ้างเหมาบริการ” ที่ รพ.สต. กรอก ('+emU+' จาก '+N+' แห่ง)','db2');
+ h+=`<div class="dbgrid">${dbCard('ประเภทพนักงานจ้าง',dbDonut([...EMTYP.map((t,i)=>[t.replace(' (พกส.)','').replace('พนักงานกระทรวงสาธารณสุข','พกส.'),tCnt[i],DBC[i]]),...(tOth?[['อื่น ๆ',tOth,'#64748B']]:[])],f(EMR.length),'คนในบัญชี')+'<br>'+dbMini([[emU+' / '+N,'รพ.สต. ที่กรอกบัญชีแล้ว (แห่ง)'],[f(EMR.length),'พนักงานจ้างในบัญชี (คน)','#4A63D8'],[conShare+'%','สัดส่วนจ้างเหมา','#E0584A'],[dbM(payM*12),'งบค่าจ้างต่อปี (ตามที่กรอก)','#16A34A']]))}
+ ${dbCard('ตำแหน่งพนักงานจ้าง 10 อันดับแรก (คน)',dbBars(posTop.map(r=>[r[0],r[1]]),{multi:1}))}
+ ${dbCard('ประเภทพนักงานจ้าง '+grLab,dbStack(grEm.slice(0,20),emSer))}
+ ${dbCard('วุฒิการศึกษา (คน)',dbBars(eduRows,{color:'#8B5CF6'}))}
+ ${dbCard('งบค่าจ้างต่อปี แยกประเภท (บาท)',dbBars(payT,{multi:1,fmt:v=>(v/1e6).toFixed(2)+' ล.'}))}</div>`;
+ /* 3 */
+ h+=dbSec(3,'#F2A900','บัญชีรายละเอียดการปรับค่าจ้าง พกส. และ ลจช.','คำนวณตามอัตราในบัญชี · ผู้เข้าข่าย '+f(AR.length)+' คน','db3');
+ h+=`<div class="dbgrid">${dbCard('ผลการปรับค่าจ้าง',dbDonut(Object.keys(DBST).filter(k=>stC[k]).map(k=>[DBST[k][0],stC[k],DBST[k][1]]),f(AR.length),'คนเข้าข่าย')+'<br>'+dbMini([[f(Math.round(adCur)),'ค่าจ้างรวมปัจจุบัน (บาท/เดือน)'],[f(Math.round(adNew)),'หลังปรับ (บาท/เดือน)','#4A63D8'],[f(Math.round(adInc)),'เพิ่มขึ้น (บาท/เดือน)','#16A34A'],[dbM(adInc*12),'ผลกระทบงบประมาณ/ปี','#E0584A']]))}
+ ${dbCard('เปรียบเทียบ พกส. กับ ลจช.',dbBars([['พกส. (จำนวนคน)',kP.length],['ลจช. (จำนวนคน)',kT.length]],{multi:1})+'<br>'+dbBars([['พกส. เพิ่ม บาท/เดือน',Math.round(incOf(kP))],['ลจช. เพิ่ม บาท/เดือน',Math.round(incOf(kT))]],{color:'#16A34A'}))}
+ ${dbCard('ค่าจ้างเพิ่มขึ้น '+grLab+' (บาท/เดือน)',dbBars(grAd.slice(0,20).map(r=>[r[0],Math.round(r[1]),r[2]+' คน']),{color:'#F2A900'}))}
+ ${dbCard('การกระจายค่าจ้างปัจจุบัน (คน)',dbBars(bands,{color:'#0EA5E9'}))}</div>`;
+ /* 4 */
+ h+=dbSec(4,'#16A34A','สำรวจลูกจ้าง พว.วิชาชีพ แพทย์แผนไทย จพ.ทันตกรรม','ต้องกรอก '+f(psTot)+' คน ใน '+psUn+' แห่ง','db4');
+ h+=`<div class="dbgrid">${dbCard('ความครบถ้วนการกรอก',dbDonut([['กรอกครบแล้ว',psDn,'#16A34A'],['ยังไม่ครบ',psTot-psDn,'#F97316']],dbP(psDn,psTot)+'%','กรอกครบ')+'<br>'+dbMini([[f(psTot),'ลูกจ้างที่ต้องสำรวจ (คน)'],[f(psDn),'กรอกครบ (คน)','#16A34A'],[f(psTot-psDn),'ค้าง (คน)','#F97316']]))}
+ ${dbCard('จำนวนตามตำแหน่ง × ประเภทการจ้าง (คน)',dbStack(psStack,[[PST[0],DBC[0]],[PST[1],DBC[1]],[PST[2],DBC[3]]]))}
+ ${dbCard('ความก้าวหน้าการกรอก '+grLab+' (%) · ช้าสุดอยู่บน',dbBars(grPs.slice(0,20).map(r=>[r[0],r[1],r[2]+' คน']),{max:100,fmt:v=>v+'%',color:'#16A34A'}))}
+ ${dbCard('วุฒิการศึกษา (ตามที่กรอก)',psEd.length?dbBars(psEd,{multi:1}):'<p class="note">ยังไม่มีข้อมูล</p>')}
+ ${dbCard('อายุงานของลูกจ้าง (คน)',dbBars(durB,{color:'#8B5CF6'}))}</div>`;
+ /* 5 */
+ h+=dbSec(5,'#E0584A','ความก้าวหน้าการกรอกข้อมูล','ร้อยละของ รพ.สต. ที่ดำเนินการแล้ว แยก'+grLab,'db5');
+ h+=dbCard('แผนที่ความก้าวหน้า (Heat map)',dbHeat([...heat,hAll],['ยืนยันอัตรากำลัง','กรอบข้าราชการ','พนักงานจ้าง/จ้างเหมา','สำรวจลูกจ้างวิชาชีพ'],dbAm?'รพ.สต.':'อำเภอ')+'<p class="note">สีเขียว ≥80% · เขียวอ่อน ≥50% · เหลือง ≥25% · ส้ม &lt;25% · แดง 0% · “—” = ไม่มีหน่วยที่ต้องกรอก · แบบปรับค่าจ้างคำนวณอัตโนมัติจากบัญชีพนักงานจ้าง</p>');
+ return h;
+}
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='dbAm'){dbAm=e.target.value;render()}});
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-dbj]');if(b){const el=document.getElementById(b.dataset.dbj);if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}});
+
 function unitHome(m){
  const u=m.u,a=pgDir(u),b=pgPs(u),n=dv().length;
  const sv=!SOPEN?{k:'na',d:'ขณะนี้ปิดรับข้อมูล'}:n?{k:'ok',d:'ส่งแล้ว '+n+' คน (เพิ่มคนอื่นได้)'}:{k:'none',d:''};
@@ -1910,7 +2086,8 @@ function unitHome(m){
  const req=tasks.slice(0,2).filter(x=>x[3].k!=='na'),done=req.filter(x=>x[3].k==='ok').length;
  return unitHead('🏥',esc(u.n),`รหัสสถานบริการ ${esc(u.cd)} · อำเภอ${esc(u.a)} · ขนาด ${esc(u.s)} · อัตรากำลังตามกรอบ ${u.fr} คน`)
  +`<div class="insight">งานที่ต้องดำเนินการของ รพ.สต. ท่าน: เสร็จแล้ว <b>${done}</b> จาก <b>${req.length}</b> รายการ${done===req.length?' 🎉 ครบแล้ว ขอบคุณครับ/ค่ะ':' · กดปุ่มในแต่ละการ์ดเพื่อไปกรอก'}</div>`
- +`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:16px">${tasks.map(x=>`<div class="glass card"><h2>${x[1]}</h2><p class="note">${x[2]}</p><p>${x[4]}</p><div class="actions"><button class="btn" type="button" data-act="go" data-i="${x[0]}">${x[3].k==='ok'?'ดู/แก้ไข':'ไปกรอกข้อมูล'}</button></div></div>`).join('')}</div>`;
+ +`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:16px">${tasks.map(x=>`<div class="glass card"><h2>${x[1]}</h2><p class="note">${x[2]}</p><p>${x[4]}</p><div class="actions"><button class="btn" type="button" data-act="go" data-i="${x[0]}">${x[3].k==='ok'?'ดู/แก้ไข':'ไปกรอกข้อมูล'}</button></div></div>`).join('')}</div>`
+ +dashBoard(m);
 }
 function unitDir(u){
  const s=stOf(u);
@@ -2473,7 +2650,7 @@ document.addEventListener('change',e=>{if(e.target&&e.target.id==='admU'){st.uni
 function unitView(v){const r=unitView0(v);return(r&&st.role==='admin'&&myUnit())?admBar()+r:r}
 function unitView0(v){
  if(st.role!=='staff'&&st.role!=='admin')return unitLogin();
- const m=myUnit();if(!m)return st.role==='admin'?admPick():unitNone();
+ const m=myUnit();if(!m)return st.role==='admin'?admPick()+(v==='dash'?dashBoard(null):''):unitNone();
  if(v==='dash')return unitHome(m);
  if(v==='dir')return unitDir(m.u);
  if(v==='frame')return unitFrame(m.u);
