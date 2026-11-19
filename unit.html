@@ -2086,10 +2086,21 @@ function dbAdList(k){
   return d>0?'<b style="color:#F97316">เกินขั้นสูง +'+f2(d)+'</b>':d===0?'<b style="color:#8B5CF6">เท่ากับขั้นสูง</b>':'ต่ำกว่าขั้นสูง '+f2(-d)};
  const nu=new Set(L.map(z=>z.u.n)).size,sum=L.reduce((a,z)=>a+(+z.R.h>0?+z.R.h:0),0),inc=L.reduce((a,z)=>a+(+z.oo>0?+z.oo:0),0);
  const body=L.length?`<div class="tw" style="max-height:60vh"><table class="adl-t"><thead><tr><th>ที่</th><th>อำเภอ</th><th>รพ.สต.</th><th>ชื่อ - สกุล</th><th>ประเภท</th><th>ตำแหน่ง</th><th>ลักษณะการจ้าง</th><th class="r">ค่าจ้างปัจจุบัน (บาท)</th><th class="r">ขั้นต่ำ</th><th class="r">ขั้นสูง</th><th>เทียบกับขั้นสูง</th><th class="r">ค่าจ้างหลังปรับ</th><th class="r">เพิ่ม/เดือน</th></tr></thead><tbody>${L.map((z,i)=>`<tr><td class="n">${i+1}</td><td>${esc(z.u.a||'')}</td><td>${esc(z.u.n||'')}</td><td>${esc(z.x.nm||'')}</td><td>${esc(z.x.typ||'')}</td><td>${esc(z.x.pos||'')}</td><td>${esc((z.x.grp?z.x.grp+' · ':'')+(z.x.hire||''))}</td><td class="r"><b>${num(z.R.h)}</b></td><td class="r">${num(z.R.mn)}</td><td class="r">${num(z.R.mx)}</td><td>${cmp(z)}</td><td class="r">${num(z.n)}</td><td class="r">${+z.oo>0?'+'+f2(z.oo):'0'}</td></tr>`).join('')}</tbody></table></div>`:'<p class="note">ไม่มีรายการ</p>';
- $('#udc').innerHTML=`<h2 style="margin:0 0 4px"><i style="display:inline-block;width:14px;height:14px;border-radius:4px;background:${st[1]};margin-right:8px"></i>${esc(st[0])}</h2><p class="note">${esc(ADST[k]||'')} · ขอบเขต: ${dbAm?'อำเภอ'+esc(dbAm):'ทั้งจังหวัด'}</p><div class="adl-sum"><span>${f(L.length)} คน</span><span>${f(nu)} รพ.สต.</span><span>ค่าจ้างรวม ${f2(sum)} บาท/เดือน</span>${inc>0?`<span>ปรับเพิ่มรวม ${f2(inc)} บาท/เดือน</span>`:''}</div>${body}<div class="actions"><button class="btn sec" data-x>ปิด</button></div>`;
+ $('#udc').innerHTML=`<h2 style="margin:0 0 4px"><i style="display:inline-block;width:14px;height:14px;border-radius:4px;background:${st[1]};margin-right:8px"></i>${esc(st[0])}</h2><p class="note">${esc(ADST[k]||'')} · ขอบเขต: ${dbAm?'อำเภอ'+esc(dbAm):'ทั้งจังหวัด'}</p><div class="adl-sum"><span>${f(L.length)} คน</span><span>${f(nu)} รพ.สต.</span><span>ค่าจ้างรวม ${f2(sum)} บาท/เดือน</span>${inc>0?`<span>ปรับเพิ่มรวม ${f2(inc)} บาท/เดือน</span>`:''}</div>${body}<div class="actions">${L.length?'<button class="btn" type="button" data-dbx="'+k+'">⬇️ ดาวน์โหลด Excel</button>':''}<button class="btn sec" data-x>ปิด</button></div>`;
  if(!$('#ud').open)$('#ud').showModal();
 }
-document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-dbst]');if(b)dbAdList(b.dataset.dbst)});
+function dbAdXlsx(k){
+ const th=(a,b)=>String(a||'').localeCompare(String(b||''),'th');
+ const L=(window.ADLIST||[]).filter(z=>z.R.st===k).sort((a,b)=>th(a.u.a,b.u.a)||th(a.u.n,b.u.n)||th(a.x.nm,b.x.nm));
+ const st=(DBST[k]||[k])[0],nv=v=>(+v>0?+v:'');
+ const cmp=z=>{const h=+z.R.h,mx=+z.R.mx;if(!(h>0)||!(mx>0))return'';const d=Math.round((h-mx)*100)/100;return d>0?'เกินขั้นสูง':d===0?'เท่ากับขั้นสูง':'ต่ำกว่าขั้นสูง'};
+ const H=['ลำดับ','อำเภอ','ชื่อ รพ.สต.','ชื่อ - สกุล','ประเภทพนักงานจ้าง','ตำแหน่ง','ลักษณะการจ้าง','ค่าจ้างปัจจุบัน (บาท)','อัตราขั้นต่ำ (บาท)','อัตราขั้นสูง (บาท)','เทียบกับขั้นสูง','ส่วนต่างจากขั้นสูง (บาท)','ค่าจ้างหลังปรับ (บาท)','ปรับเพิ่มต่อเดือน (บาท)','หมายเหตุ'];
+ const R=L.map((z,i)=>[i+1,z.u.a||'',z.u.n||'',z.x.nm||'',z.x.typ||'',z.x.pos||'',(z.x.grp?z.x.grp+' · ':'')+(z.x.hire||''),nv(z.R.h),nv(z.R.mn),nv(z.R.mx),cmp(z),(+z.R.h>0&&+z.R.mx>0)?Math.round((z.R.h-z.R.mx)*100)/100:'',nv(z.n),+z.oo>0?+z.oo:0,z.R.inf||'']);
+ const aoa=[['บัญชีปรับค่าจ้าง พกส. และ ลจช. · สถานะ: '+st],['ขอบเขต: '+(dbAm?'อำเภอ'+dbAm:'ทั้งจังหวัด')+' · '+L.length+' คน'],[],H,...R];
+ if(!window.XLSX){alert('โหลดตัวสร้างไฟล์ Excel ไม่ได้ (ต้องเชื่อมต่ออินเทอร์เน็ต) จึงดาวน์โหลดเป็น CSV แทน');csv(H,R);return}
+ exXlsx(aoa,[7,14,28,28,30,28,40,16,14,14,16,18,16,16,40],'รายชื่อ','ปรับค่าจ้าง_'+exSafe(st)+(dbAm?'_'+exSafe(dbAm):'')+'.xlsx');
+}
+document.addEventListener('click',e=>{const x=e.target.closest&&e.target.closest('[data-dbx]');if(x){dbAdXlsx(x.dataset.dbx);return}const b=e.target.closest&&e.target.closest('[data-dbst]');if(b)dbAdList(b.dataset.dbst)});
 document.addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const b=e.target.closest&&e.target.closest('li[data-dbst]');if(b){e.preventDefault();dbAdList(b.dataset.dbst)}});
 document.addEventListener('change',e=>{if(e.target&&e.target.id==='dbAm'){dbAm=e.target.value;render()}});
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-dbj]');if(b){const el=document.getElementById(b.dataset.dbj);if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}});
