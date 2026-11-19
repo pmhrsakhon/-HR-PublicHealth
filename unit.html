@@ -697,6 +697,12 @@ table{font-size:.82rem}
 .dbdb{font-size:17px;font-weight:700;fill:var(--tx)}.dbds{font-size:7.5px;fill:var(--mut);font-weight:600}
 .dbleg{list-style:none;margin:0;padding:0;display:grid;gap:6px;flex:1;min-width:170px;font-size:.9rem}
 .dbleg li{display:grid;grid-template-columns:14px 1fr auto auto;gap:8px;align-items:center}
+.dbleg li[data-dbst]{cursor:pointer;padding:4px 8px;margin:0 -8px;border-radius:10px;transition:background .15s}
+.dbleg li[data-dbst]:hover,.dbleg li[data-dbst]:focus-visible{background:color-mix(in srgb,var(--ac) 14%,transparent);outline:none}
+.dbleg li[data-dbst] span{text-decoration:underline dotted;text-underline-offset:3px}
+.dbdn circle[data-dbst]{cursor:pointer}
+.adl-t td,.adl-t th{white-space:nowrap}.adl-t td.r,.adl-t th.r{text-align:right}
+.adl-sum{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}.adl-sum span{padding:4px 12px;border-radius:999px;background:var(--acs);font-weight:600;font-size:.88rem}
 .dbleg i,.dbleg2 i{width:12px;height:12px;border-radius:4px;display:inline-block}
 .dbleg small{color:var(--mut);min-width:46px;text-align:right}
 .dbleg2{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:.84rem;font-weight:600;margin-bottom:6px}
@@ -1954,8 +1960,8 @@ const dbSh=n=>String(n||'').replace(/^รพ\.สต\./,'').replace(/^บ้า�
 const dbM=n=>n>=1e6?(n/1e6).toFixed(2)+' ล้านบาท':f(Math.round(n))+' บาท';
 function dbDonut(parts,big,small){
  const T=parts.reduce((a,p)=>a+p[1],0),C=2*Math.PI*46;let off=0;
- const seg=T?parts.filter(p=>p[1]>0).map(p=>{const l=p[1]/T*C,s=`<circle cx="60" cy="60" r="46" fill="none" stroke="${p[2]}" stroke-width="16" stroke-dasharray="${l.toFixed(2)} ${(C-l).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 60 60)"><title>${esc(p[0])}: ${f(p[1])} (${dbP(p[1],T)}%)</title></circle>`;off+=l;return s}).join(''):'';
- return `<div class="dbdn"><svg viewBox="0 0 120 120" role="img" aria-label="${esc(big+' '+small)}"><circle cx="60" cy="60" r="46" fill="none" stroke="rgba(110,140,160,.22)" stroke-width="16"/>${seg}<text x="60" y="60" text-anchor="middle" class="dbdb">${esc(big)}</text><text x="60" y="74" text-anchor="middle" class="dbds">${esc(small)}</text></svg><ul class="dbleg">${parts.map(p=>`<li><i style="background:${p[2]}"></i><span>${esc(p[0])}</span><b>${f(p[1])}</b><small>${dbP(p[1],T)}%</small></li>`).join('')}</ul></div>`}
+ const seg=T?parts.filter(p=>p[1]>0).map(p=>{const l=p[1]/T*C,s=`<circle cx="60" cy="60" r="46" fill="none" stroke="${p[2]}" stroke-width="16" stroke-dasharray="${l.toFixed(2)} ${(C-l).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 60 60)"${p[3]?` data-dbst="${p[3]}"`:''}><title>${esc(p[0])}: ${f(p[1])} (${dbP(p[1],T)}%)</title></circle>`;off+=l;return s}).join(''):'';
+ return `<div class="dbdn"><svg viewBox="0 0 120 120" role="img" aria-label="${esc(big+' '+small)}"><circle cx="60" cy="60" r="46" fill="none" stroke="rgba(110,140,160,.22)" stroke-width="16"/>${seg}<text x="60" y="60" text-anchor="middle" class="dbdb">${esc(big)}</text><text x="60" y="74" text-anchor="middle" class="dbds">${esc(small)}</text></svg><ul class="dbleg">${parts.map(p=>`<li${p[3]?` data-dbst="${p[3]}" tabindex="0" role="button" title="คลิกเพื่อดูรายชื่อ"`:''}><i style="background:${p[2]}"></i><span>${esc(p[0])}</span><b>${f(p[1])}</b><small>${dbP(p[1],T)}%</small></li>`).join('')}</ul></div>`}
 function dbBars(rows,o){o=o||{};if(!rows.length)return '<p class="note">ยังไม่มีข้อมูล</p>';const m=o.max||Math.max(1,...rows.map(r=>r[1]));
  return `<div class="dbbs">${rows.map((r,i)=>`<div class="dbb"><span title="${esc(r[0])}${r[2]?' · '+esc(r[2]):''}">${esc(r[0])}${r[2]?`<small>${esc(r[2])}</small>`:''}</span><div class="dbt"><div class="dbf" style="width:${r[1]>0?Math.max(2,r[1]/m*100):0}%;background:${o.multi?DBC[i%DBC.length]:(o.color||DBC[0])}"></div></div><b>${o.fmt?o.fmt(r[1]):f(r[1])}</b></div>`).join('')}</div>`}
 function dbStack(rows,ser){if(!rows.length)return '<p class="note">ยังไม่มีข้อมูล</p>';const m=Math.max(1,...rows.map(r=>sm(r[1])));
@@ -1997,7 +2003,7 @@ function dashBoard(m){
  const CT=tCnt[3],conShare=dbP(CT,EMR.length),ALL=GIN+EMR.length;
  /* ---------- 3) ปรับค่าจ้าง พกส./ลจช. ---------- */
  const AR=[];X.forEach(x=>x.ad.rows.forEach(z=>AR.push({u:x.u,...z})));
- const stC={};AR.forEach(z=>{stC[z.R.st]=(stC[z.R.st]||0)+1});
+ window.ADLIST=AR;const stC={};AR.forEach(z=>{stC[z.R.st]=(stC[z.R.st]||0)+1});
  const adCur=AR.reduce((a,z)=>a+(+z.R.h>0?+z.R.h:0),0),adNew=AR.reduce((a,z)=>a+(+z.n>0?+z.n:0),0),adInc=AR.reduce((a,z)=>a+(+z.oo>0?+z.oo:0),0);
  const kP=AR.filter(z=>adKind(z.x)==='P'),kT=AR.filter(z=>adKind(z.x)==='T');
  const incOf=l=>l.reduce((a,z)=>a+(+z.oo>0?+z.oo:0),0);
@@ -2055,7 +2061,7 @@ function dashBoard(m){
  ${dbCard('งบค่าจ้างต่อปี แยกประเภท (บาท)',dbBars(payT,{multi:1,fmt:v=>(v/1e6).toFixed(2)+' ล.'}))}</div>`;
  /* 3 */
  h+=dbSec(3,'#F2A900','บัญชีรายละเอียดการปรับค่าจ้าง พกส. และ ลจช.','คำนวณตามอัตราในบัญชี · ผู้เข้าข่าย '+f(AR.length)+' คน','db3');
- h+=`<div class="dbgrid">${dbCard('ผลการปรับค่าจ้าง',dbDonut(Object.keys(DBST).filter(k=>stC[k]).map(k=>[DBST[k][0],stC[k],DBST[k][1]]),f(AR.length),'คนเข้าข่าย')+'<br>'+dbMini([[f(Math.round(adCur)),'ค่าจ้างรวมปัจจุบัน (บาท/เดือน)'],[f(Math.round(adNew)),'หลังปรับ (บาท/เดือน)','#4A63D8'],[f(Math.round(adInc)),'เพิ่มขึ้น (บาท/เดือน)','#16A34A'],[dbM(adInc*12),'ผลกระทบงบประมาณ/ปี','#E0584A']]))}
+ h+=`<div class="dbgrid">${dbCard('ผลการปรับค่าจ้าง',dbDonut(Object.keys(DBST).filter(k=>stC[k]).map(k=>[DBST[k][0],stC[k],DBST[k][1],k]),f(AR.length),'คนเข้าข่าย')+'<br>'+dbMini([[f(Math.round(adCur)),'ค่าจ้างรวมปัจจุบัน (บาท/เดือน)'],[f(Math.round(adNew)),'หลังปรับ (บาท/เดือน)','#4A63D8'],[f(Math.round(adInc)),'เพิ่มขึ้น (บาท/เดือน)','#16A34A'],[dbM(adInc*12),'ผลกระทบงบประมาณ/ปี','#E0584A']])+'<p class="note">👆 คลิกที่แถวสถานะ (เช่น ถึงขั้นสูงแล้ว / เกินขั้นสูง) เพื่อดูรายชื่อ รพ.สต. และค่าจ้าง</p>')}
  ${dbCard('เปรียบเทียบ พกส. กับ ลจช.',dbBars([['พกส. (จำนวนคน)',kP.length],['ลจช. (จำนวนคน)',kT.length]],{multi:1})+'<br>'+dbBars([['พกส. เพิ่ม บาท/เดือน',Math.round(incOf(kP))],['ลจช. เพิ่ม บาท/เดือน',Math.round(incOf(kT))]],{color:'#16A34A'}))}
  ${dbCard('ค่าจ้างเพิ่มขึ้น '+grLab+' (บาท/เดือน)',dbBars(grAd.slice(0,20).map(r=>[r[0],Math.round(r[1]),r[2]+' คน']),{color:'#F2A900'}))}
  ${dbCard('การกระจายค่าจ้างปัจจุบัน (คน)',dbBars(bands,{color:'#0EA5E9'}))}</div>`;
@@ -2071,6 +2077,20 @@ function dashBoard(m){
  h+=dbCard('แผนที่ความก้าวหน้า (Heat map)',dbHeat([...heat,hAll],['ยืนยันอัตรากำลัง','กรอบข้าราชการ','พนักงานจ้าง/จ้างเหมา','สำรวจลูกจ้างวิชาชีพ'],dbAm?'รพ.สต.':'อำเภอ')+'<p class="note">สีเขียว ≥80% · เขียวอ่อน ≥50% · เหลือง ≥25% · ส้ม &lt;25% · แดง 0% · “—” = ไม่มีหน่วยที่ต้องกรอก · แบบปรับค่าจ้างคำนวณอัตโนมัติจากบัญชีพนักงานจ้าง</p>');
  return h;
 }
+/* ===== คลิกสถานะในวงกลม "ผลการปรับค่าจ้าง" → รายชื่อผู้เข้าข่ายสถานะนั้น ===== */
+function dbAdList(k){
+ const th=(a,b)=>String(a||'').localeCompare(String(b||''),'th');
+ const L=(window.ADLIST||[]).filter(z=>z.R.st===k).sort((a,b)=>th(a.u.a,b.u.a)||th(a.u.n,b.u.n)||th(a.x.nm,b.x.nm));
+ const st=DBST[k]||[k,'#64748B'],num=v=>(+v>0?f2(v):'-');
+ const cmp=z=>{const h=+z.R.h,mx=+z.R.mx;if(!(h>0)||!(mx>0))return'-';const d=Math.round((h-mx)*100)/100;
+  return d>0?'<b style="color:#F97316">เกินขั้นสูง +'+f2(d)+'</b>':d===0?'<b style="color:#8B5CF6">เท่ากับขั้นสูง</b>':'ต่ำกว่าขั้นสูง '+f2(-d)};
+ const nu=new Set(L.map(z=>z.u.n)).size,sum=L.reduce((a,z)=>a+(+z.R.h>0?+z.R.h:0),0),inc=L.reduce((a,z)=>a+(+z.oo>0?+z.oo:0),0);
+ const body=L.length?`<div class="tw" style="max-height:60vh"><table class="adl-t"><thead><tr><th>ที่</th><th>อำเภอ</th><th>รพ.สต.</th><th>ชื่อ - สกุล</th><th>ประเภท</th><th>ตำแหน่ง</th><th>ลักษณะการจ้าง</th><th class="r">ค่าจ้างปัจจุบัน (บาท)</th><th class="r">ขั้นต่ำ</th><th class="r">ขั้นสูง</th><th>เทียบกับขั้นสูง</th><th class="r">ค่าจ้างหลังปรับ</th><th class="r">เพิ่ม/เดือน</th></tr></thead><tbody>${L.map((z,i)=>`<tr><td class="n">${i+1}</td><td>${esc(z.u.a||'')}</td><td>${esc(z.u.n||'')}</td><td>${esc(z.x.nm||'')}</td><td>${esc(z.x.typ||'')}</td><td>${esc(z.x.pos||'')}</td><td>${esc((z.x.grp?z.x.grp+' · ':'')+(z.x.hire||''))}</td><td class="r"><b>${num(z.R.h)}</b></td><td class="r">${num(z.R.mn)}</td><td class="r">${num(z.R.mx)}</td><td>${cmp(z)}</td><td class="r">${num(z.n)}</td><td class="r">${+z.oo>0?'+'+f2(z.oo):'0'}</td></tr>`).join('')}</tbody></table></div>`:'<p class="note">ไม่มีรายการ</p>';
+ $('#udc').innerHTML=`<h2 style="margin:0 0 4px"><i style="display:inline-block;width:14px;height:14px;border-radius:4px;background:${st[1]};margin-right:8px"></i>${esc(st[0])}</h2><p class="note">${esc(ADST[k]||'')} · ขอบเขต: ${dbAm?'อำเภอ'+esc(dbAm):'ทั้งจังหวัด'}</p><div class="adl-sum"><span>${f(L.length)} คน</span><span>${f(nu)} รพ.สต.</span><span>ค่าจ้างรวม ${f2(sum)} บาท/เดือน</span>${inc>0?`<span>ปรับเพิ่มรวม ${f2(inc)} บาท/เดือน</span>`:''}</div>${body}<div class="actions"><button class="btn sec" data-x>ปิด</button></div>`;
+ if(!$('#ud').open)$('#ud').showModal();
+}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-dbst]');if(b)dbAdList(b.dataset.dbst)});
+document.addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const b=e.target.closest&&e.target.closest('li[data-dbst]');if(b){e.preventDefault();dbAdList(b.dataset.dbst)}});
 document.addEventListener('change',e=>{if(e.target&&e.target.id==='dbAm'){dbAm=e.target.value;render()}});
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-dbj]');if(b){const el=document.getElementById(b.dataset.dbj);if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}});
 
