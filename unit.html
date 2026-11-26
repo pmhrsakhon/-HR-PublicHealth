@@ -1972,6 +1972,8 @@ function dbHeat(rows,cols,h0){
 const dbSec=(n,c,t,s,id)=>`<div class="dbsh" id="${id}" style="--c:${c}"><i>${n}</i><div><h2>${t}</h2><p class="note">${s}</p></div></div>`;
 const dbCard=(t,b,x)=>`<div class="glass card"${x?' '+x:''}><h3>${t}</h3>${b}</div>`;
 const dbMini=a=>`<div class="dbmini">${a.map(x=>`<div style="--c:${x[2]||'var(--ac)'}"><b>${x[0]}</b><span>${x[1]}</span></div>`).join('')}</div>`;
+/* วุฒิที่จ้าง (ลักษณะการจ้าง) ขึ้นต้นด้วย “ปริญญาตรี” เท่านั้น (ไม่รวมปริญญาโท/วุฒิบัตรที่ต่อจากปริญญาตรี) */
+const adBach=x=>/^ปริญญาตรี/.test(adNorm(x&&x.hire));
 const DBST={min:['ต่ำกว่าขั้นต่ำ → ปรับเป็นขั้นต่ำ','#E0584A'],p1:['ปรับเพิ่ม 1%','#16A34A'],cap:['ปรับถึงขั้นสูง','#4A63D8'],max:['ถึงขั้นสูงแล้ว','#8B5CF6'],over:['เกินขั้นสูง','#F97316'],noacct:['ไม่พบอัตราในบัญชี','#64748B'],inc:['ค่าจ้างยังไม่ครบ','#F2A900']};
 
 function dbFs(u,r){const sp=FRS[String(u.s||'').trim().toUpperCase()],tot=sp?sp.reduce((a,g)=>a+g[1].length,0):0;let fl=0,vc=0;if(r&&r.rows&&sp)r.rows.slice(0,tot).forEach(x=>{if(!x)return;if(x.nm==='ว่าง')vc++;else if(String(x.nm||'').trim())fl++});return{tot,fl,vc,rep:!!(r&&sp)}}
@@ -2010,6 +2012,8 @@ function dashBoard(m){
  const bands=[['< 10,000',0,10000],['10,000 – 12,999',10000,13000],['13,000 – 15,999',13000,16000],['16,000 – 19,999',16000,20000],['20,000 – 24,999',20000,25000],['≥ 25,000',25000,1e12]].map(b=>[b[0],AR.filter(z=>+z.R.h>=b[1]&&+z.R.h<b[2]).length]);
  const grAd=grp.map(([n,l])=>{const r=[];l.forEach(x=>x.ad.rows.forEach(z=>r.push(z)));return[n,incOf(r),r.length]}).filter(r=>r[2]>0).sort((a,b)=>b[1]-a[1]);
  const minN=stC.min||0,noN=(stC.noacct||0)+(stC.inc||0);
+ const BR=AR.filter(z=>adBach(z.x)),bC={};BR.forEach(z=>{bC[z.R.st]=(bC[z.R.st]||0)+1});
+ const bCur=BR.reduce((a,z)=>a+(+z.R.h>0?+z.R.h:0),0),bNew=BR.reduce((a,z)=>a+(+z.n>0?+z.n:0),0),bInc=incOf(BR),bKP=BR.filter(z=>adKind(z.x)==='P').length,bKT=BR.filter(z=>adKind(z.x)==='T').length;
  /* ---------- 4) สำรวจลูกจ้างวิชาชีพ ---------- */
  const PA=[];X.forEach(x=>x.ps.forEach(s=>PA.push({u:x.u,s,r:psRow(x.u,s)})));
  const psDn=PA.filter(z=>psDone(z.r)).length,psTot=PA.length,psUn=X.filter(x=>x.ps.length).length;
@@ -2064,7 +2068,8 @@ function dashBoard(m){
  h+=`<div class="dbgrid">${dbCard('ผลการปรับค่าจ้าง',dbDonut(Object.keys(DBST).filter(k=>stC[k]).map(k=>[DBST[k][0],stC[k],DBST[k][1],k]),f(AR.length),'คนเข้าข่าย')+'<br>'+dbMini([[f(Math.round(adCur)),'ค่าจ้างรวมปัจจุบัน (บาท/เดือน)'],[f(Math.round(adNew)),'หลังปรับ (บาท/เดือน)','#4A63D8'],[f(Math.round(adInc)),'เพิ่มขึ้น (บาท/เดือน)','#16A34A'],[dbM(adInc*12),'ผลกระทบงบประมาณ/ปี','#E0584A']])+'<p class="note">👆 คลิกที่แถวสถานะ (เช่น ถึงขั้นสูงแล้ว / เกินขั้นสูง) เพื่อดูรายชื่อ รพ.สต. และค่าจ้าง</p>')}
  ${dbCard('เปรียบเทียบ พกส. กับ ลจช.',dbBars([['พกส. (จำนวนคน)',kP.length],['ลจช. (จำนวนคน)',kT.length]],{multi:1})+'<br>'+dbBars([['พกส. เพิ่ม บาท/เดือน',Math.round(incOf(kP))],['ลจช. เพิ่ม บาท/เดือน',Math.round(incOf(kT))]],{color:'#16A34A'}))}
  ${dbCard('ค่าจ้างเพิ่มขึ้น '+grLab+' (บาท/เดือน)',dbBars(grAd.slice(0,20).map(r=>[r[0],Math.round(r[1]),r[2]+' คน']),{color:'#F2A900'}))}
- ${dbCard('การกระจายค่าจ้างปัจจุบัน (คน)',dbBars(bands,{color:'#0EA5E9'}))}</div>`;
+ ${dbCard('การกระจายค่าจ้างปัจจุบัน (คน)',dbBars(bands,{color:'#0EA5E9'}))}
+ ${dbCard('พนักงานจ้าง (พกส. และ ลจช.) วุฒิที่จ้าง=ปริญญาตรี',BR.length?dbDonut(Object.keys(DBST).filter(k=>bC[k]).map(k=>[DBST[k][0],bC[k],DBST[k][1],'B:'+k]),f(BR.length),'คนวุฒิปริญญาตรี')+'<br>'+dbMini([[f(BR.length)+' / '+f(AR.length),'ผู้เข้าข่ายวุฒิปริญญาตรี (ร้อยละ '+dbP(BR.length,AR.length)+') · พกส. '+f(bKP)+' · ลจช. '+f(bKT)+' คน'],[f(Math.round(bCur)),'ค่าจ้างรวมปัจจุบัน (บาท/เดือน)'],[f(Math.round(bNew)),'หลังปรับ (บาท/เดือน)','#4A63D8'],[f(Math.round(bInc)),'เพิ่มขึ้น (บาท/เดือน)','#16A34A'],[dbM(bInc*12),'ผลกระทบงบประมาณ/ปี','#E0584A']])+'<p class="note">นับเฉพาะผู้ที่ “ลักษณะการจ้าง/วุฒิที่จ้าง” เป็นวุฒิปริญญาตรี · 👆 คลิกที่แถวสถานะเพื่อดูรายชื่อ รพ.สต. และค่าจ้าง</p>':'<p class="note">ยังไม่มีพนักงานจ้าง (พกส. และ ลจช.) ที่วุฒิที่จ้างเป็นปริญญาตรี</p>','style="grid-column:1/-1"')}</div>`;
  /* 4 */
  h+=dbSec(4,'#16A34A','สำรวจลูกจ้าง พว.วิชาชีพ แพทย์แผนไทย จพ.ทันตกรรม','ต้องกรอก '+f(psTot)+' คน ใน '+psUn+' แห่ง','db4');
  h+=`<div class="dbgrid">${dbCard('ความครบถ้วนการกรอก',dbDonut([['กรอกครบแล้ว',psDn,'#16A34A'],['ยังไม่ครบ',psTot-psDn,'#F97316']],dbP(psDn,psTot)+'%','กรอกครบ')+'<br>'+dbMini([[f(psTot),'ลูกจ้างที่ต้องสำรวจ (คน)'],[f(psDn),'กรอกครบ (คน)','#16A34A'],[f(psTot-psDn),'ค้าง (คน)','#F97316']]))}
@@ -2079,20 +2084,22 @@ function dashBoard(m){
 }
 /* ===== คลิกสถานะในวงกลม "ผลการปรับค่าจ้าง" → รายชื่อผู้เข้าข่ายสถานะนั้น ===== */
 function dbAdList(k){
+ const bf=/^B:/.test(k),sk=bf?k.slice(2):k;
  const th=(a,b)=>String(a||'').localeCompare(String(b||''),'th');
- const L=(window.ADLIST||[]).filter(z=>z.R.st===k).sort((a,b)=>th(a.u.a,b.u.a)||th(a.u.n,b.u.n)||th(a.x.nm,b.x.nm));
- const st=DBST[k]||[k,'#64748B'],num=v=>(+v>0?f2(v):'-');
+ const L=(window.ADLIST||[]).filter(z=>z.R.st===sk&&(!bf||adBach(z.x))).sort((a,b)=>th(a.u.a,b.u.a)||th(a.u.n,b.u.n)||th(a.x.nm,b.x.nm));
+ const st=DBST[sk]||[sk,'#64748B'],num=v=>(+v>0?f2(v):'-');
  const cmp=z=>{const h=+z.R.h,mx=+z.R.mx;if(!(h>0)||!(mx>0))return'-';const d=Math.round((h-mx)*100)/100;
   return d>0?'<b style="color:#F97316">เกินขั้นสูง +'+f2(d)+'</b>':d===0?'<b style="color:#8B5CF6">เท่ากับขั้นสูง</b>':'ต่ำกว่าขั้นสูง '+f2(-d)};
  const nu=new Set(L.map(z=>z.u.n)).size,sum=L.reduce((a,z)=>a+(+z.R.h>0?+z.R.h:0),0),inc=L.reduce((a,z)=>a+(+z.oo>0?+z.oo:0),0);
  const body=L.length?`<div class="tw" style="max-height:60vh"><table class="adl-t"><thead><tr><th>ที่</th><th>อำเภอ</th><th>รพ.สต.</th><th>ชื่อ - สกุล</th><th>ประเภท</th><th>ตำแหน่ง</th><th>ลักษณะการจ้าง</th><th class="r">ค่าจ้างปัจจุบัน (บาท)</th><th class="r">ขั้นต่ำ</th><th class="r">ขั้นสูง</th><th>เทียบกับขั้นสูง</th><th class="r">ค่าจ้างหลังปรับ</th><th class="r">เพิ่ม/เดือน</th></tr></thead><tbody>${L.map((z,i)=>`<tr><td class="n">${i+1}</td><td>${esc(z.u.a||'')}</td><td>${esc(z.u.n||'')}</td><td>${esc(z.x.nm||'')}</td><td>${esc(z.x.typ||'')}</td><td>${esc(z.x.pos||'')}</td><td>${esc((z.x.grp?z.x.grp+' · ':'')+(z.x.hire||''))}</td><td class="r"><b>${num(z.R.h)}</b></td><td class="r">${num(z.R.mn)}</td><td class="r">${num(z.R.mx)}</td><td>${cmp(z)}</td><td class="r">${num(z.n)}</td><td class="r">${+z.oo>0?'+'+f2(z.oo):'0'}</td></tr>`).join('')}</tbody></table></div>`:'<p class="note">ไม่มีรายการ</p>';
- $('#udc').innerHTML=`<h2 style="margin:0 0 4px"><i style="display:inline-block;width:14px;height:14px;border-radius:4px;background:${st[1]};margin-right:8px"></i>${esc(st[0])}</h2><p class="note">${esc(ADST[k]||'')} · ขอบเขต: ${dbAm?'อำเภอ'+esc(dbAm):'ทั้งจังหวัด'}</p><div class="adl-sum"><span>${f(L.length)} คน</span><span>${f(nu)} รพ.สต.</span><span>ค่าจ้างรวม ${f2(sum)} บาท/เดือน</span>${inc>0?`<span>ปรับเพิ่มรวม ${f2(inc)} บาท/เดือน</span>`:''}</div>${body}<div class="actions">${L.length?'<button class="btn" type="button" data-dbx="'+k+'">⬇️ ดาวน์โหลด Excel</button>':''}<button class="btn sec" data-x>ปิด</button></div>`;
+ $('#udc').innerHTML=`<h2 style="margin:0 0 4px"><i style="display:inline-block;width:14px;height:14px;border-radius:4px;background:${st[1]};margin-right:8px"></i>${esc(st[0])}${bf?' · วุฒิที่จ้าง=ปริญญาตรี':''}</h2><p class="note">${esc(ADST[sk]||'')} · ขอบเขต: ${dbAm?'อำเภอ'+esc(dbAm):'ทั้งจังหวัด'}</p><div class="adl-sum"><span>${f(L.length)} คน</span><span>${f(nu)} รพ.สต.</span><span>ค่าจ้างรวม ${f2(sum)} บาท/เดือน</span>${inc>0?`<span>ปรับเพิ่มรวม ${f2(inc)} บาท/เดือน</span>`:''}</div>${body}<div class="actions">${L.length?'<button class="btn" type="button" data-dbx="'+k+'">⬇️ ดาวน์โหลด Excel</button>':''}<button class="btn sec" data-x>ปิด</button></div>`;
  if(!$('#ud').open)$('#ud').showModal();
 }
 function dbAdXlsx(k){
+ const bf=/^B:/.test(k),sk=bf?k.slice(2):k;
  const th=(a,b)=>String(a||'').localeCompare(String(b||''),'th');
- const L=(window.ADLIST||[]).filter(z=>z.R.st===k).sort((a,b)=>th(a.u.a,b.u.a)||th(a.u.n,b.u.n)||th(a.x.nm,b.x.nm));
- const st=(DBST[k]||[k])[0],nv=v=>(+v>0?+v:'');
+ const L=(window.ADLIST||[]).filter(z=>z.R.st===sk&&(!bf||adBach(z.x))).sort((a,b)=>th(a.u.a,b.u.a)||th(a.u.n,b.u.n)||th(a.x.nm,b.x.nm));
+ const st=(DBST[sk]||[sk])[0]+(bf?' · วุฒิที่จ้าง=ปริญญาตรี':''),nv=v=>(+v>0?+v:'');
  const cmp=z=>{const h=+z.R.h,mx=+z.R.mx;if(!(h>0)||!(mx>0))return'';const d=Math.round((h-mx)*100)/100;return d>0?'เกินขั้นสูง':d===0?'เท่ากับขั้นสูง':'ต่ำกว่าขั้นสูง'};
  const H=['ลำดับ','อำเภอ','ชื่อ รพ.สต.','ชื่อ - สกุล','ประเภทพนักงานจ้าง','ตำแหน่ง','ลักษณะการจ้าง','ค่าจ้างปัจจุบัน (บาท)','อัตราขั้นต่ำ (บาท)','อัตราขั้นสูง (บาท)','เทียบกับขั้นสูง','ส่วนต่างจากขั้นสูง (บาท)','ค่าจ้างหลังปรับ (บาท)','ปรับเพิ่มต่อเดือน (บาท)','หมายเหตุ'];
  const R=L.map((z,i)=>[i+1,z.u.a||'',z.u.n||'',z.x.nm||'',z.x.typ||'',z.x.pos||'',(z.x.grp?z.x.grp+' · ':'')+(z.x.hire||''),nv(z.R.h),nv(z.R.mn),nv(z.R.mx),cmp(z),(+z.R.h>0&&+z.R.mx>0)?Math.round((z.R.h-z.R.mx)*100)/100:'',nv(z.n),+z.oo>0?+z.oo:0,z.R.inf||'']);
